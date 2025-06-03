@@ -304,6 +304,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Approve quote and create chat room
+  app.post('/api/quotes/:id/approve', isAuthenticated, async (req: any, res) => {
+    try {
+      const quoteId = req.params.id;
+      const userId = req.user.claims.sub;
+      const { printerId } = req.body;
+
+      // Get quote details
+      const quote = await storage.getQuote(quoteId);
+      if (!quote) {
+        return res.status(404).json({ message: "Quote not found" });
+      }
+
+      // Verify user is the customer for this quote
+      if (quote.customerId !== userId) {
+        return res.status(403).json({ message: "Only quote owner can approve" });
+      }
+
+      // Update quote status to approved
+      await storage.updateQuoteStatus(quoteId, "approved");
+
+      // Create chat room automatically when contract is approved
+      try {
+        const existingRoom = await storage.getChatRoomByQuote(quoteId, quote.customerId, printerId);
+        
+        if (!existingRoom) {
+          await storage.createChatRoom({
+            quoteId,
+            customerId: quote.customerId,
+            printerId,
+            status: 'active'
+          });
+        }
+      } catch (chatError) {
+        console.error("Error creating chat room:", chatError);
+        // Don't fail the approval if chat room creation fails
+      }
+
+      res.json({ message: "Quote approved and chat room created" });
+    } catch (error) {
+      console.error("Error approving quote:", error);
+      res.status(500).json({ message: "Failed to approve quote" });
+    }
+  });
+
   // Order routes
   app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
@@ -621,10 +666,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/chat/rooms', isAuthenticated, async (req, res) => {
+  app.post('/api/chat/rooms', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertChatRoomSchema.parse(req.body);
+      
+      // Check if contract is approved for this quote
+      const quote = await storage.getQuote(validatedData.quoteId);
+      if (!quote || quote.status !== 'approved') {
+        return res.status(403).json({ 
+          message: "Chat not available - contract must be approved first" 
+        });
+      }
+
+      // Verify user is authorized for this chat
+      if (userId !== validatedData.customerId && userId !== validatedData.printerId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
       
       // Check if room already exists for this quote and participants
       const existingRoom = await storage.getChatRoomByQuote(
@@ -662,6 +720,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { roomId } = req.params;
       const userId = req.user.claims.sub;
+      
+      // Verify room exists and user has access
+      const room = await storage.getChatRoom(roomId);
+      if (!room) {
+        return res.status(404).json({ message: "Chat room not found" });
+      }
+
+      // Check if contract is approved for this room
+      const quote = await storage.getQuote(room.quoteId);
+      if (!quote || quote.status !== 'approved') {
+        return res.status(403).json({ 
+          message: "Chat not available - contract must be approved first" 
+        });
+      }
+
+      // Verify user is authorized for this chat
+      if (userId !== room.customerId && userId !== room.printerId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
       
       const validatedData = insertChatMessageSchema.parse({
         ...req.body,
@@ -737,6 +814,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (message.type === 'join_room') {
           const { roomId } = message;
           
+          // Verify room exists and user has access
+          const room = await storage.getChatRoom(roomId);
+          if (!room) {
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: 'Room not found'
+            }));
+            return;
+          }
+
+          // Check if contract is approved for this room
+          const quote = await storage.getQuote(room.quoteId);
+          if (!quote || quote.status !== 'approved') {
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: 'Chat not available - contract not approved'
+            }));
+            return;
+          }
+          
           if (!clients.has(roomId)) {
             clients.set(roomId, new Set());
           }
@@ -758,7 +855,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Invalid message format'
+        }));
       }
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
     });
 
     ws.on('close', () => {

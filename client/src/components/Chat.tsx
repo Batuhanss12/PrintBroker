@@ -69,6 +69,13 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
       setCurrentRoom(room);
       queryClient.invalidateQueries({ queryKey: ['/api/chat/rooms'] });
     },
+    onError: (error: Error) => {
+      if (error.message.includes('contract must be approved')) {
+        alert('Mesajlaşma özelliği sadece sözleşme onaylandıktan sonra kullanılabilir.');
+      } else {
+        alert('Chat odası oluşturulamadı: ' + error.message);
+      }
+    },
   });
 
   // Send message
@@ -84,6 +91,13 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
       queryClient.invalidateQueries({ 
         queryKey: ['/api/chat/rooms', currentRoom?.id, 'messages'] 
       });
+    },
+    onError: (error: Error) => {
+      if (error.message.includes('contract must be approved')) {
+        alert('Mesajlaşma özelliği sadece sözleşme onaylandıktan sonra kullanılabilir.');
+      } else {
+        alert('Mesaj gönderilemedi: ' + error.message);
+      }
     },
   });
 
@@ -110,16 +124,29 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
     };
 
     websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'new_message') {
-        queryClient.invalidateQueries({ 
-          queryKey: ['/api/chat/rooms', currentRoom.id, 'messages'] 
-        });
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'new_message') {
+          queryClient.invalidateQueries({ 
+            queryKey: ['/api/chat/rooms', currentRoom.id, 'messages'] 
+          });
+        } else if (data.type === 'error') {
+          console.error('WebSocket error:', data.message);
+          if (data.message.includes('contract not approved')) {
+            alert('Mesajlaşma özelliği sadece sözleşme onaylandıktan sonra kullanılabilir.');
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message parsing error:', error);
       }
     };
 
-    websocket.onclose = () => {
-      console.log('WebSocket disconnected');
+    websocket.onerror = (error) => {
+      console.error('WebSocket connection error:', error);
+    };
+
+    websocket.onclose = (event) => {
+      console.log('WebSocket disconnected:', event.code, event.reason);
     };
 
     setWs(websocket);
