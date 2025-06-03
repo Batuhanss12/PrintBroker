@@ -401,6 +401,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment routes
+  app.post('/api/payment/create', async (req, res) => {
+    try {
+      const { paytrService } = await import('./paytr');
+      const userIp = req.ip || req.connection.remoteAddress || '127.0.0.1';
+      
+      const result = await paytrService.createPayment(req.body, userIp);
+      res.json(result);
+    } catch (error) {
+      console.error("Payment creation error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Ödeme işlemi başlatılamadı" 
+      });
+    }
+  });
+
+  app.post('/api/payment/callback', async (req, res) => {
+    try {
+      const { paytrService } = await import('./paytr');
+      const isValid = paytrService.verifyCallback(req.body);
+      
+      if (isValid) {
+        const { merchant_oid, status, total_amount } = req.body;
+        
+        if (status === 'success') {
+          // Payment successful - update user subscription
+          // You can implement subscription logic here
+          console.log(`Payment successful for order: ${merchant_oid}, amount: ${total_amount}`);
+        }
+        
+        res.send('OK');
+      } else {
+        res.status(400).send('Invalid hash');
+      }
+    } catch (error) {
+      console.error("Payment callback error:", error);
+      res.status(500).send('Error');
+    }
+  });
+
+  // Payment result pages
+  app.get('/payment/success', (req, res) => {
+    res.redirect('/dashboard?payment=success');
+  });
+
+  app.get('/payment/fail', (req, res) => {
+    res.redirect('/payment?error=payment_failed');
+  });
+
   // Admin routes
   app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
     try {

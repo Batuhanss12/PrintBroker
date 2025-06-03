@@ -308,7 +308,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16 max-w-5xl mx-auto">
             {/* Customer Plan */}
             <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-0 shadow-lg bg-white overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 transform rotate-45 translate-x-8 -translate-y-8"></div>
@@ -372,7 +372,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            {/* Printer Plan */}
+            {/* Firm Plan */}
             <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-2 border-orange-200 shadow-xl bg-white overflow-hidden scale-105">
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 to-red-500"></div>
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
@@ -385,13 +385,10 @@ export default function Landing() {
                 <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <Building2 className="h-8 w-8 text-white" />
                 </div>
-                <CardTitle className="text-xl font-bold text-gray-900 mb-2">Matbaa Paketi</CardTitle>
+                <CardTitle className="text-xl font-bold text-gray-900 mb-2">Firma Paketi</CardTitle>
                 <div className="space-y-2">
                   <div className="text-3xl font-bold text-orange-600">₺299</div>
                   <p className="text-sm text-gray-500">aylık abonelik</p>
-                  <div className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-medium border border-orange-200">
-                    14 GÜN ÜCRETSİZ
-                  </div>
                 </div>
               </CardHeader>
               
@@ -407,96 +404,33 @@ export default function Landing() {
                     <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span>Gelişmiş analitik</span>
+                    <span>Gelişmiş analitik dashboard</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span>Müşteri değerlendirme</span>
+                    <span>Müşteri değerlendirme sistemi</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span>Otomatik sipariş</span>
+                    <span>Otomatik sipariş yönetimi</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span>Premium destek</span>
+                    <span>Premium öncelikli destek</span>
                   </li>
                 </ul>
                 <Button 
-                  onClick={handleLogin}
+                  onClick={() => window.location.href = "/payment?plan=firm"}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
                 >
-                  <Target className="h-4 w-4 mr-2" />
-                  Ücretsiz Deneyin
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Enterprise Plan - New Third Card */}
-            <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-0 shadow-lg bg-white overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500 transform rotate-45 translate-x-8 -translate-y-8"></div>
-              <div className="absolute top-4 right-4 z-10">
-                <div className="bg-white text-purple-600 text-xs font-bold px-2 py-1 rounded-full shadow-sm">
-                  KURUMSAL
-                </div>
-              </div>
-              
-              <CardHeader className="text-center pb-4 pt-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Award className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-gray-900 mb-2">Kurumsal Paket</CardTitle>
-                <div className="space-y-1">
-                  <div className="text-2xl font-bold text-purple-600">ÖZEL FİYAT</div>
-                  <p className="text-sm text-gray-500">İhtiyacınıza özel</p>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="px-6 pb-6">
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center text-sm">
-                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                      <Check className="h-3 w-3 text-purple-600" />
-                    </div>
-                    <span>Sınırsız kullanıcı</span>
-                  </li>
-                  <li className="flex items-center text-sm">
-                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                      <Check className="h-3 w-3 text-purple-600" />
-                    </div>
-                    <span>API entegrasyonu</span>
-                  </li>
-                  <li className="flex items-center text-sm">
-                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                      <Check className="h-3 w-3 text-purple-600" />
-                    </div>
-                    <span>Özel raporlama</span>
-                  </li>
-                  <li className="flex items-center text-sm">
-                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                      <Check className="h-3 w-3 text-purple-600" />
-                    </div>
-                    <span>Özel domain</span>
-                  </li>
-                  <li className="flex items-center text-sm">
-                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                      <Check className="h-3 w-3 text-purple-600" />
-                    </div>
-                    <span>7/24 öncelikli destek</span>
-                  </li>
-                </ul>
-                <Button 
-                  onClick={handleLogin}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  İletişime Geç
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Hemen Öde
                 </Button>
               </CardContent>
             </Card>
