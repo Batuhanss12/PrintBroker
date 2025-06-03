@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -28,7 +28,8 @@ import {
   Globe,
   Smartphone,
   Monitor,
-  Tablet
+  Tablet,
+  FileText
 } from "lucide-react";
 
 export default function Landing() {
@@ -87,7 +88,9 @@ export default function Landing() {
                       </div>
                       <div>
                         <DialogTitle className="text-2xl font-bold text-gray-900">Matbixx'e Hoş Geldiniz</DialogTitle>
-                        <p className="text-gray-600 mt-1">Hesabınızla giriş yapın veya yeni hesap oluşturun</p>
+                        <DialogDescription className="text-gray-600 mt-1">
+                          Hesabınızla giriş yapın veya yeni hesap oluşturun
+                        </DialogDescription>
                       </div>
                     </div>
                   </div>
@@ -277,19 +280,19 @@ export default function Landing() {
             <Button 
               onClick={() => setIsLoginModalOpen(true)}
               size="lg" 
-              className="bg-white text-blue-900 hover:bg-gray-100 px-8 py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto"
+              className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto border-2 border-white"
             >
-              <UserCheck className="mr-2 h-5 w-5" />
-              Müşteri Olarak Başla
+              <UserCheck className="mr-2 h-5 w-5 text-blue-900" />
+              <span className="text-blue-900 font-bold">Müşteri Olarak Başla</span>
             </Button>
             <Button 
               onClick={() => setIsLoginModalOpen(true)}
               variant="outline" 
               size="lg" 
-              className="border-2 border-white text-white hover:bg-white hover:text-blue-900 px-8 py-4 text-lg font-semibold transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto"
+              className="border-2 border-white text-white hover:bg-white hover:text-blue-900 px-8 py-4 text-lg font-bold transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto bg-transparent"
             >
               <Building2 className="mr-2 h-5 w-5" />
-              Matbaa Olarak Katıl
+              <span className="font-bold">Matbaa Olarak Katıl</span>
             </Button>
           </div>
 
@@ -572,8 +575,398 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Device Compatibility Section */}
+      {/* Live Work Tracking Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Canlı <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">İş Takip</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Anlık olarak platform üzerindeki işleri ve fiyatları takip edin
+            </p>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold">Canlı İş Akışı</h3>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm">Anlık Güncelleme</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Recent Orders */}
+                <div>
+                  <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-blue-600" />
+                    Son Tamamlanan İşler
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h5 className="font-semibold text-gray-900">Kartvizit Baskısı</h5>
+                          <p className="text-sm text-gray-600">500 adet • Mat selofon</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">₺85</div>
+                          <div className="text-xs text-gray-500">2 dakika önce</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Building2 className="h-4 w-4 mr-1" />
+                        <span>Ankara Dijital Matbaa</span>
+                      </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h5 className="font-semibold text-gray-900">A4 Broşür</h5>
+                          <p className="text-sm text-gray-600">1000 adet • Çift taraflı</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">₺245</div>
+                          <div className="text-xs text-gray-500">5 dakika önce</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Building2 className="h-4 w-4 mr-1" />
+                        <span>İstanbul Print House</span>
+                      </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h5 className="font-semibold text-gray-900">Etiket Baskısı</h5>
+                          <p className="text-sm text-gray-600">Roll etiket • 50x30mm</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">₺180</div>
+                          <div className="text-xs text-gray-500">8 dakika önce</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Building2 className="h-4 w-4 mr-1" />
+                        <span>Bursa Etiket Merkezi</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Active Quotes */}
+                <div>
+                  <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />
+                    Aktif Teklifler
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow bg-gradient-to-r from-blue-50 to-purple-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h5 className="font-semibold text-gray-900">Katalog Baskısı</h5>
+                          <p className="text-sm text-gray-600">20 sayfa • A4 boyut</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-blue-600 font-semibold">3 Teklif</div>
+                          <div className="text-xs text-gray-500">En düşük ₺320</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center text-gray-500">
+                          <Users className="h-4 w-4 mr-1" />
+                          <span>Teklif bekleniyor</span>
+                        </div>
+                        <div className="text-orange-600 font-medium">2 saat kaldı</div>
+                      </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow bg-gradient-to-r from-green-50 to-blue-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h5 className="font-semibold text-gray-900">Poster Baskısı</h5>
+                          <p className="text-sm text-gray-600">A1 boyut • UV baskı</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-green-600 font-semibold">5 Teklif</div>
+                          <div className="text-xs text-gray-500">En düşük ₺45</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center text-gray-500">
+                          <Users className="h-4 w-4 mr-1" />
+                          <span>Teklif karşılaştırması</span>
+                        </div>
+                        <div className="text-green-600 font-medium">Hazır</div>
+                      </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow bg-gradient-to-r from-purple-50 to-pink-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h5 className="font-semibold text-gray-900">Banner Baskısı</h5>
+                          <p className="text-sm text-gray-600">200x100cm • Vinil</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-purple-600 font-semibold">7 Teklif</div>
+                          <div className="text-xs text-gray-500">En düşük ₺150</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center text-gray-500">
+                          <Users className="h-4 w-4 mr-1" />
+                          <span>Müşteri seçim yapıyor</span>
+                        </div>
+                        <div className="text-blue-600 font-medium">1 gün kaldı</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Row */}
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600 mb-1">₺12,450</div>
+                    <div className="text-sm text-gray-600">Bugün İşlem Hacmi</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600 mb-1">47</div>
+                    <div className="text-sm text-gray-600">Tamamlanan İş</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600 mb-1">23</div>
+                    <div className="text-sm text-gray-600">Aktif Teklif</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600 mb-1">8 dk</div>
+                    <div className="text-sm text-gray-600">Ortalama Yanıt</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Price Examples Section */}
       <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Örnek <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Fiyatlar</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Popüler matbaa işleri için şeffaf fiyatlandırma örnekleri
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Kartvizit */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-blue-50 to-white">
+              <CardHeader>
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <CreditCard className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900">Kartvizit</CardTitle>
+                <CardDescription className="text-gray-600">
+                  500 adet • 350gr kuşe • Mat selofon
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Standart Kalite</span>
+                    <span className="font-bold text-green-600">₺65</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Premium Kalite</span>
+                    <span className="font-bold text-green-600">₺85</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Lüks Kalite</span>
+                    <span className="font-bold text-green-600">₺120</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Broşür */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-purple-50 to-white">
+              <CardHeader>
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900">Broşür</CardTitle>
+                <CardDescription className="text-gray-600">
+                  1000 adet • A4 • Çift taraflı • 90gr
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Siyah-Beyaz</span>
+                    <span className="font-bold text-green-600">₺180</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">4+4 Renkli</span>
+                    <span className="font-bold text-green-600">₺245</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Kuşe Kağıt</span>
+                    <span className="font-bold text-green-600">₺320</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Etiket */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-green-50 to-white">
+              <CardHeader>
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Target className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900">Etiket</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Roll etiket • 50x30mm • 1000 adet
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Termal Etiket</span>
+                    <span className="font-bold text-green-600">₺145</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Kuşe Etiket</span>
+                    <span className="font-bold text-green-600">₺180</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Su Geçirmez</span>
+                    <span className="font-bold text-green-600">₺220</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Katalog */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-orange-50 to-white">
+              <CardHeader>
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900">Katalog</CardTitle>
+                <CardDescription className="text-gray-600">
+                  20 sayfa • A4 • Saddle stitch
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">100 adet</span>
+                    <span className="font-bold text-green-600">₺320</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">500 adet</span>
+                    <span className="font-bold text-green-600">₺680</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">1000 adet</span>
+                    <span className="font-bold text-green-600">₺1.150</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Banner */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-pink-50 to-white">
+              <CardHeader>
+                <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Monitor className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900">Banner</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Vinil banner • UV dayanıklı
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">100x70cm</span>
+                    <span className="font-bold text-green-600">₺85</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">150x100cm</span>
+                    <span className="font-bold text-green-600">₺150</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">200x150cm</span>
+                    <span className="font-bold text-green-600">₺280</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Poster */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-indigo-50 to-white">
+              <CardHeader>
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Award className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900">Poster</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Yüksek kalite dijital baskı
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">A3 boyut</span>
+                    <span className="font-bold text-green-600">₺25</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">A2 boyut</span>
+                    <span className="font-bold text-green-600">₺35</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">A1 boyut</span>
+                    <span className="font-bold text-green-600">₺45</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Price Note */}
+          <div className="mt-12 text-center">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-100">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Fiyat Garantisi</h3>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Tüm fiyatlar güncel piyasa fiyatlarıdır. Platform üzerinden teklif aldığınızda, 
+                rekabetçi fiyatlarla en iyi matbaaları karşılaştırabilirsiniz.
+              </p>
+              <div className="mt-6">
+                <Button 
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3"
+                >
+                  Hemen Teklif Al
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Device Compatibility Section */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
