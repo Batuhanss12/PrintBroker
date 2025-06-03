@@ -25,7 +25,8 @@ import {
   TrendingUp,
   Award,
   Target,
-  Send
+  Send,
+  Settings
 } from "lucide-react";
 
 export default function Landing() {
