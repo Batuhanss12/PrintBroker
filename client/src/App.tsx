@@ -10,6 +10,8 @@ import CustomerDashboard from "@/pages/CustomerDashboard";
 import PrinterDashboard from "@/pages/PrinterDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import DesignEngine from "@/components/DesignEngine";
+import NotFound from "@/pages/not-found"; // Added NotFound import
+import QuoteForm from "@/pages/QuoteForm"; // Added QuoteForm import
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
