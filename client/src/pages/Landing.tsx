@@ -241,7 +241,7 @@ export default function Landing() {
       </section>
 
       {/* Quick Quote Section */}
-      <section className="py-20 bg-gradient-to-r from-gray-50 to-white">
+      <section className="py-20 bg-gradient-to-r from-gray-50 via-blue-50 to-purple-50 animate-gradient-slow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -253,16 +253,16 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg">
+            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg bg-gradient-to-br from-white via-blue-50 to-indigo-50 animate-gradient-slow">
               <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-gradient-to-br group-hover:from-blue-500 group-hover:to-indigo-500 group-hover:text-white transition-all duration-300 animate-gradient">
                   <LayoutGrid className="h-10 w-10 text-blue-500 group-hover:text-white" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-gray-900">Tabaka Etiket</h3>
                 <p className="text-gray-600 mb-6">A3/A4 tabaka halinde etiket baskısı. Kuşe, bristol ve sticker seçenekleri.</p>
                 <Button 
                   onClick={handleLogin}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3"
+                  className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 animate-gradient-fast"
                 >
                   <Target className="h-4 w-4 mr-2" />
                   Teklif Al
@@ -270,16 +270,16 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg">
+            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg bg-gradient-to-br from-white via-orange-50 to-red-50 animate-gradient-slow">
               <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-orange-500 group-hover:text-white transition-all duration-300">
+                <div className="w-20 h-20 bg-gradient-to-br from-orange-100 via-red-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-red-500 group-hover:text-white transition-all duration-300 animate-gradient">
                   <Disc className="h-10 w-10 text-orange-500 group-hover:text-white" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-gray-900">Rulo Etiket</h3>
                 <p className="text-gray-600 mb-6">Termal ve yapışkanlı rulo etiketler. Farklı çap ve mandrin seçenekleri.</p>
                 <Button 
                   onClick={handleLogin}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3"
+                  className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold py-3 animate-gradient-fast"
                 >
                   <Target className="h-4 w-4 mr-2" />
                   Teklif Al
@@ -287,16 +287,16 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg">
+            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg bg-gradient-to-br from-white via-green-50 to-emerald-50 animate-gradient-slow">
               <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-green-500 group-hover:text-white transition-all duration-300">
+                <div className="w-20 h-20 bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-gradient-to-br group-hover:from-green-500 group-hover:to-emerald-500 group-hover:text-white transition-all duration-300 animate-gradient">
                   <Printer className="h-10 w-10 text-green-500 group-hover:text-white" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-gray-900">Genel Baskı</h3>
                 <p className="text-gray-600 mb-6">Katalog, broşür, kartvizit ve özel baskı projeleri için.</p>
                 <Button 
                   onClick={handleLogin}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3"
+                  className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold py-3 animate-gradient-fast"
                 >
                   <Target className="h-4 w-4 mr-2" />
                   Teklif Al
@@ -308,10 +308,10 @@ export default function Landing() {
       </section>
 
       {/* Why Matbixx Section */}
-      <section id="why-matbixx" className="py-20 bg-gradient-to-br from-slate-50 to-blue-50">
+      <section id="why-matbixx" className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 animate-gradient-slow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 rounded-full px-6 py-3 mb-6">
+            <div className="inline-flex items-center bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 text-blue-700 rounded-full px-6 py-3 mb-6 animate-gradient">
               <Award className="h-5 w-5 mr-2" />
               <span className="font-semibold">Neden Matbixx?</span>
             </div>
@@ -438,10 +438,10 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
+      <section id="features" className="py-20 bg-gradient-to-br from-white via-gray-50 to-blue-50 animate-gradient-slow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center bg-blue-100 text-blue-600 rounded-full px-4 py-2 mb-6">
+            <div className="inline-flex items-center bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 text-blue-600 rounded-full px-4 py-2 mb-6 animate-gradient">
               <Award className="h-4 w-4 mr-2" />
               <span className="text-sm font-medium">Teknolojik Üstünlük</span>
             </div>
@@ -454,9 +454,9 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 animate-gradient-slow">
               <CardContent className="p-8">
-                <div className="bg-blue-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 animate-gradient">
                   <Palette className="text-white text-2xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">AI Destekli Tasarım</h3>
@@ -464,9 +464,9 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-orange-50 to-red-50">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 animate-gradient-slow">
               <CardContent className="p-8">
-                <div className="bg-orange-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 animate-gradient">
                   <Upload className="text-white text-2xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">Gelişmiş Dosya Yönetimi</h3>
@@ -474,9 +474,9 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 animate-gradient-slow">
               <CardContent className="p-8">
-                <div className="bg-green-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 animate-gradient">
                   <BarChart3 className="text-white text-2xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">Akıllı Teklif Sistemi</h3>
@@ -484,9 +484,9 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-purple-50 to-pink-50">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 animate-gradient-slow">
               <CardContent className="p-8">
-                <div className="bg-purple-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 animate-gradient">
                   <Shield className="text-white text-2xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">Güvenli Ödeme</h3>
@@ -494,9 +494,9 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-orange-50">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 animate-gradient-slow">
               <CardContent className="p-8">
-                <div className="bg-yellow-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="bg-gradient-to-br from-yellow-500 via-orange-500 to-amber-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 animate-gradient">
                   <Star className="text-white text-2xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">Kalite Değerlendirme</h3>
@@ -504,9 +504,9 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-teal-50 to-cyan-50">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-teal-50 via-cyan-50 to-sky-50 animate-gradient-slow">
               <CardContent className="p-8">
-                <div className="bg-teal-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="bg-gradient-to-br from-teal-500 via-cyan-500 to-sky-500 rounded-xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 animate-gradient">
                   <TrendingUp className="text-white text-2xl" />
                 </div>
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">Gerçek Zamanlı Takip</h3>
@@ -518,10 +518,10 @@ export default function Landing() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section id="pricing" className="py-20 bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 animate-gradient-slow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center bg-green-100 text-green-600 rounded-full px-4 py-2 mb-6">
+            <div className="inline-flex items-center bg-gradient-to-r from-green-100 via-emerald-100 to-teal-100 text-green-600 rounded-full px-4 py-2 mb-6 animate-gradient">
               <CreditCard className="h-4 w-4 mr-2" />
               <span className="text-sm font-medium">Esnek Fiyatlandırma</span>
             </div>
