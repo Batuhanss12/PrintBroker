@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export default function Payment() {
   const [searchParams] = useSearchParams();
   const planType = searchParams.get("plan") || "customer";
   const { toast } = useToast();
+  const { user, isLoading, isAuthenticated } = useAuth();
   
   const [formData, setFormData] = useState<PaymentFormData>({
     firstName: "",
@@ -117,6 +119,79 @@ export default function Payment() {
 
     return true;
   };
+
+  // Load registration data if available
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Load saved registration data
+      const savedData = sessionStorage.getItem(planType === 'customer' ? 'customerRegistration' : 'printerRegistration');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        setFormData(prev => ({
+          ...prev,
+          firstName: data.firstName || user.firstName || "",
+          lastName: data.lastName || user.lastName || "",
+          email: data.email || user.email || "",
+          phone: data.phone || "",
+          address: data.address || "",
+          city: data.city || "",
+          postalCode: data.postalCode || "",
+          companyName: data.companyName || user.companyName || "",
+          taxNumber: data.taxNumber || ""
+        }));
+        // Clear the session storage
+        sessionStorage.removeItem(planType === 'customer' ? 'customerRegistration' : 'printerRegistration');
+      } else {
+        // Fill with existing user data
+        setFormData(prev => ({
+          ...prev,
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          email: user.email || "",
+          companyName: user.companyName || "",
+        }));
+      }
+    }
+  }, [isAuthenticated, user, planType]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Giriş Gerekli</h2>
+              <p className="text-gray-600 mb-4">
+                Ödeme yapmak için önce giriş yapmanız gerekiyor.
+              </p>
+              <Button 
+                onClick={() => window.location.href = planType === 'customer' ? '/customer-register' : '/printer-register'}
+                className="w-full mb-2"
+              >
+                Kayıt Ol
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = "/api/login"}
+                className="w-full"
+              >
+                Giriş Yap
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handlePayment = async () => {
     if (!validateForm()) return;

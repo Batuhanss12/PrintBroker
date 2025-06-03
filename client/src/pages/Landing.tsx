@@ -82,7 +82,7 @@ export default function Landing() {
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
               <Button 
-                onClick={handleLogin}
+                onClick={() => window.location.href = "/customer-register"}
                 size="lg"
                 className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-10 py-4 text-lg shadow-2xl hover:shadow-white/20 transition-all duration-300 transform hover:scale-105"
               >
@@ -90,7 +90,7 @@ export default function Landing() {
                 Müşteri Olarak Başla
               </Button>
               <Button 
-                onClick={handleLogin}
+                onClick={() => window.location.href = "/printer-register"}
                 variant="outline"
                 size="lg"
                 className="border-2 border-white text-white hover:bg-white hover:text-blue-600 font-semibold px-10 py-4 text-lg backdrop-blur-sm bg-white/10 transition-all duration-300 transform hover:scale-105"
