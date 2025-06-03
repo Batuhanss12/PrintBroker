@@ -1,5 +1,4 @@
 import passport from "passport";
-import { Strategy as OpenIDStrategy } from "openid-client";
 import type { Express } from "express";
 import session from "express-session";
 
@@ -36,12 +35,21 @@ export async function setupAuth(app: Express) {
       response_types: ['code'],
     });
 
-    passport.use('oidc', new OpenIDStrategy({ 
-      client,
-      passReqToCallback: false
-    }, (tokenSet, userinfo, done) => {
+    // Use passport-openidconnect strategy instead
+    const { Strategy: OpenIDConnectStrategy } = await import('passport-openidconnect');
+    
+    passport.use('oidc', new OpenIDConnectStrategy({
+      issuer: 'https://replit.com',
+      authorizationURL: 'https://replit.com/auth/oauth2/authorize',
+      tokenURL: 'https://replit.com/auth/oauth2/token',
+      userInfoURL: 'https://replit.com/auth/oauth2/userinfo',
+      clientID: process.env.REPLIT_CLIENT_ID || 'default-client-id',
+      clientSecret: process.env.REPLIT_CLIENT_SECRET || 'default-client-secret',
+      callbackURL: `${host}/api/auth/callback`,
+      scope: ['openid', 'profile', 'email']
+    }, (tokenSet: any, userinfo: any, done: any) => {
       try {
-        return done(null, { ...userinfo, claims: tokenSet.claims() });
+        return done(null, { ...userinfo, claims: userinfo });
       } catch (error) {
         console.error('OIDC strategy error:', error);
         return done(error, null);
