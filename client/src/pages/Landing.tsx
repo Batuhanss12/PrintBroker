@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { 
   Check, 
   ArrowRight, 
@@ -23,7 +24,14 @@ import {
   LogIn,
   Menu,
   X,
-  CreditCard
+  CreditCard,
+  Send,
+  LayoutGrid,
+  Disc,
+  Printer,
+  Palette,
+  Upload,
+  CheckCircle
 } from "lucide-react";
 
 export default function Landing() {
@@ -454,7 +462,7 @@ export default function Landing() {
                 </div>
                 <div className="text-blue-100 font-medium text-sm lg:text-base mb-2">Tamamlanan Proje</div>
                 <div className="text-xs text-blue-200/80 flex items-center justify-center">
-                  <CheckCircle className="h-3 w-3 mr-1" />
+                  <Check className="h-3 w-3 mr-1" />
                   <span>Başarıyla teslim</span>
                 </div>
               </div>
