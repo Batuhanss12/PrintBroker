@@ -56,11 +56,11 @@ export default function Landing() {
               <a href="#pricing" className="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">Fiyatlar</a>
               <a href="#contact" className="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">İletişim</a>
             </nav>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 relative z-10">
               <Button variant="ghost" onClick={handleLogin} className="text-gray-700 hover:text-primary">
                 Giriş Yap
               </Button>
-              <Button onClick={handleLogin} className="bg-primary text-white hover:bg-blue-700">
+              <Button onClick={handleLogin} className="bg-primary text-white hover:bg-blue-700 relative z-20">
                 Ücretsiz Başla
               </Button>
             </div>
