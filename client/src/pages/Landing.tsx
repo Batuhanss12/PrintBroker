@@ -308,7 +308,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
             {/* Customer Plan */}
             <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 border-0 shadow-xl bg-gradient-to-br from-blue-50 to-indigo-100">
               <div className="absolute top-6 right-6">
@@ -433,62 +433,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            {/* Enterprise Plan */}
-            <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 border-0 shadow-xl bg-gradient-to-br from-purple-50 to-indigo-100">
-              <CardHeader className="text-center pb-4">
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <BarChart3 className="h-10 w-10 text-white" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-gray-900">Kurumsal Çözüm</CardTitle>
-                <div className="mt-4">
-                  <div className="text-4xl font-bold text-purple-600">ÖZEL</div>
-                  <div className="text-2xl font-bold text-gray-900 mt-2">FİYATLANDIRMA</div>
-                  <p className="text-gray-600 mt-2">İhtiyacınıza özel</p>
-                </div>
-              </CardHeader>
-              <CardContent className="px-8 pb-8">
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-medium">Özel API entegrasyonu</span>
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-medium">White-label çözümler</span>
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-medium">Gelişmiş raporlama</span>
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-medium">Özel eğitim ve danışmanlık</span>
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-medium">24/7 VIP destek</span>
-                  </li>
-                </ul>
-                <Button 
-                  onClick={handleLogin}
-                  variant="outline"
-                  className="w-full border-2 border-purple-500 text-purple-600 hover:bg-purple-500 hover:text-white font-semibold py-4 text-lg transition-all duration-300"
-                >
-                  <FileText className="h-5 w-5 mr-2" />
-                  Teklif İsteyin
-                </Button>
-              </CardContent>
-            </Card>
+
           </div>
 
           {/* Money Back Guarantee */}

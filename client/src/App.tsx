@@ -9,7 +9,7 @@ import Home from "@/pages/Home";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import PrinterDashboard from "@/pages/PrinterDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
-import QuoteForm from "@/pages/QuoteForm";
+import QuoteForm from "@/pages/QuoteFormNew";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,18 +30,18 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Home} />
-          {(user as any)?.role === 'customer' && (
-            <>
-              <Route path="/dashboard" component={CustomerDashboard} />
-              <Route path="/quote/:type" component={QuoteForm} />
-            </>
-          )}
-          {(user as any)?.role === 'printer' && (
-            <Route path="/dashboard" component={PrinterDashboard} />
-          )}
-          {(user as any)?.role === 'admin' && (
-            <Route path="/dashboard" component={AdminDashboard} />
-          )}
+          {/* Tüm paneller aktif - role'e göre dashboard yönlendirme */}
+          <Route path="/dashboard" component={() => {
+            const userRole = (user as any)?.role || 'customer';
+            if (userRole === 'admin') return <AdminDashboard />;
+            if (userRole === 'printer') return <PrinterDashboard />;
+            return <CustomerDashboard />;
+          }} />
+          <Route path="/quote/:type" component={QuoteForm} />
+          {/* Test için tüm panellere erişim */}
+          <Route path="/customer-dashboard" component={CustomerDashboard} />
+          <Route path="/printer-dashboard" component={PrinterDashboard} />
+          <Route path="/admin-dashboard" component={AdminDashboard} />
         </>
       )}
       <Route component={NotFound} />
