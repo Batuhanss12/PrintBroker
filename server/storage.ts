@@ -27,6 +27,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserRole(id: string, role: string): Promise<void>;
+  updateUserCreditBalance(id: string, newBalance: string): Promise<void>;
+  updateUserSubscription(id: string, status: string): Promise<void>;
 
   // Quote operations
   createQuote(quote: InsertQuote): Promise<Quote>;
@@ -108,6 +110,28 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date() 
       })
       .where(eq(users.id, id));
+  }
+
+  async updateUserCreditBalance(userId: string, newBalance: string): Promise<void> {
+    await db.update(users)
+      .set({ 
+        creditBalance: newBalance,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserSubscription(userId: string, status: string): Promise<void> {
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 1); // 1 month from now
+
+    await db.update(users)
+      .set({ 
+        subscriptionStatus: status,
+        subscriptionExpiresAt: expiresAt,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
   }
 
   // Quote operations

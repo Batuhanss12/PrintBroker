@@ -58,14 +58,14 @@ export default function Payment() {
       price: 0,
       description: "Kredili sistem - Kullandığın kadar öde",
       icon: <Users className="h-6 w-6" />,
-      features: ["Sınırsız teklif alma", "AI destekli tasarım", "100MB dosya yükleme", "Gerçek zamanlı takip", "7/24 canlı destek"]
+      features: ["Sınırsız teklif alma", "AI destekli tasarım (35₺/tasarım)", "100MB dosya yükleme", "Gerçek zamanlı takip", "7/24 canlı destek"]
     },
     firm: {
       name: "Firma Paketi",
-      price: 299,
+      price: 2999,
       description: "Aylık abonelik sistemi",
       icon: <Building2 className="h-6 w-6" />,
-      features: ["Sınırsız teklif verme", "Gelişmiş analitik dashboard", "Müşteri değerlendirme sistemi", "Otomatik sipariş yönetimi", "Premium öncelikli destek"]
+      features: ["Yoğun müşteri portföyü yönetimi", "Gelişmiş analitik dashboard", "Otomatik sipariş ve teklif yönetimi", "Müşteri CRM entegrasyonu", "Premium öncelikli destek"]
     }
   };
 
@@ -143,8 +143,17 @@ export default function Payment() {
       const result = await response.json();
 
       if (result.success) {
+        // Show success message
+        toast({
+          title: "Ödeme İşlemi Başlatıldı",
+          description: "PayTR güvenli ödeme sayfasına yönlendiriliyorsunuz...",
+          variant: "default",
+        });
+        
         // Redirect to PayTR payment page
-        window.location.href = result.paymentUrl;
+        setTimeout(() => {
+          window.location.href = result.paymentUrl;
+        }, 1500);
       } else {
         throw new Error(result.message || "Ödeme hatası");
       }

@@ -311,6 +311,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Check if user has enough credit (35₺ per design)
+      const designCost = 35;
+      const currentBalance = parseFloat(user.creditBalance || '0');
+      
+      if (currentBalance < designCost) {
+        return res.status(400).json({ 
+          message: "Insufficient credit balance. Please add credit to your account.",
+          requiredCredit: designCost,
+          currentBalance: currentBalance
+        });
+      }
+
       const { prompt, options = {} } = req.body;
       
       if (!prompt || typeof prompt !== 'string') {
@@ -319,16 +331,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await ideogramService.generateImage(prompt, options);
       
+      // Deduct credit from user balance
+      const newBalance = currentBalance - designCost;
+      await storage.updateUserCreditBalance(userId, newBalance.toString());
+      
       // Save generation history
       await storage.saveDesignGeneration({
         userId,
         prompt,
         options,
         result: result.data,
+        creditDeducted: designCost,
         createdAt: new Date(),
       });
 
-      res.json(result);
+      res.json({
+        ...result,
+        creditDeducted: designCost,
+        remainingBalance: newBalance
+      });
     } catch (error) {
       console.error("Error generating design:", error);
       res.status(500).json({ message: "Failed to generate design" });
@@ -427,9 +448,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { merchant_oid, status, total_amount } = req.body;
         
         if (status === 'success') {
-          // Payment successful - update user subscription
-          // You can implement subscription logic here
+          // Payment successful - update user subscription or credit
           console.log(`Payment successful for order: ${merchant_oid}, amount: ${total_amount}`);
+          
+          // Extract user info from merchant_oid if needed
+          // Format: userid_plantype_timestamp
+          const orderParts = merchant_oid.split('_');
+          if (orderParts.length >= 2) {
+            const userId = orderParts[0];
+            const planType = orderParts[1];
+            
+            if (planType === 'customer') {
+              // Add credit to customer account
+              const creditAmount = parseFloat(total_amount);
+              const user = await storage.getUser(userId);
+              if (user) {
+                const currentBalance = parseFloat(user.creditBalance || '0');
+                const newBalance = currentBalance + creditAmount;
+                await storage.updateUserCreditBalance(userId, newBalance.toString());
+              }
+            } else if (planType === 'firm') {
+              // Update firm subscription
+              await storage.updateUserSubscription(userId, 'active');
+            }
+          }
         }
         
         res.send('OK');
