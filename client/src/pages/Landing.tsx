@@ -45,22 +45,22 @@ export default function Landing() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center mr-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
                   <span className="text-white font-bold text-lg">M</span>
                 </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">Matbixx</span>
+                <span className="text-2xl font-bold text-blue-600">Matbixx</span>
               </div>
             </div>
             <nav className="hidden md:flex space-x-8">
-              <a href="#features" className="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">Özellikler</a>
-              <a href="#pricing" className="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">Fiyatlar</a>
-              <a href="#contact" className="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">İletişim</a>
+              <a href="#features" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Özellikler</a>
+              <a href="#pricing" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Fiyatlar</a>
+              <a href="#contact" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">İletişim</a>
             </nav>
-            <div className="flex items-center space-x-4 relative z-10">
-              <Button variant="ghost" onClick={handleLogin} className="text-gray-700 hover:text-primary">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={handleLogin} className="text-gray-700 hover:text-blue-600">
                 Giriş Yap
               </Button>
-              <Button onClick={handleLogin} className="bg-primary text-white hover:bg-blue-700 relative z-20">
+              <Button onClick={handleLogin} className="bg-blue-600 text-white hover:bg-blue-700">
                 Ücretsiz Başla
               </Button>
             </div>
