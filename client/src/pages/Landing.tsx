@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   PrinterIcon, 
   Palette, 
@@ -29,12 +31,21 @@ import {
   Menu,
   LogIn,
   CheckCircle,
-  Settings
+  Settings,
+  X,
+  Crown,
+  UserCheck
 } from "lucide-react";
 
 export default function Landing() {
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
   const handleLogin = () => {
-    window.location.href = "/api/login";
+    setIsLoginModalOpen(true);
+  };
+
+  const handleLoginAs = (role: string) => {
+    window.location.href = `/api/login?role=${role}`;
   };
 
   return (
@@ -57,10 +68,224 @@ export default function Landing() {
               <a href="#contact" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">İletişim</a>
             </nav>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={handleLogin} className="text-gray-700 hover:text-blue-600">
-                Giriş Yap
-              </Button>
+              <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" className="text-gray-700 hover:text-blue-600">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Giriş Yap
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-4xl p-0 bg-gradient-to-br from-gray-50 to-blue-50">
+                  <DialogHeader className="p-6 pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">M</span>
+                        </div>
+                        <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          Matbixx'e Hoş Geldiniz
+                        </DialogTitle>
+                      </div>
+                    </div>
+                    <p className="text-gray-600 mt-2">Hesap türünüzü seçin ve platformumuzun avantajlarından yararlanmaya başlayın</p>
+                  </DialogHeader>
+                  
+                  <div className="px-6 pb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Customer Card */}
+                      <Card className="relative overflow-hidden border-2 border-blue-200 hover:border-blue-400 transition-all duration-300 hover:shadow-xl group">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 transform rotate-45 translate-x-8 -translate-y-8"></div>
+                        <CardHeader className="pb-4">
+                          <div className="flex items-center justify-between">
+                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <Users className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                              Bireysel
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-xl font-bold text-gray-900 mt-3">
+                            Müşteri Girişi
+                          </CardTitle>
+                          <p className="text-sm text-gray-600">
+                            Baskı ihtiyaçlarınız için profesyonel çözümler
+                          </p>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Hızlı teklif alma</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>AI destekli tasarım</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Sipariş takibi</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>7/24 destek</span>
+                            </div>
+                          </div>
+                          <Button 
+                            onClick={() => handleLoginAs('customer')}
+                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                          >
+                            <UserCheck className="h-4 w-4 mr-2" />
+                            Müşteri Olarak Giriş
+                          </Button>
+                          <div className="text-center">
+                            <p className="text-xs text-gray-500">
+                              Hesabınız yok mu?{" "}
+                              <button
+                                onClick={() => {
+                                  setIsLoginModalOpen(false);
+                                  window.location.href = "/customer-register";
+                                }}
+                                className="text-blue-600 hover:text-blue-700 font-medium underline"
+                              >
+                                Kayıt Ol
+                              </button>
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Printer Card */}
+                      <Card className="relative overflow-hidden border-2 border-orange-200 hover:border-orange-400 transition-all duration-300 hover:shadow-xl group">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 transform rotate-45 translate-x-8 -translate-y-8"></div>
+                        <CardHeader className="pb-4">
+                          <div className="flex items-center justify-between">
+                            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <Building2 className="h-6 w-6 text-orange-600" />
+                            </div>
+                            <Badge variant="secondary" className="bg-orange-50 text-orange-700 hover:bg-orange-100">
+                              İşletme
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-xl font-bold text-gray-900 mt-3">
+                            Matbaa Girişi
+                          </CardTitle>
+                          <p className="text-sm text-gray-600">
+                            İşinizi büyütün, daha fazla müşteriye ulaşın
+                          </p>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Sipariş yönetimi</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Müşteri portföyü</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Gelişmiş analitik</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Premium destek</span>
+                            </div>
+                          </div>
+                          <Button 
+                            onClick={() => handleLoginAs('printer')}
+                            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                          >
+                            <Building2 className="h-4 w-4 mr-2" />
+                            Matbaa Olarak Giriş
+                          </Button>
+                          <div className="text-center">
+                            <p className="text-xs text-gray-500">
+                              Hesabınız yok mu?{" "}
+                              <button
+                                onClick={() => {
+                                  setIsLoginModalOpen(false);
+                                  window.location.href = "/printer-register";
+                                }}
+                                className="text-orange-600 hover:text-orange-700 font-medium underline"
+                              >
+                                Kayıt Ol
+                              </button>
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Admin Card */}
+                      <Card className="relative overflow-hidden border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:shadow-xl group">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400 to-purple-600 transform rotate-45 translate-x-8 -translate-y-8"></div>
+                        <div className="absolute top-2 left-2">
+                          <Crown className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <CardHeader className="pb-4">
+                          <div className="flex items-center justify-between">
+                            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <Shield className="h-6 w-6 text-purple-600" />
+                            </div>
+                            <Badge variant="secondary" className="bg-purple-50 text-purple-700 hover:bg-purple-100">
+                              VIP
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-xl font-bold text-gray-900 mt-3">
+                            Yönetici Girişi
+                          </CardTitle>
+                          <p className="text-sm text-gray-600">
+                            Platform yönetimi ve gelişmiş kontroller
+                          </p>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Sistem yönetimi</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Kullanıcı kontrolü</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Raporlama araçları</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-700">
+                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>Tam yetki</span>
+                            </div>
+                          </div>
+                          <Button 
+                            onClick={() => handleLoginAs('admin')}
+                            className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                          >
+                            <Shield className="h-4 w-4 mr-2" />
+                            Yönetici Olarak Giriş
+                          </Button>
+                          <div className="text-center">
+                            <p className="text-xs text-gray-500">
+                              Özel yetkili hesap gereklidir
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Security Notice */}
+                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                      <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                        <Shield className="h-4 w-4 text-blue-600" />
+                        <span>SSL ile güvenli giriş • Kişisel verileriniz korunur</span>
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
               <Button onClick={handleLogin} className="bg-blue-600 text-white hover:bg-blue-700">
+                <Zap className="h-4 w-4 mr-2" />
                 Ücretsiz Başla
               </Button>
             </div>
