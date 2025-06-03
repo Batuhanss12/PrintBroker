@@ -647,10 +647,12 @@ export default function Landing() {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={() => {
-                    console.log('Customer registration button clicked');
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Customer registration button clicked - DIRECT');
                     setIsLoginModalOpen(false);
-                    setTimeout(() => setShowLoginForm('customer'), 100);
+                    setShowLoginForm('customer');
                   }}
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
@@ -707,10 +709,12 @@ export default function Landing() {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={() => {
-                    console.log('Printer registration button clicked');
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Printer registration button clicked - DIRECT');
                     setIsLoginModalOpen(false);
-                    setTimeout(() => setShowLoginForm('printer'), 100);
+                    setShowLoginForm('printer');
                   }}
                   className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
