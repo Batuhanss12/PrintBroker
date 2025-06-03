@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,8 @@ interface PaymentFormData {
 }
 
 export default function Payment() {
-  const [searchParams] = useSearchParams();
+  const search = useSearch();
+  const searchParams = new URLSearchParams(search);
   const planType = searchParams.get("plan") || "customer";
   const { toast } = useToast();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
