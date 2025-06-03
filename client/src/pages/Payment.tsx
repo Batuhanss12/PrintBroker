@@ -37,7 +37,7 @@ export default function Payment() {
   const [searchParams] = useSearchParams();
   const planType = searchParams.get("plan") || "customer";
   const { toast } = useToast();
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   
   const [formData, setFormData] = useState<PaymentFormData>({
     firstName: "",
@@ -154,7 +154,7 @@ export default function Payment() {
     }
   }, [isAuthenticated, user, planType]);
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
