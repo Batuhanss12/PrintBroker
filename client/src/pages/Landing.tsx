@@ -62,6 +62,10 @@ export default function Landing() {
         body: JSON.stringify({ ...formData, role })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -76,6 +80,7 @@ export default function Landing() {
         throw new Error(data.message || "Kayıt işlemi başarısız");
       }
     } catch (error: any) {
+      console.error('Registration error:', error);
       toast({
         title: "Hata",
         description: error.message || "Kayıt işlemi başarısız",
