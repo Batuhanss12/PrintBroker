@@ -336,7 +336,12 @@ export default function Landing() {
           {/* Action Buttons at Top */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4 sm:px-0">
             <Button 
-              onClick={() => setIsLoginModalOpen(true)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowLoginForm('customer');
+                setIsLoginModalOpen(true);
+              }}
               size="lg" 
               className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto border-2 border-white"
             >
@@ -344,7 +349,12 @@ export default function Landing() {
               <span className="text-blue-900 font-bold">Müşteri Olarak Başla</span>
             </Button>
             <Button 
-              onClick={() => setIsLoginModalOpen(true)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowLoginForm('printer');
+                setIsLoginModalOpen(true);
+              }}
               variant="outline" 
               size="lg" 
               className="border-2 border-white text-white hover:bg-white hover:text-blue-900 px-8 py-4 text-lg font-bold transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto bg-transparent"
@@ -650,9 +660,8 @@ export default function Landing() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Customer registration button clicked - DIRECT');
-                    setIsLoginModalOpen(false);
                     setShowLoginForm('customer');
+                    setIsLoginModalOpen(true);
                   }}
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
@@ -712,9 +721,8 @@ export default function Landing() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Printer registration button clicked - DIRECT');
-                    setIsLoginModalOpen(false);
                     setShowLoginForm('printer');
+                    setIsLoginModalOpen(true);
                   }}
                   className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
