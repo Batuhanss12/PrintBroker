@@ -304,11 +304,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Design generation routes
   app.post('/api/design/generate', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      const { prompt, options = {} } = req.body;
+      
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      // Check if Ideogram API is available
+      if (!process.env.IDEOGRAM_API_KEY) {
+        return res.status(503).json({ 
+          message: "Design generation service is currently unavailable. Please contact administrator.",
+          service: "ideogram_unavailable"
+        });
       }
 
       // Check if user has enough credit (35₺ per design)
@@ -321,12 +335,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           requiredCredit: designCost,
           currentBalance: currentBalance
         });
-      }
-
-      const { prompt, options = {} } = req.body;
-      
-      if (!prompt || typeof prompt !== 'string') {
-        return res.status(400).json({ message: "Prompt is required" });
       }
 
       const result = await ideogramService.generateImage(prompt, options);

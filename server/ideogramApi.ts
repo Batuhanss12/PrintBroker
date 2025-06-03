@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import FormData from 'form-data';
 
@@ -32,7 +31,7 @@ class IdeogramService {
   constructor() {
     this.apiKey = process.env.IDEOGRAM_API_KEY || '';
     if (!this.apiKey) {
-      console.warn('IDEOGRAM_API_KEY environment variable not set');
+      console.warn('IDEOGRAM_API_KEY environment variable not set - design generation will be disabled');
     }
   }
 
@@ -44,6 +43,9 @@ class IdeogramService {
     negativePrompt?: string;
     seed?: number;
   } = {}): Promise<IdeogramResponse> {
+    if (!this.apiKey) {
+      throw new Error('Ideogram API key not configured. Please contact administrator.');
+    }
     try {
       const requestData: IdeogramRequest = {
         image_request: {
@@ -83,20 +85,24 @@ class IdeogramService {
 
   // Batch generation with rate limiting
   async generateBatch(requests: Array<{ prompt: string; options?: Parameters<typeof this.generateImage>[1] }>, batchSize = 3): Promise<IdeogramResponse[]> {
+    if (!this.apiKey) {
+      throw new Error('Ideogram API key not configured. Please contact administrator.');
+    }
+
     const results: IdeogramResponse[] = [];
-    
+
     for (let i = 0; i < requests.length; i += batchSize) {
       const batch = requests.slice(i, i + batchSize);
       const batchPromises = batch.map(req => this.generateImage(req.prompt, req.options));
       const batchResults = await Promise.all(batchPromises);
       results.push(...batchResults);
-      
+
       // Rate limiting delay between batches
       if (i + batchSize < requests.length) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
-    
+
     return results;
   }
 }

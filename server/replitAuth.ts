@@ -17,6 +17,13 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Always use fallback auth in development
+  if (!process.env.REPLIT_CLIENT_ID || !process.env.REPLIT_CLIENT_SECRET) {
+    console.log('Missing Replit auth credentials, using fallback authentication');
+    setupFallbackAuth(app);
+    return;
+  }
+
   try {
     const { Issuer } = await import("openid-client");
 
@@ -25,8 +32,15 @@ export async function setupAuth(app: Express) {
       `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER || 'replit'}.repl.co` : 
       'http://localhost:5000';
 
-    // Discover OIDC issuer with error handling
-    const issuer = await Issuer.discover('https://replit.com/.well-known/openid_configuration');
+    // Try to discover OIDC issuer with better error handling
+    let issuer;
+    try {
+      issuer = await Issuer.discover('https://replit.com/.well-known/openid_configuration');
+    } catch (discoverError) {
+      console.log('OIDC discovery failed, using fallback auth');
+      setupFallbackAuth(app);
+      return;
+    }
 
     const client = new issuer.Client({
       client_id: process.env.REPLIT_CLIENT_ID || 'default-client-id',
