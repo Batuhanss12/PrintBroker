@@ -450,7 +450,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         prompt,
         options,
         result: result.data,
-        creditDeducted: designCost,
         createdAt: new Date(),
       });
 

@@ -62,8 +62,9 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
 
   // Create or get chat room
   const createRoomMutation = useMutation({
-    mutationFn: async (roomData: { quoteId: string; customerId: string; printerId: string }) => {
-      return await apiRequest(`/api/chat/rooms`, 'POST', roomData) as ChatRoom;
+    mutationFn: async (roomData: { quoteId: string; customerId: string; printerId: string }): Promise<ChatRoom> => {
+      const response = await apiRequest(`/api/chat/rooms`, 'POST', roomData);
+      return response as unknown as ChatRoom;
     },
     onSuccess: (room: ChatRoom) => {
       setCurrentRoom(room);
@@ -200,6 +201,11 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
     return userId.slice(0, 2).toUpperCase();
   };
 
+  // Type guard for user data
+  const isValidUser = (user: any): user is { id: string; profileImageUrl?: string } => {
+    return user && typeof user.id === 'string';
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -215,7 +221,7 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
           </CardHeader>
           <ScrollArea className="h-[500px]">
             <div className="p-4 space-y-2">
-              {rooms.map((room: ChatRoom) => (
+              {(rooms as ChatRoom[]).map((room: ChatRoom) => (
                 <div
                   key={room.id}
                   className={`p-3 rounded-lg cursor-pointer transition-colors ${
@@ -229,7 +235,7 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="text-xs">
                         {getUserInitials(
-                          user?.id === room.customerId ? room.printerId : room.customerId
+                          isValidUser(user) && user.id === room.customerId ? room.printerId : room.customerId
                         )}
                       </AvatarFallback>
                     </Avatar>
@@ -251,7 +257,7 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
                   </div>
                 </div>
               ))}
-              {rooms.length === 0 && (
+              {(rooms as ChatRoom[]).length === 0 && (
                 <div className="text-center text-muted-foreground py-8">
                   <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">Henüz konuşma yok</p>
