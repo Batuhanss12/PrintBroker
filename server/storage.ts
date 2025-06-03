@@ -438,6 +438,122 @@ export class DatabaseStorage implements IStorage {
       console.error('Error storing designs:', error);
     }
   }
+
+  // Chat operations
+  async createChatRoom(chatRoom: InsertChatRoom): Promise<ChatRoom> {
+    const [room] = await db
+      .insert(chatRooms)
+      .values(chatRoom)
+      .returning();
+    return room;
+  }
+
+  async getChatRoom(id: string): Promise<ChatRoom | undefined> {
+    const [room] = await db
+      .select()
+      .from(chatRooms)
+      .where(eq(chatRooms.id, id));
+    return room;
+  }
+
+  async getChatRoomByQuote(quoteId: string, customerId: string, printerId: string): Promise<ChatRoom | undefined> {
+    const [room] = await db
+      .select()
+      .from(chatRooms)
+      .where(
+        and(
+          eq(chatRooms.quoteId, quoteId),
+          eq(chatRooms.customerId, customerId),
+          eq(chatRooms.printerId, printerId)
+        )
+      );
+    return room;
+  }
+
+  async getChatRoomsByUser(userId: string): Promise<ChatRoom[]> {
+    const rooms = await db
+      .select()
+      .from(chatRooms)
+      .where(
+        or(
+          eq(chatRooms.customerId, userId),
+          eq(chatRooms.printerId, userId)
+        )
+      )
+      .orderBy(desc(chatRooms.lastMessageAt));
+    return rooms;
+  }
+
+  async sendMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [newMessage] = await db
+      .insert(chatMessages)
+      .values(message)
+      .returning();
+
+    // Update room's last message timestamp
+    await db
+      .update(chatRooms)
+      .set({ 
+        lastMessageAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(chatRooms.id, message.roomId));
+
+    return newMessage;
+  }
+
+  async getMessages(roomId: string, limit: number = 50): Promise<ChatMessage[]> {
+    const messages = await db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.roomId, roomId))
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(limit);
+    
+    return messages.reverse(); // Return in chronological order
+  }
+
+  async markMessagesAsRead(roomId: string, userId: string): Promise<void> {
+    await db
+      .update(chatMessages)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(chatMessages.roomId, roomId),
+          sql`${chatMessages.senderId} != ${userId}`,
+          eq(chatMessages.isRead, false)
+        )
+      );
+  }
+
+  async getUnreadMessageCount(userId: string): Promise<number> {
+    const userRooms = await db
+      .select({ id: chatRooms.id })
+      .from(chatRooms)
+      .where(
+        or(
+          eq(chatRooms.customerId, userId),
+          eq(chatRooms.printerId, userId)
+        )
+      );
+
+    const roomIds = userRooms.map(room => room.id);
+
+    if (roomIds.length === 0) return 0;
+
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(chatMessages)
+      .where(
+        and(
+          sql`${chatMessages.roomId} = ANY(${roomIds})`,
+          sql`${chatMessages.senderId} != ${userId}`,
+          eq(chatMessages.isRead, false)
+        )
+      );
+
+    return result?.count || 0;
+  }
 }
 
 export const storage = new DatabaseStorage();

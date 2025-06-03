@@ -1,11 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertQuoteSchema, insertPrinterQuoteSchema, insertRatingSchema } from "@shared/schema";
+import { insertQuoteSchema, insertPrinterQuoteSchema, insertRatingSchema, insertChatRoomSchema, insertChatMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { ideogramService } from "./ideogramApi";
 
@@ -608,6 +609,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Chat API routes
+  app.get('/api/chat/rooms', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const rooms = await storage.getChatRoomsByUser(userId);
+      res.json(rooms);
+    } catch (error) {
+      console.error("Error fetching chat rooms:", error);
+      res.status(500).json({ message: "Failed to fetch chat rooms" });
+    }
+  });
+
+  app.post('/api/chat/rooms', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validatedData = insertChatRoomSchema.parse(req.body);
+      
+      // Check if room already exists for this quote and participants
+      const existingRoom = await storage.getChatRoomByQuote(
+        validatedData.quoteId,
+        validatedData.customerId,
+        validatedData.printerId
+      );
+
+      if (existingRoom) {
+        return res.json(existingRoom);
+      }
+
+      const room = await storage.createChatRoom(validatedData);
+      res.json(room);
+    } catch (error) {
+      console.error("Error creating chat room:", error);
+      res.status(500).json({ message: "Failed to create chat room" });
+    }
+  });
+
+  app.get('/api/chat/rooms/:roomId/messages', isAuthenticated, async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const { limit = 50 } = req.query;
+      
+      const messages = await storage.getMessages(roomId, parseInt(limit as string));
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post('/api/chat/rooms/:roomId/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const { roomId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const validatedData = insertChatMessageSchema.parse({
+        ...req.body,
+        roomId,
+        senderId: userId
+      });
+
+      const message = await storage.sendMessage(validatedData);
+      
+      // Broadcast to WebSocket clients
+      broadcastToRoom(roomId, {
+        type: 'new_message',
+        data: message
+      });
+
+      res.json(message);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.put('/api/chat/rooms/:roomId/read', isAuthenticated, async (req: any, res) => {
+    try {
+      const { roomId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      await storage.markMessagesAsRead(roomId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ message: "Failed to mark messages as read" });
+    }
+  });
+
+  app.get('/api/chat/unread-count', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const count = await storage.getUnreadMessageCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      res.status(500).json({ message: "Failed to fetch unread count" });
+    }
+  });
+
   const httpServer = createServer(app);
+
+  // WebSocket server for real-time chat
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  const clients = new Map<string, Set<WebSocket>>();
+
+  // Broadcast function for WebSocket
+  function broadcastToRoom(roomId: string, message: any) {
+    const roomClients = clients.get(roomId);
+    if (roomClients) {
+      const messageStr = JSON.stringify(message);
+      roomClients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(messageStr);
+        }
+      });
+    }
+  }
+
+  wss.on('connection', (ws: WebSocket, req) => {
+    console.log('WebSocket client connected');
+
+    ws.on('message', async (data: Buffer) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        if (message.type === 'join_room') {
+          const { roomId } = message;
+          
+          if (!clients.has(roomId)) {
+            clients.set(roomId, new Set());
+          }
+          clients.get(roomId)!.add(ws);
+          
+          ws.send(JSON.stringify({
+            type: 'room_joined',
+            roomId
+          }));
+        } else if (message.type === 'leave_room') {
+          const { roomId } = message;
+          const roomClients = clients.get(roomId);
+          if (roomClients) {
+            roomClients.delete(ws);
+            if (roomClients.size === 0) {
+              clients.delete(roomId);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      // Remove client from all rooms
+      clients.forEach((roomClients, roomId) => {
+        roomClients.delete(ws);
+        if (roomClients.size === 0) {
+          clients.delete(roomId);
+        }
+      });
+      console.log('WebSocket client disconnected');
+    });
+  });
+
   return httpServer;
 }
