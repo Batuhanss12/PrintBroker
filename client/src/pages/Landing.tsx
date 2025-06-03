@@ -40,7 +40,7 @@ import {
 
 export default function Landing() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState<string | null>(null);
+  const [showLoginForm, setShowLoginForm] = useState<'customer' | 'printer' | 'admin' | 'login' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -650,7 +650,7 @@ export default function Landing() {
                   onClick={() => {
                     console.log('Customer registration button clicked');
                     setIsLoginModalOpen(false);
-                    setShowLoginForm('customer');
+                    setTimeout(() => setShowLoginForm('customer'), 100);
                   }}
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
@@ -710,7 +710,7 @@ export default function Landing() {
                   onClick={() => {
                     console.log('Printer registration button clicked');
                     setIsLoginModalOpen(false);
-                    setShowLoginForm('printer');
+                    setTimeout(() => setShowLoginForm('printer'), 100);
                   }}
                   className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
