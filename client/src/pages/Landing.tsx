@@ -74,12 +74,19 @@ export default function Landing() {
                 <LogIn className="h-4 w-4 mr-2" />
                 Giriş Yap
               </Button>
-              
-              <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
-                <DialogTrigger asChild>
-                  <div style={{ display: 'none' }}></div>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-4xl p-0 bg-gradient-to-br from-gray-50 to-blue-50">
+              <Button 
+                onClick={() => setIsLoginModalOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Ücretsiz Başla
+              </Button>
+            </div>
+
+            <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
+              <DialogTrigger asChild>
+                <div style={{ display: 'none' }}></div>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-4xl p-0 bg-gradient-to-br from-gray-50 to-blue-50">
                   <DialogHeader className="p-6 pb-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -286,48 +293,90 @@ export default function Landing() {
                     </div>
                   </div>
                 </DialogContent>
-              </Dialog>
+            </Dialog>
 
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden relative z-50">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="p-2 bg-white border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {/* Mobile Buttons */}
+            <div className="md:hidden flex items-center space-x-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setIsLoginModalOpen(true)}
+                className="text-gray-700 hover:text-blue-600 px-2"
+              >
+                <LogIn className="h-4 w-4 mr-1" />
+                Giriş
+              </Button>
+              
+              <div className="relative z-50">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    align="end" 
+                    className="w-72 bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl z-[100] overflow-hidden"
+                    sideOffset={8}
                   >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="end" 
-                  className="w-48 bg-white border border-gray-200 shadow-lg rounded-lg z-[100]"
-                  sideOffset={5}
-                >
-                  <DropdownMenuItem 
-                    onClick={() => setIsLoginModalOpen(true)} 
-                    className="flex items-center cursor-pointer px-4 py-2 hover:bg-gray-100"
-                  >
-                    <LogIn className="h-4 w-4 mr-2 text-gray-600" />
-                    <span className="text-gray-700">Giriş Yap</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="px-4 py-2 hover:bg-gray-100">
-                    <a href="#features" className="flex items-center cursor-pointer w-full text-gray-700">
-                      <Star className="h-4 w-4 mr-2 text-gray-600" />
-                      Özellikler
-                    </a>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="px-4 py-2 hover:bg-gray-100">
-                    <a href="#pricing" className="flex items-center cursor-pointer w-full text-gray-700">
-                      <CreditCard className="h-4 w-4 mr-2 text-gray-600" />
-                      Fiyatlar
-                    </a>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
+                      <h3 className="font-bold text-lg mb-1">Matbixx Premium</h3>
+                      <p className="text-blue-100 text-sm">Türkiye'nin lider B2B matbaa platformu</p>
+                    </div>
+                    
+                    <div className="p-2">
+                      <DropdownMenuItem className="rounded-xl p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 group cursor-pointer">
+                        <div className="flex items-center w-full">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <Star className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">Premium Özellikler</h4>
+                            <p className="text-sm text-gray-600">AI tasarım, anlık teklif sistemi</p>
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem className="rounded-xl p-4 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group cursor-pointer">
+                        <a href="#pricing" className="flex items-center w-full">
+                          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <CreditCard className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">Fiyat Paketleri</h4>
+                            <p className="text-sm text-gray-600">Uygun fiyatlı çözümler</p>
+                          </div>
+                        </a>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem className="rounded-xl p-4 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 transition-all duration-300 group cursor-pointer">
+                        <div className="flex items-center w-full">
+                          <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                            <Zap className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">Hızlı Başlangıç</h4>
+                            <p className="text-sm text-gray-600">5 dakikada hesap açın</p>
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                    </div>
+                    
+                    <div className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 border-t border-gray-100">
+                      <Button 
+                        onClick={() => setIsLoginModalOpen(true)}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg"
+                      >
+                        Hemen Ücretsiz Başla
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
         </div>
