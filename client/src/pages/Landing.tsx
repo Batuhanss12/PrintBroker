@@ -154,12 +154,7 @@ export default function Landing() {
                       </div>
 
                       <Button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsLoginModalOpen(false);
-                          window.location.href = '/customer';
-                        }}
+                        onClick={() => setShowLoginForm('login')}
                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <UserCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -167,12 +162,7 @@ export default function Landing() {
                       </Button>
 
                       <Button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsLoginModalOpen(false);
-                          window.location.href = '/printer';
-                        }}
+                        onClick={() => setShowLoginForm('login')}
                         className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <Building2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -180,12 +170,7 @@ export default function Landing() {
                       </Button>
 
                       <Button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsLoginModalOpen(false);
-                          window.location.href = '/admin';
-                        }}
+                        onClick={() => setShowLoginForm('login')}
                         className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <Crown className="h-5 w-5 group-hover:scale-110 transition-transform" />

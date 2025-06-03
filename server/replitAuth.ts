@@ -239,6 +239,8 @@ function setupFallbackAuth(app: Express) {
 
 export function isAuthenticated(req: any, res: any, next: any) {
   if (req.session?.user) {
+    // Set req.user from session for compatibility with existing code
+    req.user = req.session.user;
     return next();
   }
 

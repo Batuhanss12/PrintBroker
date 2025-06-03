@@ -96,7 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.user?.id;
+      const userId = req.user?.id || req.session.user?.id;
       if (!userId) {
         return res.status(401).json({ message: "User session not found" });
       }
@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/quotes', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.id || req.user?.claims?.sub;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -352,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Order routes
   app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.id || req.user?.claims?.sub;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -775,7 +775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/chat/unread-count', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.id || req.user?.claims?.sub;
       const count = await storage.getUnreadMessageCount(userId);
       res.json({ count });
     } catch (error) {
