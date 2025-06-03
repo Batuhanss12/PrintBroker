@@ -48,7 +48,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 animate-gradient-slow">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -66,12 +66,18 @@ export default function Landing() {
             </nav>
             {/* Desktop Buttons */}
             <div className="hidden md:flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsLoginModalOpen(true)}
+                className="text-gray-700 hover:text-blue-600"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Giriş Yap
+              </Button>
+              
               <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" className="text-gray-700 hover:text-blue-600">
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Giriş Yap
-                  </Button>
+                  <div style={{ display: 'none' }}></div>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-4xl p-0 bg-gradient-to-br from-gray-50 to-blue-50">
                   <DialogHeader className="p-6 pb-2">
@@ -285,27 +291,38 @@ export default function Landing() {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="md:hidden">
+            <div className="md:hidden relative z-50">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="p-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="p-2 bg-white border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
                     <Menu className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 mt-2">
-                  <DropdownMenuItem onClick={() => setIsLoginModalOpen(true)} className="flex items-center cursor-pointer">
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Giriş Yap
+                <DropdownMenuContent 
+                  align="end" 
+                  className="w-48 bg-white border border-gray-200 shadow-lg rounded-lg z-[100]"
+                  sideOffset={5}
+                >
+                  <DropdownMenuItem 
+                    onClick={() => setIsLoginModalOpen(true)} 
+                    className="flex items-center cursor-pointer px-4 py-2 hover:bg-gray-100"
+                  >
+                    <LogIn className="h-4 w-4 mr-2 text-gray-600" />
+                    <span className="text-gray-700">Giriş Yap</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a href="#features" className="flex items-center cursor-pointer w-full">
-                      <Star className="h-4 w-4 mr-2" />
+                  <DropdownMenuItem className="px-4 py-2 hover:bg-gray-100">
+                    <a href="#features" className="flex items-center cursor-pointer w-full text-gray-700">
+                      <Star className="h-4 w-4 mr-2 text-gray-600" />
                       Özellikler
                     </a>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a href="#pricing" className="flex items-center cursor-pointer w-full">
-                      <CreditCard className="h-4 w-4 mr-2" />
+                  <DropdownMenuItem className="px-4 py-2 hover:bg-gray-100">
+                    <a href="#pricing" className="flex items-center cursor-pointer w-full text-gray-700">
+                      <CreditCard className="h-4 w-4 mr-2 text-gray-600" />
                       Fiyatlar
                     </a>
                   </DropdownMenuItem>
