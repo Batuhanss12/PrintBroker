@@ -58,9 +58,9 @@ export default function Landing() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, role })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         toast({
           title: "Kayıt Başarılı",
@@ -143,7 +143,7 @@ export default function Landing() {
                     </div>
                   </div>
                 </DialogHeader>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[500px]">
                   {/* Login Options */}
                   <div className="p-6 flex flex-col justify-center">
@@ -152,7 +152,7 @@ export default function Landing() {
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">Hızlı Giriş</h3>
                         <p className="text-gray-600">Hesabınızı seçin ve hemen başlayın</p>
                       </div>
-                      
+
                       <Button 
                         onClick={() => {
                           console.log('Customer button clicked');
@@ -164,7 +164,7 @@ export default function Landing() {
                         <UserCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Müşteri Girişi</span>
                       </Button>
-                      
+
                       <Button 
                         onClick={() => {
                           console.log('Printer button clicked');
@@ -176,7 +176,7 @@ export default function Landing() {
                         <Building2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Matbaa Girişi</span>
                       </Button>
-                      
+
                       <Button 
                         onClick={() => {
                           console.log('Admin button clicked');
@@ -189,7 +189,7 @@ export default function Landing() {
                         <span>Admin Girişi</span>
                       </Button>
                     </div>
-                    
+
                     <div className="mt-8 pt-6 border-t border-gray-200">
                       <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
                         <Shield className="h-4 w-4 text-blue-600" />
@@ -197,7 +197,7 @@ export default function Landing() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Info Panel */}
                   <div className="bg-gradient-to-br from-blue-600 to-purple-700 p-6 text-white flex flex-col justify-center lg:rounded-r-lg">
                     <div className="space-y-6">
@@ -205,7 +205,7 @@ export default function Landing() {
                         <h3 className="text-2xl font-bold mb-3">Matbixx Avantajları</h3>
                         <p className="text-blue-100 mb-6">Türkiye'nin en gelişmiş B2B matbaa platformunda yer alın</p>
                       </div>
-                      
+
                       <div className="space-y-4">
                         <div className="flex items-start space-x-3">
                           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -216,7 +216,7 @@ export default function Landing() {
                             <p className="text-sm text-blue-100">Yapay zeka ile profesyonel tasarımlar</p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-start space-x-3">
                           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                             <Clock className="h-4 w-4" />
@@ -226,7 +226,7 @@ export default function Landing() {
                             <p className="text-sm text-blue-100">Dakikalar içinde fiyat teklifleri</p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-start space-x-3">
                           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                             <Shield className="h-4 w-4" />
@@ -254,7 +254,7 @@ export default function Landing() {
                 <LogIn className="h-4 w-4 mr-1" />
                 Giriş
               </Button>
-              
+
               <div className="relative z-50">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -275,7 +275,7 @@ export default function Landing() {
                       <h3 className="font-bold text-lg mb-1">Matbixx Premium</h3>
                       <p className="text-blue-100 text-sm">Türkiye'nin lider B2B matbaa platformu</p>
                     </div>
-                    
+
                     <div className="p-2">
                       <DropdownMenuItem className="rounded-xl p-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 group cursor-pointer">
                         <div className="flex items-center w-full">
@@ -288,7 +288,7 @@ export default function Landing() {
                           </div>
                         </div>
                       </DropdownMenuItem>
-                      
+
                       <DropdownMenuItem className="rounded-xl p-4 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group cursor-pointer">
                         <a href="#pricing" className="flex items-center w-full">
                           <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
@@ -300,7 +300,7 @@ export default function Landing() {
                           </div>
                         </a>
                       </DropdownMenuItem>
-                      
+
                       <DropdownMenuItem className="rounded-xl p-4 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 transition-all duration-300 group cursor-pointer">
                         <div className="flex items-center w-full">
                           <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
@@ -313,7 +313,7 @@ export default function Landing() {
                         </div>
                       </DropdownMenuItem>
                     </div>
-                    
+
                     <div className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 border-t border-gray-100">
                       <Button 
                         onClick={() => setIsLoginModalOpen(true)}
@@ -368,7 +368,7 @@ export default function Landing() {
             <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-4xl mx-auto leading-relaxed animate-fade-in-up-delay">
               AI destekli tasarım araçları, anlık teklif sistemi ve güvenli ödeme çözümleri ile matbaa işlemlerinizi dijitalleştirin
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
               <div className="flex items-center space-x-2 text-blue-200">
                 <Shield className="h-5 w-5" />
@@ -429,7 +429,7 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-            
+
             <div className="p-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Recent Orders */}
@@ -784,7 +784,7 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4">Ürün</h4>
               <ul className="space-y-2">
@@ -793,7 +793,7 @@ export default function Landing() {
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">API</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4">Şirket</h4>
               <ul className="space-y-2">
@@ -802,7 +802,7 @@ export default function Landing() {
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Blog</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-lg font-semibold mb-4">Destek</h4>
               <ul className="space-y-2">
