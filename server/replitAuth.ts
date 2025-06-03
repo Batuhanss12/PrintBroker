@@ -176,7 +176,7 @@ function setupFallbackAuth(app: Express) {
       
       const mockUser = await storage.upsertUser({
         id: userId,
-        email: 'dev@example.com',
+        email: `dev-${role}-${Date.now()}@example.com`,
         firstName: 'Development',
         lastName: 'User',
         role: role as 'customer' | 'printer' | 'admin',
