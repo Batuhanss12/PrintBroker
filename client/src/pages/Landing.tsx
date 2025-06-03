@@ -1,40 +1,29 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { 
-  PrinterIcon, 
-  Palette, 
-  Upload, 
-  Handshake, 
-  CreditCard, 
-  BarChart3,
-  Users,
-  Building2,
-  Star,
-  Clock,
-  Check,
-  ArrowRight,
-  LayoutGrid,
-  Disc,
-  Printer,
-  FileText,
-  Shield,
-  Zap,
-  TrendingUp,
+  Check, 
+  ArrowRight, 
+  Star, 
+  Users, 
+  Building2, 
+  Zap, 
+  Shield, 
+  Clock, 
+  Target, 
+  TrendingUp, 
   Award,
-  Target,
-  Send,
-  Menu,
-  LogIn,
-  CheckCircle,
-  Settings,
-  X,
+  UserCheck,
   Crown,
-  UserCheck
+  Settings,
+  BarChart3,
+  LogIn,
+  Menu,
+  X,
+  CreditCard
 } from "lucide-react";
 
 export default function Landing() {
@@ -89,7 +78,7 @@ export default function Landing() {
                     </div>
                     <p className="text-gray-600 mt-2">Hesap türünüzü seçin ve platformumuzun avantajlarından yararlanmaya başlayın</p>
                   </DialogHeader>
-                  
+
                   <div className="px-6 pb-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* Customer Card */}
@@ -283,11 +272,22 @@ export default function Landing() {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="bg-blue-600 text-white hover:bg-blue-700">
+                    <Menu className="h-4 w-4 mr-2" />
+                     Menü
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuItem><a href="#features" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Özellikler</a></DropdownMenuItem>
+                  <DropdownMenuItem><a href="#pricing" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Fiyatlar</a></DropdownMenuItem>
+                  <DropdownMenuItem><a href="#contact" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">İletişim</a></DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               
-              <Button onClick={handleLogin} className="bg-blue-600 text-white hover:bg-blue-700">
-                <Zap className="h-4 w-4 mr-2" />
-                Ücretsiz Başla
-              </Button>
+              
             </div>
           </div>
         </div>
@@ -525,7 +525,8 @@ export default function Landing() {
                   onClick={() => {
                     try {
                       console.log('Navigating to roll_label form');
-                      window.location.href = "/quote/roll_label";
+                      ```tool_code
+window.location.href = "/quote/roll_label";
                     } catch (error) {
                       console.error('Navigation error:', error);
                       alert('Sayfa yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
