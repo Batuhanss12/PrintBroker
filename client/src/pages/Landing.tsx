@@ -117,7 +117,13 @@ export default function Landing() {
             <div className="hidden md:flex items-center space-x-4">
               <Button 
                 variant="ghost" 
-                onClick={() => setIsLoginModalOpen(true)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isLoginModalOpen) {
+                    setIsLoginModalOpen(true);
+                  }
+                }}
                 className="text-gray-700 hover:text-blue-600"
               >
                 <LogIn className="h-4 w-4 mr-2" />
@@ -304,7 +310,13 @@ export default function Landing() {
 
                     <div className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 border-t border-gray-100">
                       <Button 
-                        onClick={() => setIsLoginModalOpen(true)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!isLoginModalOpen) {
+                            setIsLoginModalOpen(true);
+                          }
+                        }}
                         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg"
                       >
                         Giriş Yap
