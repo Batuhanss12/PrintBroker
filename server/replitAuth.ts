@@ -56,12 +56,29 @@ export async function setupAuth(app: Express) {
       }
     }));
 
-    passport.serializeUser((user, done) => {
-      done(null, user);
+    passport.serializeUser((user: any, done) => {
+      try {
+        // Store only essential user data in session
+        const sessionData = {
+          id: user.claims?.sub || user.id,
+          email: user.claims?.email || user.email,
+          name: user.claims?.name || user.name,
+          claims: user.claims || user
+        };
+        done(null, sessionData);
+      } catch (error) {
+        console.error('Serialize user error:', error);
+        done(error, null);
+      }
     });
 
-    passport.deserializeUser((user: any, done) => {
-      done(null, user);
+    passport.deserializeUser((sessionData: any, done) => {
+      try {
+        done(null, sessionData);
+      } catch (error) {
+        console.error('Deserialize user error:', error);
+        done(error, null);
+      }
     });
 
     // Auth routes with better error handling
@@ -135,19 +152,41 @@ export async function setupAuth(app: Express) {
 function setupFallbackAuth(app: Express) {
   console.log('Using fallback authentication for development');
 
-  app.get('/api/login', (req, res) => {
+  app.get('/api/login', async (req, res) => {
     try {
-      // Create a mock user session for development
-      const mockUser = {
+      const role = req.query.role as string || 'customer';
+      const userId = 'dev-user-' + Date.now();
+      
+      // Create a mock user in the database
+      const { storage } = await import('./storage');
+      
+      const mockUser = await storage.upsertUser({
+        id: userId,
+        email: 'dev@example.com',
+        firstName: 'Development',
+        lastName: 'User',
+        role: role as 'customer' | 'printer' | 'admin',
+        creditBalance: '1000.00',
+        companyName: role === 'printer' ? 'Dev Matbaa' : undefined,
+        phone: '+90 555 123 4567',
+        address: 'Development Address',
+        isActive: true,
+        subscriptionStatus: role === 'printer' ? 'active' : undefined
+      });
+
+      const sessionUser = {
+        id: userId,
+        email: mockUser.email,
+        name: `${mockUser.firstName} ${mockUser.lastName}`,
         claims: {
-          sub: 'dev-user-' + Date.now(),
-          name: 'Development User',
-          email: 'dev@example.com'
+          sub: userId,
+          email: mockUser.email,
+          name: `${mockUser.firstName} ${mockUser.lastName}`
         }
       };
 
       // Use passport's login method
-      req.logIn(mockUser, (err) => {
+      req.logIn(sessionUser, (err) => {
         if (err) {
           console.error('Mock login error:', err);
           return res.redirect('/?error=mock_login_failed');
@@ -171,7 +210,7 @@ function setupFallbackAuth(app: Express) {
 }
 
 export function isAuthenticated(req: any, res: any, next: any) {
-  if (req.user && req.user.claims) {
+  if (req.user && (req.user.claims || req.user.id)) {
     return next();
   }
 
