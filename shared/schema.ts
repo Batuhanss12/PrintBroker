@@ -38,6 +38,7 @@ export const users = pgTable("users", {
   role: varchar("role", { enum: ["customer", "printer", "admin"] }).notNull().default("customer"),
   creditBalance: decimal("credit_balance", { precision: 10, scale: 2 }).default("0.00"),
   subscriptionStatus: varchar("subscription_status", { enum: ["active", "inactive", "suspended"] }).default("inactive"),
+  phone: varchar("phone"),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   companyName: varchar("company_name"),
   companyDescription: text("company_description"),
@@ -45,6 +46,7 @@ export const users = pgTable("users", {
   companyPhone: varchar("company_phone"),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   totalRatings: integer("total_ratings").default(0),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

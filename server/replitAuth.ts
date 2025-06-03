@@ -166,6 +166,21 @@ export async function setupAuth(app: Express) {
 function setupFallbackAuth(app: Express) {
   console.log('Using fallback authentication for development');
 
+  // Setup passport serialization for fallback auth
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const { storage } = await import('./storage');
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
+  });
+
   app.get('/api/login', async (req, res) => {
     try {
       const role = req.query.role as string || 'customer';
@@ -183,7 +198,7 @@ function setupFallbackAuth(app: Express) {
         creditBalance: '1000.00',
         companyName: role === 'printer' ? 'Dev Matbaa' : undefined,
         phone: '+90 555 123 4567',
-        address: 'Development Address',
+        companyAddress: 'Development Address',
         isActive: true,
         subscriptionStatus: role === 'printer' ? 'active' : undefined
       });
