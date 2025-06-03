@@ -720,14 +720,73 @@ export default function QuoteForm() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCurrentTab("specifications")}
+                      onClick={() => setCurrentTab("design")}
                     >
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       Geri
                     </Button>
                     <Button
                       type="button"
-                      onClick={() => setCurrentTab("files")}
+                      onClick={() => setCurrentTab("submit")}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Devam Et
+                      <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="files" className="space-y-6">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Upload className="h-5 w-5 text-gray-600 mr-2" />
+                      Dosya Yükle
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Matbaa işiniz için gerekli dosyaları yükleyin. AI tasarım motoru ile oluşturulan tasarımlar otomatik olarak eklenir.
+                    </p>
+                    
+                    <FileUpload
+                      onFileUpload={handleFileUpload}
+                      maxFiles={10}
+                      maxSizeInMB={100}
+                      className="mb-4"
+                    />
+                    
+                    {uploadedFiles.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-medium mb-2">Yüklenen Dosyalar:</h4>
+                        <div className="space-y-2">
+                          {uploadedFiles.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between bg-white p-3 rounded border">
+                              <span className="text-sm">{file}</span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                              >
+                                Kaldır
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentTab("design")}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Geri
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => setCurrentTab("submit")}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       Devam Et
