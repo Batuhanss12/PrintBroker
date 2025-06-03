@@ -154,24 +154,36 @@ export default function Landing() {
                       </div>
                       
                       <Button 
-                        onClick={() => setShowLoginForm('customer')}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
+                        onClick={() => {
+                          console.log('Customer button clicked');
+                          setShowLoginForm('customer');
+                        }}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group relative z-10"
+                        style={{ pointerEvents: 'auto' }}
                       >
                         <UserCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Müşteri Girişi</span>
                       </Button>
                       
                       <Button 
-                        onClick={() => setShowLoginForm('printer')}
-                        className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
+                        onClick={() => {
+                          console.log('Printer button clicked');
+                          setShowLoginForm('printer');
+                        }}
+                        className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group relative z-10"
+                        style={{ pointerEvents: 'auto' }}
                       >
                         <Building2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Matbaa Girişi</span>
                       </Button>
                       
                       <Button 
-                        onClick={() => setShowLoginForm('admin')}
-                        className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
+                        onClick={() => {
+                          console.log('Admin button clicked');
+                          setShowLoginForm('admin');
+                        }}
+                        className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group relative z-10"
+                        style={{ pointerEvents: 'auto' }}
                       >
                         <Crown className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Admin Girişi</span>
