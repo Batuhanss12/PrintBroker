@@ -61,8 +61,8 @@ export default function Landing() {
       // Store selected role in session storage for after auth
       sessionStorage.setItem('selectedRole', showLoginForm || 'customer');
       
-      // Redirect to Replit Auth login
-      window.location.href = '/api/login';
+      // Redirect to Replit Auth login with return URL
+      window.location.href = '/api/login?returnTo=/dashboard';
     } catch (error) {
       toast({
         title: "Giriş hatası",
@@ -1015,8 +1015,8 @@ export default function Landing() {
                       type="submit"
                       onClick={(e) => {
                         e.preventDefault();
-                        // Simulated login - redirect to customer panel
-                        window.location.href = '/customer-dashboard';
+                        sessionStorage.setItem('selectedRole', 'customer');
+                        window.location.href = '/api/login?returnTo=/dashboard';
                       }}
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 group"
                     >
@@ -1028,8 +1028,8 @@ export default function Landing() {
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
-                        // Simulated login - redirect to printer panel
-                        window.location.href = '/printer-dashboard';
+                        sessionStorage.setItem('selectedRole', 'printer');
+                        window.location.href = '/api/login?returnTo=/dashboard';
                       }}
                       className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 group"
                     >
@@ -1041,8 +1041,8 @@ export default function Landing() {
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
-                        // Simulated login - redirect to admin panel
-                        window.location.href = '/admin-dashboard';
+                        sessionStorage.setItem('selectedRole', 'admin');
+                        window.location.href = '/api/login?returnTo=/dashboard';
                       }}
                       className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 group"
                     >
