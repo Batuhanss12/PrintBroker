@@ -56,6 +56,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint for role switching
+  app.post('/api/test/change-role', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { role } = req.body;
+      
+      if (!['customer', 'printer', 'admin'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      await storage.updateUserRole(userId, role);
+      res.json({ message: "Role updated successfully" });
+    } catch (error) {
+      console.error("Error updating role:", error);
+      res.status(500).json({ message: "Failed to update role" });
+    }
+  });
+
   // Update user profile
   app.patch('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

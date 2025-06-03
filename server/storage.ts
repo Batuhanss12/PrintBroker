@@ -26,6 +26,7 @@ export interface IStorage {
   // User operations (IMPORTANT: mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserRole(id: string, role: string): Promise<void>;
   
   // Quote operations
   createQuote(quote: InsertQuote): Promise<Quote>;
