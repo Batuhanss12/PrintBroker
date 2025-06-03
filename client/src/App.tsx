@@ -29,7 +29,12 @@ function Router() {
   return (
     <Switch>
       {!isAuthenticated ? (
-        <Route path="/" component={Landing} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/customer-register" component={CustomerRegister} />
+          <Route path="/printer-register" component={PrinterRegister} />
+          <Route path="/payment" component={Payment} />
+        </>
       ) : (
         <>
           <Route path="/" component={Home} />
@@ -46,8 +51,6 @@ function Router() {
           <Route path="/printer-dashboard" component={PrinterDashboard} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/payment" component={Payment} />
-          <Route path="/customer-register" component={CustomerRegister} />
-          <Route path="/printer-register" component={PrinterRegister} />
         </>
       )}
       <Route component={NotFound} />
