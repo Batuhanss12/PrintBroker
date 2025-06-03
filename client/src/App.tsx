@@ -30,16 +30,16 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Home} />
-          {user?.role === 'customer' && (
+          {(user as any)?.role === 'customer' && (
             <>
               <Route path="/dashboard" component={CustomerDashboard} />
               <Route path="/quote/:type" component={QuoteForm} />
             </>
           )}
-          {user?.role === 'printer' && (
+          {(user as any)?.role === 'printer' && (
             <Route path="/dashboard" component={PrinterDashboard} />
           )}
-          {user?.role === 'admin' && (
+          {(user as any)?.role === 'admin' && (
             <Route path="/dashboard" component={AdminDashboard} />
           )}
         </>
