@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  /* Animated gradients */
+  .animate-gradient {
+    background-size: 400% 400%;
+    animation: gradient 8s ease infinite;
+  }
+  
+  .animate-gradient-fast {
+    background-size: 300% 300%;
+    animation: gradient 4s ease infinite;
+  }
+  
+  .animate-gradient-slow {
+    background-size: 500% 500%;
+    animation: gradient 12s ease infinite;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-float-delayed {
+    animation: float 6s ease-in-out infinite;
+    animation-delay: 3s;
+  }
+}
+
 :root {
   --background: 0 0% 100%; /* #FFFFFF */
   --foreground: 240 10% 3.9%; /* #020817 */
@@ -253,6 +280,27 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 

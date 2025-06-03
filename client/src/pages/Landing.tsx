@@ -38,7 +38,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 animate-gradient-slow">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,7 +69,7 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white py-32 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white py-32 overflow-hidden animate-gradient">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_50%)] bg-[size:80px_80px]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(99,102,241,0.1),transparent_50%)] bg-[size:120px_120px]"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -78,7 +78,7 @@ export default function Landing() {
             <Button 
               onClick={() => window.location.href = "/customer-register"}
               size="lg"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-12 py-5 text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 rounded-xl border-0"
+              className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-12 py-5 text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 rounded-xl border-0 animate-gradient-fast animate-float"
             >
               <Users className="h-6 w-6 mr-3" />
               Müşteri Olarak Başla
@@ -87,7 +87,7 @@ export default function Landing() {
               onClick={() => window.location.href = "/printer-register"}
               variant="outline"
               size="lg"
-              className="border-2 border-gradient-to-r from-purple-400 to-pink-400 text-white hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:border-transparent font-bold px-12 py-5 text-lg backdrop-blur-lg bg-white/10 transition-all duration-300 transform hover:scale-105 rounded-xl"
+              className="border-2 bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 text-white hover:from-purple-600 hover:to-pink-600 font-bold px-12 py-5 text-lg backdrop-blur-lg transition-all duration-300 transform hover:scale-105 rounded-xl animate-gradient-fast animate-float-delayed"
             >
               <Building2 className="h-6 w-6 mr-3" />
               Matbaa Olarak Katıl
@@ -100,10 +100,10 @@ export default function Landing() {
               <span className="text-lg font-semibold bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">Türkiye'nin En Yenilikçi B2B Matbaa Platformu</span>
             </div>
             <h1 className="text-6xl md:text-8xl font-black mb-8 leading-tight">
-              <span className="bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-transparent animate-gradient">
                 Matbaa Sektöründe
               </span>
-              <span className="block bg-gradient-to-r from-yellow-200 via-orange-200 to-red-200 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-yellow-200 via-orange-200 to-red-200 bg-clip-text text-transparent animate-gradient-fast">
                 Dijital Devrim
               </span>
             </h1>
@@ -125,7 +125,7 @@ export default function Landing() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm rounded-2xl p-6 border border-green-400/30">
+                <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm rounded-2xl p-6 border border-green-400/30 animate-float">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-green-200 font-semibold">Onaylanan Teklifler</h4>
                     <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
@@ -134,7 +134,7 @@ export default function Landing() {
                   <div className="text-sm text-green-200">Son 24 saatte: 23 teklif</div>
                 </div>
 
-                <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-2xl p-6 border border-yellow-400/30">
+                <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-2xl p-6 border border-yellow-400/30 animate-float-delayed">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-yellow-200 font-semibold">Bekleyen Teklifler</h4>
                     <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
@@ -143,7 +143,7 @@ export default function Landing() {
                   <div className="text-sm text-yellow-200">Aktif: 47 teklif</div>
                 </div>
 
-                <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-400/30">
+                <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-400/30 animate-float">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-blue-200 font-semibold">Toplam İşlem Hacmi</h4>
                     <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
