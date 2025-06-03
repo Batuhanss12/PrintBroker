@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -34,6 +38,44 @@ import {
 
 export default function Landing() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    companyName: '',
+    password: ''
+  });
+  const { toast } = useToast();
+
+  const handleRegister = async (role: string) => {
+    setIsLoading(true);
+    try {
+      const response = await apiRequest('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, role })
+      });
+      
+      if (response.success) {
+        toast({
+          title: "Kayıt Başarılı",
+          description: "Hesabınız oluşturuldu, yönlendiriliyorsunuz...",
+        });
+        window.location.href = '/';
+      }
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Kayıt işlemi başarısız",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 animate-gradient-slow">
@@ -105,29 +147,29 @@ export default function Landing() {
                         <p className="text-gray-600">Hesabınızı seçin ve hemen başlayın</p>
                       </div>
                       
-                      <a 
-                        href="/api/login?role=customer" 
+                      <button 
+                        onClick={() => setShowLoginForm('customer')}
                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <UserCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Müşteri Girişi</span>
-                      </a>
+                      </button>
                       
-                      <a 
-                        href="/api/login?role=printer" 
+                      <button 
+                        onClick={() => setShowLoginForm('printer')}
                         className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <Building2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Matbaa Girişi</span>
-                      </a>
+                      </button>
                       
-                      <a 
-                        href="/api/login?role=admin" 
+                      <button 
+                        onClick={() => setShowLoginForm('admin')}
                         className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <Crown className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Admin Girişi</span>
-                      </a>
+                      </button>
                     </div>
                     
                     <div className="mt-8 pt-6 border-t border-gray-200">
