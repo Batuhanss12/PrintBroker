@@ -252,57 +252,181 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg bg-gradient-to-br from-white via-blue-50 to-indigo-50 animate-gradient-slow">
-              <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-gradient-to-br group-hover:from-blue-500 group-hover:to-indigo-500 group-hover:text-white transition-all duration-300 animate-gradient">
-                  <LayoutGrid className="h-10 w-10 text-blue-500 group-hover:text-white" />
+          {/* 3 Card Layout: Quote Form + Pricing Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+            
+            {/* Teklif Formu Kartı */}
+            <Card className="lg:col-span-1 hover:shadow-2xl transition-all duration-300 border-0 shadow-xl bg-gradient-to-br from-white via-indigo-50 to-purple-50 animate-gradient-slow">
+              <CardHeader className="text-center pb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Send className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Tabaka Etiket</h3>
-                <p className="text-gray-600 mb-6">A3/A4 tabaka halinde etiket baskısı. Kuşe, bristol ve sticker seçenekleri.</p>
+                <CardTitle className="text-2xl font-bold text-gray-900">Teklif Formu Seç</CardTitle>
+                <p className="text-gray-600">İhtiyacınıza uygun formu seçin ve detayları doldurun</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <Button 
-                  onClick={handleLogin}
-                  className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 animate-gradient-fast"
+                  onClick={() => window.location.href = "/quote/sheet_label"}
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
                 >
-                  <Target className="h-4 w-4 mr-2" />
-                  Teklif Al
+                  <LayoutGrid className="h-5 w-5 mr-3" />
+                  <div>
+                    <div className="font-bold">Tabaka Etiket</div>
+                    <div className="text-sm opacity-90">A3/A4 tabaka halinde</div>
+                  </div>
                 </Button>
+
+                <Button 
+                  onClick={() => window.location.href = "/quote/roll_label"}
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
+                >
+                  <Disc className="h-5 w-5 mr-3" />
+                  <div>
+                    <div className="font-bold">Rulo Etiket</div>
+                    <div className="text-sm opacity-90">Termal ve yapışkanlı</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  onClick={() => window.location.href = "/quote/general_printing"}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
+                >
+                  <Printer className="h-5 w-5 mr-3" />
+                  <div>
+                    <div className="font-bold">Genel Baskı</div>
+                    <div className="text-sm opacity-90">Katalog, broşür, kartvizit</div>
+                  </div>
+                </Button>
+
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center text-blue-700 mb-2">
+                    <Target className="h-4 w-4 mr-2" />
+                    <span className="font-semibold text-sm">Hızlı Teklif Süreci</span>
+                  </div>
+                  <ul className="text-xs text-blue-600 space-y-1">
+                    <li>• 5 dakikada form doldurma</li>
+                    <li>• 24 saat içinde teklifler</li>
+                    <li>• Karşılaştırmalı fiyatlar</li>
+                  </ul>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg bg-gradient-to-br from-white via-orange-50 to-red-50 animate-gradient-slow">
-              <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-orange-100 via-red-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-red-500 group-hover:text-white transition-all duration-300 animate-gradient">
-                  <Disc className="h-10 w-10 text-orange-500 group-hover:text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Rulo Etiket</h3>
-                <p className="text-gray-600 mb-6">Termal ve yapışkanlı rulo etiketler. Farklı çap ve mandrin seçenekleri.</p>
-                <Button 
-                  onClick={handleLogin}
-                  className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold py-3 animate-gradient-fast"
-                >
-                  <Target className="h-4 w-4 mr-2" />
-                  Teklif Al
-                </Button>
-              </CardContent>
-            </Card>
+            {/* Fiyat Kartları Yan Yana */}
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Müşteri Paketi */}
+              <Card className="relative bg-white border-2 border-blue-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                <CardHeader className="text-center pb-6 pt-8">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-gray-900">Müşteri Paketi</CardTitle>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-gray-900">KREDİLİ</span>
+                    <p className="text-gray-600 mt-2">SİSTEM</p>
+                    <p className="text-lg text-blue-600 font-semibold mt-2">Kullandığın kadar öde</p>
+                  </div>
+                </CardHeader>
 
-            <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg bg-gradient-to-br from-white via-green-50 to-emerald-50 animate-gradient-slow">
-              <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-gradient-to-br group-hover:from-green-500 group-hover:to-emerald-500 group-hover:text-white transition-all duration-300 animate-gradient">
-                  <Printer className="h-10 w-10 text-green-500 group-hover:text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Genel Baskı</h3>
-                <p className="text-gray-600 mb-6">Katalog, broşür, kartvizit ve özel baskı projeleri için.</p>
-                <Button 
-                  onClick={handleLogin}
-                  className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold py-3 animate-gradient-fast"
-                >
-                  <Target className="h-4 w-4 mr-2" />
-                  Teklif Al
-                </Button>
-              </CardContent>
-            </Card>
+                <CardContent className="px-6 pb-8">
+                  <ul className="space-y-3 mb-8">
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span>Sınırsız teklif alma</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span>AI destekli tasarım (35₺/tasarım)</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span>100MB dosya yükleme</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span>Gerçek zamanlı takip</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span>7/24 canlı destek</span>
+                    </li>
+                  </ul>
+                  <Button 
+                    onClick={() => window.location.href = "/customer-register"}
+                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+                  >
+                    Hemen Başla
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Firma Paketi */}
+              <Card className="relative bg-white border-2 border-orange-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                <CardHeader className="text-center pb-6 pt-8">
+                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Building2 className="h-8 w-8 text-orange-600" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-gray-900">Firma Paketi</CardTitle>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-orange-600">₺2999</span>
+                    <p className="text-gray-600 mt-2">aylık abonelik</p>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="px-6 pb-8">
+                  <ul className="space-y-3 mb-8">
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-orange-600" />
+                      </div>
+                      <span>Yoğun müşteri portföyü</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-orange-600" />
+                      </div>
+                      <span>Gelişmiş analitik dashboard</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-orange-600" />
+                      </div>
+                      <span>Otomatik sipariş yönetimi</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-orange-600" />
+                      </div>
+                      <span>Müşteri CRM entegrasyonu</span>
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Check className="h-3 w-3 text-orange-600" />
+                      </div>
+                      <span>Premium öncelikli destek</span>
+                    </li>
+                  </ul>
+                  <Button 
+                    onClick={() => window.location.href = "/printer-register"}
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+                  >
+                    Matbaa Olarak Katıl
+                  </Button>
+                </CardContent>
+              </Card>
+
+            </div>
           </div>
         </div>
       </section>
