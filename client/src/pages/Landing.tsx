@@ -339,8 +339,7 @@ export default function Landing() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setShowLoginForm('customer');
-                setIsLoginModalOpen(true);
+                window.location.href = '/customer-register';
               }}
               size="lg" 
               className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto border-2 border-white"
@@ -352,8 +351,7 @@ export default function Landing() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setShowLoginForm('printer');
-                setIsLoginModalOpen(true);
+                window.location.href = '/printer-register';
               }}
               variant="outline" 
               size="lg" 
@@ -660,8 +658,7 @@ export default function Landing() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setShowLoginForm('customer');
-                    setIsLoginModalOpen(true);
+                    window.location.href = '/customer-register';
                   }}
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
@@ -721,8 +718,7 @@ export default function Landing() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setShowLoginForm('printer');
-                    setIsLoginModalOpen(true);
+                    window.location.href = '/printer-register';
                   }}
                   className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >

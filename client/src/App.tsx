@@ -62,8 +62,19 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <Switch>
+          <Route path="/" component={Landing} />
+          <Route path="/home" component={Home} />
+          <Route path="/customer" component={CustomerDashboard} />
+          <Route path="/printer" component={PrinterDashboard} />
+          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/quote" component={QuoteForm} />
+          <Route path="/payment" component={Payment} />
+          <Route path="/customer-register" component={CustomerRegister} />
+          <Route path="/printer-register" component={PrinterRegister} />
+          <Route component={NotFound} />
+        </Switch>
         <Toaster />
-        <Router />
       </TooltipProvider>
     </QueryClientProvider>
   );
