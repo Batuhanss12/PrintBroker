@@ -241,7 +241,7 @@ export default function Landing() {
       </section>
 
       {/* Quick Quote Section */}
-      <section className="py-20 bg-gradient-to-r from-gray-50 via-blue-50 to-purple-50 animate-gradient-slow">
+      <section className="py-20 bg-gradient-to-br from-white via-blue-50 to-indigo-50 animate-gradient-slow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -308,7 +308,7 @@ export default function Landing() {
       </section>
 
       {/* Why Matbixx Section */}
-      <section id="why-matbixx" className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 animate-gradient-slow">
+      <section id="why-matbixx" className="py-20 bg-gradient-to-br from-gray-50 via-slate-50 to-blue-50 animate-gradient-slow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 text-blue-700 rounded-full px-6 py-3 mb-6 animate-gradient">
@@ -438,7 +438,7 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-gradient-to-br from-white via-gray-50 to-blue-50 animate-gradient-slow">
+      <section id="features" className="py-20 bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 animate-gradient-slow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 text-blue-600 rounded-full px-4 py-2 mb-6 animate-gradient">
@@ -518,7 +518,7 @@ export default function Landing() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 animate-gradient-slow">
+      <section id="pricing" className="py-20 bg-gradient-to-br from-white via-gray-50 to-slate-50 animate-gradient-slow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center bg-gradient-to-r from-green-100 via-emerald-100 to-teal-100 text-green-600 rounded-full px-4 py-2 mb-6 animate-gradient">
