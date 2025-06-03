@@ -90,12 +90,35 @@ export default function CustomerRegister() {
     setIsLoading(true);
     
     try {
-      // Store registration data in sessionStorage
-      sessionStorage.setItem('customerRegistration', JSON.stringify(formData));
-      
-      // Redirect to login with return URL
-      window.location.href = `/api/login?role=customer&returnTo=${encodeURIComponent('/payment?plan=customer')}`;
-    } catch (error) {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          role: 'customer',
+          companyName: formData.company
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Kayıt Başarılı",
+          description: "Hesabınız oluşturuldu, ana sayfaya yönlendiriliyorsunuz...",
+        });
+        
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
+      } else {
+        throw new Error(data.message || "Kayıt işlemi başarısız");
+      }
+    } catch (error: any) {
       console.error("Registration error:", error);
       toast({
         title: "Kayıt Hatası",
