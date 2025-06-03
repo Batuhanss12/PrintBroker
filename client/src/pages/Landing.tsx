@@ -26,8 +26,10 @@ import {
   Award,
   Target,
   Send,
-  Settings,
-  CheckCircle
+  Menu,
+  LogIn,
+  CheckCircle,
+  Settings
 } from "lucide-react";
 
 export default function Landing() {
@@ -418,7 +420,7 @@ export default function Landing() {
               </Card>
 
               <Card className="group hover:shadow-2xl transition-all duration-500 border-0 shadow-lg bg-gradient-to-br from-indigo-50 to-blue-50 overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-bl-full"></div>
+
                 <CardContent className="p-8 relative">
                   <div className="bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                     <Shield className="text-white text-2xl" />
