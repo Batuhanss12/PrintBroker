@@ -207,12 +207,12 @@ function setupFallbackAuth(app: Express) {
       // Direct session setup without passport
       req.session.user = {
         id: userId,
-        email: mockUser.email,
-        role: mockUser.role,
+        email: mockUser.email || '',
+        role: mockUser.role || 'customer',
         claims: {
           sub: userId,
-          email: mockUser.email,
-          role: mockUser.role
+          email: mockUser.email || '',
+          role: mockUser.role || 'customer'
         }
       };
 
