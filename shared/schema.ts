@@ -115,6 +115,30 @@ export const files = pgTable("files", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Chat system tables
+export const chatRooms = pgTable("chat_rooms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  quoteId: uuid("quote_id").references(() => quotes.id).notNull(),
+  customerId: varchar("customer_id").references(() => users.id).notNull(),
+  printerId: varchar("printer_id").references(() => users.id).notNull(),
+  status: varchar("status", { enum: ["active", "closed"] }).default("active"),
+  lastMessageAt: timestamp("last_message_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  roomId: uuid("room_id").references(() => chatRooms.id).notNull(),
+  senderId: varchar("sender_id").references(() => users.id).notNull(),
+  message: text("message").notNull(),
+  messageType: varchar("message_type", { enum: ["text", "file", "image"] }).default("text"),
+  fileUrl: varchar("file_url"),
+  fileName: varchar("file_name"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   quotes: many(quotes),
@@ -197,6 +221,35 @@ export const filesRelations = relations(files, ({ one }) => ({
   }),
 }));
 
+export const chatRoomsRelations = relations(chatRooms, ({ one, many }) => ({
+  quote: one(quotes, {
+    fields: [chatRooms.quoteId],
+    references: [quotes.id],
+  }),
+  customer: one(users, {
+    fields: [chatRooms.customerId],
+    references: [users.id],
+    relationName: "customerChats",
+  }),
+  printer: one(users, {
+    fields: [chatRooms.printerId],
+    references: [users.id],
+    relationName: "printerChats",
+  }),
+  messages: many(chatMessages),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  room: one(chatRooms, {
+    fields: [chatMessages.roomId],
+    references: [chatRooms.id],
+  }),
+  sender: one(users, {
+    fields: [chatMessages.senderId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users);
 export const insertQuoteSchema = createInsertSchema(quotes).omit({ id: true, createdAt: true, updatedAt: true });
@@ -204,6 +257,8 @@ export const insertPrinterQuoteSchema = createInsertSchema(printerQuotes).omit({
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertRatingSchema = createInsertSchema(ratings).omit({ id: true, createdAt: true });
 export const insertFileSchema = createInsertSchema(files).omit({ id: true, createdAt: true });
+export const insertChatRoomSchema = createInsertSchema(chatRooms).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, createdAt: true });
 
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
@@ -218,3 +273,7 @@ export type InsertRating = z.infer<typeof insertRatingSchema>;
 export type Rating = typeof ratings.$inferSelect;
 export type InsertFile = z.infer<typeof insertFileSchema>;
 export type File = typeof files.$inferSelect;
+export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
+export type ChatRoom = typeof chatRooms.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;

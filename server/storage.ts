@@ -5,6 +5,8 @@ import {
   orders,
   ratings,
   files,
+  chatRooms,
+  chatMessages,
   type User,
   type UpsertUser,
   type InsertQuote,
@@ -17,6 +19,10 @@ import {
   type Rating,
   type InsertFile,
   type File,
+  type InsertChatRoom,
+  type ChatRoom,
+  type InsertChatMessage,
+  type ChatMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -78,6 +84,17 @@ export interface IStorage {
   }>;
 
   getDesignTemplates(): Promise<any[]>; // Replace any with a more specific type
+
+  // Chat operations
+  createChatRoom(chatRoom: InsertChatRoom): Promise<ChatRoom>;
+  getChatRoom(id: string): Promise<ChatRoom | undefined>;
+  getChatRoomByQuote(quoteId: string, customerId: string, printerId: string): Promise<ChatRoom | undefined>;
+  getChatRoomsByUser(userId: string): Promise<ChatRoom[]>;
+  
+  sendMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  getMessages(roomId: string, limit?: number): Promise<ChatMessage[]>;
+  markMessagesAsRead(roomId: string, userId: string): Promise<void>;
+  getUnreadMessageCount(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
