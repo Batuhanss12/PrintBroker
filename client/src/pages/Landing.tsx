@@ -525,8 +525,7 @@ export default function Landing() {
                   onClick={() => {
                     try {
                       console.log('Navigating to roll_label form');
-                      ```tool_code
-window.location.href = "/quote/roll_label";
+                      window.location.href = "/quote/roll_label";
                     } catch (error) {
                       console.error('Navigation error:', error);
                       alert('Sayfa yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
