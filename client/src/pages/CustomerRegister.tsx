@@ -258,9 +258,6 @@ export default function CustomerRegister() {
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900">Kredili Sistem</h3>
-                  <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    ÜCRETSİZ
-                  </div>
                 </div>
                 <p className="text-gray-600 mb-4">Kullandığın kadar öde sistemi</p>
                 
