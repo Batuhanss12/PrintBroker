@@ -112,7 +112,7 @@ export default function Landing() {
             <div className="hidden md:flex items-center space-x-4">
               <Button 
                 variant="ghost" 
-                onClick={() => setShowLoginForm('login')}
+                onClick={() => setIsLoginModalOpen(true)}
                 className="text-gray-700 hover:text-blue-600"
               >
                 <LogIn className="h-4 w-4 mr-2" />
@@ -121,10 +121,8 @@ export default function Landing() {
 
             </div>
 
-            <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
-              <DialogTrigger asChild>
-                <div style={{ display: 'none' }}></div>
-              </DialogTrigger>
+            <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}
+              >
               <DialogContent className="sm:max-w-4xl p-0 bg-gradient-to-br from-gray-50 to-blue-50">
                 <DialogHeader className="p-6 pb-2">
                   <div className="flex items-center justify-between">
@@ -314,7 +312,7 @@ export default function Landing() {
                         onClick={() => setIsLoginModalOpen(true)}
                         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg"
                       >
-                        Hemen Ücretsiz Başla
+                        Giriş Yap
                       </Button>
                     </div>
                   </DropdownMenuContent>
