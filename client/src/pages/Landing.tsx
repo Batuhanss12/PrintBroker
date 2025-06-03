@@ -76,7 +76,13 @@ export default function Landing() {
           {/* Action Buttons at Top */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Button 
-              onClick={() => window.location.href = "/customer-register"}
+              onClick={() => {
+                try {
+                  window.location.href = "/customer-register";
+                } catch (error) {
+                  console.error('Navigation error:', error);
+                }
+              }}
               size="lg"
               className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-12 py-5 text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 rounded-xl border-0 animate-gradient-fast animate-float"
             >
@@ -84,10 +90,16 @@ export default function Landing() {
               Müşteri Olarak Başla
             </Button>
             <Button 
-              onClick={() => window.location.href = "/printer-register"}
+              onClick={() => {
+                try {
+                  window.location.href = "/printer-register";
+                } catch (error) {
+                  console.error('Navigation error:', error);
+                }
+              }}
               variant="outline"
               size="lg"
-              className="border-2 bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 text-white hover:from-purple-600 hover:to-pink-600 font-bold px-12 py-5 text-lg backdrop-blur-lg transition-all duration-300 transform hover:scale-105 rounded-xl animate-gradient-fast animate-float-delayed"
+              className="bg-white/10 backdrop-blur-xl border-white/20 text-white hover:bg-white/20 hover:border-white/30 font-bold px-12 py-5 text-lg shadow-2xl hover:shadow-white/10 transition-all duration-300 transform hover:scale-105 rounded-xl animate-float-delayed"
             >
               <Building2 className="h-6 w-6 mr-3" />
               Matbaa Olarak Katıl
@@ -254,7 +266,7 @@ export default function Landing() {
 
           {/* 3 Card Layout: Quote Form + Pricing Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
-            
+
             {/* Teklif Formu Kartı */}
             <Card className="lg:col-span-1 hover:shadow-2xl transition-all duration-300 border-0 shadow-xl bg-gradient-to-br from-white via-indigo-50 to-purple-50 animate-gradient-slow">
               <CardHeader className="text-center pb-6">
@@ -267,8 +279,13 @@ export default function Landing() {
               <CardContent className="space-y-4">
                 <Button 
                   onClick={() => {
-                    console.log('Navigating to sheet_label form');
-                    window.location.href = "/quote/sheet_label";
+                    try {
+                      console.log('Navigating to sheet_label form');
+                      window.location.href = "/quote/sheet_label";
+                    } catch (error) {
+                      console.error('Navigation error:', error);
+                      alert('Sayfa yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+                    }
                   }}
                   className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
                 >
@@ -281,8 +298,13 @@ export default function Landing() {
 
                 <Button 
                   onClick={() => {
-                    console.log('Navigating to roll_label form');
-                    window.location.href = "/quote/roll_label";
+                    try {
+                      console.log('Navigating to roll_label form');
+                      window.location.href = "/quote/roll_label";
+                    } catch (error) {
+                      console.error('Navigation error:', error);
+                      alert('Sayfa yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+                    }
                   }}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
                 >
@@ -295,8 +317,13 @@ export default function Landing() {
 
                 <Button 
                   onClick={() => {
-                    console.log('Navigating to general_printing form');
-                    window.location.href = "/quote/general_printing";
+                    try {
+                      console.log('Navigating to general_printing form');
+                      window.location.href = "/quote/general_printing";
+                    } catch (error) {
+                      console.error('Navigation error:', error);
+                      alert('Sayfa yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+                    }
                   }}
                   className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
                 >
@@ -323,7 +350,7 @@ export default function Landing() {
 
             {/* Fiyat Kartları Yan Yana */}
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+
               {/* Müşteri Paketi */}
               <Card className="relative bg-white border-2 border-blue-200 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
                 <CardHeader className="text-center pb-6 pt-8">
@@ -467,7 +494,7 @@ export default function Landing() {
               </h3>
               <p className="text-lg text-gray-600">Baskı ihtiyaçlarınızı dakikalar içinde profesyonel çözümlerle karşılayın</p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <Card className="group hover:shadow-2xl transition-all duration-500 border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full"></div>
@@ -522,7 +549,7 @@ export default function Landing() {
               </h3>
               <p className="text-lg text-gray-600">İş hacminizi artırın, operasyonlarınızı optimize edin</p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <Card className="group hover:shadow-2xl transition-all duration-500 border-0 shadow-lg bg-gradient-to-br from-orange-50 to-red-50 overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-orange-500/10 to-transparent rounded-bl-full"></div>
@@ -780,7 +807,7 @@ export default function Landing() {
             </Card>
           </div>
 
-          
+
         </div>
       </section>
 
