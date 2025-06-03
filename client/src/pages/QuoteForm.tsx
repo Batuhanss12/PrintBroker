@@ -23,9 +23,11 @@ import {
   Printer,
   AlertCircle,
   ArrowLeft,
-  Send
+  Send,
+  Wand2
 } from "lucide-react";
 import { Link } from "wouter";
+import DesignEngine from "@/components/DesignEngine";
 
 const quoteSchema = z.object({
   title: z.string().min(1, "Başlık gereklidir"),
@@ -386,6 +388,60 @@ export default function QuoteForm() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* AI Design Generation */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wand2 className="h-5 w-5" />
+                AI Tasarım Oluşturucu
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Yapay zeka ile profesyonel tasarımlar oluşturun. Logo, etiket, kartvizit ve daha fazlası.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex flex-col gap-2 h-auto py-4"
+                    onClick={() => window.open('/design-engine', '_blank')}
+                  >
+                    <LayoutGrid className="h-6 w-6 text-blue-500" />
+                    <span className="text-sm">Logo Tasarımı</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="flex flex-col gap-2 h-auto py-4"
+                    onClick={() => window.open('/design-engine', '_blank')}
+                  >
+                    <Disc className="h-6 w-6 text-orange-500" />
+                    <span className="text-sm">Etiket Tasarımı</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="flex flex-col gap-2 h-auto py-4"
+                    onClick={() => window.open('/design-engine', '_blank')}
+                  >
+                    <Printer className="h-6 w-6 text-green-500" />
+                    <span className="text-sm">Kartvizit Tasarımı</span>
+                  </Button>
+                </div>
+
+                <Button
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                  onClick={() => window.open('/design-engine', '_blank')}
+                >
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  Tasarım Motorunu Aç
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

@@ -9,8 +9,7 @@ import Home from "@/pages/HomeNew";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import PrinterDashboard from "@/pages/PrinterDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
-import QuoteForm from "@/pages/QuoteFormNew";
-import NotFound from "@/pages/not-found";
+import DesignEngine from "@/components/DesignEngine";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();

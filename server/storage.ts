@@ -27,37 +27,55 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserRole(id: string, role: string): Promise<void>;
-  
+
   // Quote operations
   createQuote(quote: InsertQuote): Promise<Quote>;
   getQuote(id: string): Promise<Quote | undefined>;
   getQuotesByCustomer(customerId: string): Promise<Quote[]>;
   getQuotesForPrinter(): Promise<Quote[]>;
   updateQuoteStatus(id: string, status: string): Promise<void>;
-  
+
   // Printer quote operations
   createPrinterQuote(printerQuote: InsertPrinterQuote): Promise<PrinterQuote>;
   getPrinterQuotesByQuote(quoteId: string): Promise<PrinterQuote[]>;
   getPrinterQuotesByPrinter(printerId: string): Promise<PrinterQuote[]>;
-  
+
   // Order operations
   createOrder(order: InsertOrder): Promise<Order>;
   getOrdersByCustomer(customerId: string): Promise<Order[]>;
   getOrdersByPrinter(printerId: string): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<void>;
-  
+
   // Rating operations
   createRating(rating: InsertRating): Promise<Rating>;
   updatePrinterRating(printerId: string): Promise<void>;
-  
+
   // File operations
   createFile(file: InsertFile): Promise<File>;
   getFilesByQuote(quoteId: string): Promise<File[]>;
-  
+
   // Admin operations
   getAllUsers(): Promise<User[]>;
   getUserStats(): Promise<any>;
   getRecentActivity(): Promise<any[]>;
+
+  // Design operations
+  saveDesignGeneration(data: {
+    userId: string;
+    prompt: string;
+    options: any;
+    result: any;
+    createdAt: Date;
+  }): Promise<any>; // Replace any with a more specific type
+
+  getDesignHistory(userId: string, options: { page: number; limit: number }): Promise<{
+    designs: any[]; // Replace any with a more specific type
+    total: number;
+    page: number;
+    totalPages: number;
+  }>;
+
+  getDesignTemplates(): Promise<any[]>; // Replace any with a more specific type
 }
 
 export class DatabaseStorage implements IStorage {
@@ -277,6 +295,107 @@ export class DatabaseStorage implements IStorage {
     return [...recentQuotes, ...recentOrders]
       .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
       .slice(0, 10);
+  }
+
+  async saveDesignGeneration(data: {
+    userId: string;
+    prompt: string;
+    options: any;
+    result: any;
+    createdAt: Date;
+  }) {
+    // Since we don't have a designs table, we'll store in a JSON file or memory
+    // In production, you'd want to create a proper database table
+    const designHistory = this.getStoredDesigns();
+    const newDesign = {
+      id: crypto.randomUUID(),
+      ...data
+    };
+    designHistory.push(newDesign);
+    this.storeDesigns(designHistory);
+    return newDesign;
+  }
+
+  async getDesignHistory(userId: string, options: { page: number; limit: number }) {
+    const designHistory = this.getStoredDesigns();
+    const userDesigns = designHistory
+      .filter(design => design.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const start = (options.page - 1) * options.limit;
+    const end = start + options.limit;
+
+    return {
+      designs: userDesigns.slice(start, end),
+      total: userDesigns.length,
+      page: options.page,
+      totalPages: Math.ceil(userDesigns.length / options.limit)
+    };
+  }
+
+  async getDesignTemplates() {
+    return [
+      {
+        id: '1',
+        name: 'Logo Tasarımı',
+        prompt: 'Modern ve minimal logo tasarımı, {company_name} için profesyonel görünüm',
+        category: 'logo',
+        thumbnail: '/api/files/template-logo.jpg'
+      },
+      {
+        id: '2',
+        name: 'Etiket Tasarımı',
+        prompt: 'Ürün etiketi tasarımı, {product_name} için çekici ve bilgilendirici',
+        category: 'label',
+        thumbnail: '/api/files/template-label.jpg'
+      },
+      {
+        id: '3',
+        name: 'Kartvizit Tasarımı',
+        prompt: 'Profesyonel kartvizit tasarımı, {company_name} için kurumsal kimlik',
+        category: 'business_card',
+        thumbnail: '/api/files/template-card.jpg'
+      },
+      {
+        id: '4',
+        name: 'Broşür Kapağı',
+        prompt: 'Çekici broşür kapağı tasarımı, {service_name} için pazarlama materyali',
+        category: 'brochure',
+        thumbnail: '/api/files/template-brochure.jpg'
+      },
+      {
+        id: '5',
+        name: 'Poster Tasarımı',
+        prompt: 'Etkileyici poster tasarımı, {event_name} için göz alıcı reklam',
+        category: 'poster',
+        thumbnail: '/api/files/template-poster.jpg'
+      }
+    ];
+  }
+
+  private getStoredDesigns(): any[] {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(process.cwd(), 'design-history.json');
+      if (fs.existsSync(filePath)) {
+        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  private storeDesigns(designs: any[]) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(process.cwd(), 'design-history.json');
+      fs.writeFileSync(filePath, JSON.stringify(designs, null, 2));
+    } catch (error) {
+      console.error('Error storing designs:', error);
+    }
   }
 }
 

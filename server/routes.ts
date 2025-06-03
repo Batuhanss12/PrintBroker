@@ -7,6 +7,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertQuoteSchema, insertPrinterQuoteSchema, insertRatingSchema } from "@shared/schema";
 import { z } from "zod";
+import { ideogramService } from "./ideogramApi";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -297,6 +298,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating rating:", error);
       res.status(500).json({ message: "Failed to create rating" });
+    }
+  });
+
+  // Design generation routes
+  app.post('/api/design/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { prompt, options = {} } = req.body;
+      
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      const result = await ideogramService.generateImage(prompt, options);
+      
+      // Save generation history
+      await storage.saveDesignGeneration({
+        userId,
+        prompt,
+        options,
+        result: result.data,
+        createdAt: new Date(),
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating design:", error);
+      res.status(500).json({ message: "Failed to generate design" });
+    }
+  });
+
+  app.post('/api/design/generate-batch', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { requests } = req.body;
+      
+      if (!Array.isArray(requests) || requests.length === 0) {
+        return res.status(400).json({ message: "Requests array is required" });
+      }
+
+      if (requests.length > 10) {
+        return res.status(400).json({ message: "Maximum 10 requests per batch" });
+      }
+
+      const results = await ideogramService.generateBatch(requests);
+      
+      // Save batch generation history
+      for (let i = 0; i < requests.length; i++) {
+        await storage.saveDesignGeneration({
+          userId,
+          prompt: requests[i].prompt,
+          options: requests[i].options || {},
+          result: results[i].data,
+          createdAt: new Date(),
+        });
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error generating batch designs:", error);
+      res.status(500).json({ message: "Failed to generate batch designs" });
+    }
+  });
+
+  app.get('/api/design/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { page = 1, limit = 20 } = req.query;
+      
+      const history = await storage.getDesignHistory(userId, {
+        page: parseInt(page),
+        limit: parseInt(limit)
+      });
+
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching design history:", error);
+      res.status(500).json({ message: "Failed to fetch design history" });
+    }
+  });
+
+  app.get('/api/design/templates', isAuthenticated, async (req: any, res) => {
+    try {
+      const templates = await storage.getDesignTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching design templates:", error);
+      res.status(500).json({ message: "Failed to fetch design templates" });
     }
   });
 
