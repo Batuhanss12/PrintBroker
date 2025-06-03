@@ -48,6 +48,9 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
   const [ws, setWs] = useState<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Type-safe user data
+  const currentUser = user as { id: string; profileImageUrl?: string } | undefined;
+
   // Fetch chat rooms
   const { data: rooms = [] } = useQuery<ChatRoom[]>({
     queryKey: ['/api/chat/rooms'],
@@ -235,7 +238,7 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="text-xs">
                         {getUserInitials(
-                          isValidUser(user) && user.id === room.customerId ? room.printerId : room.customerId
+                          currentUser?.id === room.customerId ? room.printerId : room.customerId
                         )}
                       </AvatarFallback>
                     </Avatar>
@@ -279,14 +282,14 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
               
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
-                  {messages.map((message: ChatMessage) => (
+                  {(messages as ChatMessage[]).map((message: ChatMessage) => (
                     <div
                       key={message.id}
                       className={`flex gap-3 ${
-                        message.senderId === user?.id ? "justify-end" : ""
+                        message.senderId === currentUser?.id ? "justify-end" : ""
                       }`}
                     >
-                      {message.senderId !== user?.id && (
+                      {message.senderId !== currentUser?.id && (
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="text-xs">
                             {getUserInitials(message.senderId)}
@@ -295,7 +298,7 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
                       )}
                       <div
                         className={`max-w-[70%] rounded-lg p-3 ${
-                          message.senderId === user?.id
+                          message.senderId === currentUser?.id
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
                         }`}
@@ -303,7 +306,7 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
                         <p className="text-sm">{message.content}</p>
                         <p
                           className={`text-xs mt-1 ${
-                            message.senderId === user?.id
+                            message.senderId === currentUser?.id
                               ? "text-primary-foreground/70"
                               : "text-muted-foreground"
                           }`}
@@ -311,11 +314,11 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
                           {format(new Date(message.createdAt), "HH:mm")}
                         </p>
                       </div>
-                      {message.senderId === user?.id && (
+                      {message.senderId === currentUser?.id && (
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={user?.profileImageUrl || undefined} />
+                          <AvatarImage src={currentUser?.profileImageUrl} />
                           <AvatarFallback className="text-xs">
-                            {getUserInitials(user?.id || "")}
+                            {getUserInitials(currentUser?.id || "UN")}
                           </AvatarFallback>
                         </Avatar>
                       )}
