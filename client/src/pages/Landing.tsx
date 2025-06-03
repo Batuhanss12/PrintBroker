@@ -28,12 +28,14 @@ import {
   LogIn,
   Menu,
   X,
+  User,
+  FileText,
+  CheckCircle,
   CreditCard,
   Globe,
   Smartphone,
   Monitor,
-  Tablet,
-  FileText
+  Tablet
 } from "lucide-react";
 
 export default function Landing() {
@@ -46,6 +48,7 @@ export default function Landing() {
     email: '',
     phone: '',
     companyName: '',
+    taxNumber: '',
     password: ''
   });
   const { toast } = useToast();
