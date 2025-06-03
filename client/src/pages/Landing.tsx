@@ -118,12 +118,7 @@ export default function Landing() {
                 <LogIn className="h-4 w-4 mr-2" />
                 Giriş Yap
               </Button>
-              <Button 
-                onClick={() => setIsLoginModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Ücretsiz Başla
-              </Button>
+
             </div>
 
             <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
@@ -652,7 +647,11 @@ export default function Landing() {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={() => setShowLoginForm('customer')}
+                  onClick={() => {
+                    console.log('Customer registration button clicked');
+                    setIsLoginModalOpen(false);
+                    setShowLoginForm('customer');
+                  }}
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   Müşteri Olarak Başla
@@ -708,7 +707,11 @@ export default function Landing() {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={() => setShowLoginForm('printer')}
+                  onClick={() => {
+                    console.log('Printer registration button clicked');
+                    setIsLoginModalOpen(false);
+                    setShowLoginForm('printer');
+                  }}
                   className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   Matbaa Olarak Katıl
