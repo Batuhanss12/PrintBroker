@@ -48,10 +48,47 @@ export default function Landing() {
     email: '',
     phone: '',
     companyName: '',
-    taxNumber: '',
-    password: ''
+    password: '',
+    taxNumber: ''
   });
   const { toast } = useToast();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await apiRequest('/api/auth/login', 'POST', {
+        email: formData.email,
+        password: formData.password,
+        role: showLoginForm
+      });
+
+      if (response.success) {
+        toast({
+          title: "Giriş başarılı",
+          description: "Hoş geldiniz!",
+        });
+        
+        // Redirect based on role
+        if (showLoginForm === 'customer') {
+          window.location.href = '/customer-dashboard';
+        } else if (showLoginForm === 'printer') {
+          window.location.href = '/printer-dashboard';
+        } else if (showLoginForm === 'admin') {
+          window.location.href = '/admin-dashboard';
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Giriş hatası",
+        description: "E-posta veya şifre hatalı",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRegister = async (role: string) => {
     setIsLoading(true);
@@ -151,45 +188,136 @@ export default function Landing() {
                 </DialogHeader>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[500px]">
-                  {/* Login Options */}
+                  {/* Login Form or Options */}
                   <div className="p-6 flex flex-col justify-center">
-                    <div className="space-y-4">
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">Hızlı Giriş</h3>
-                        <p className="text-gray-600">Hesabınızı seçin ve hemen başlayın</p>
+                    {!showLoginForm ? (
+                      <div className="space-y-4">
+                        <div className="text-center mb-6">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">Hızlı Giriş</h3>
+                          <p className="text-gray-600">Hesabınızı seçin ve hemen başlayın</p>
+                        </div>
+
+                        <Button 
+                          onClick={() => setShowLoginForm('customer')}
+                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
+                        >
+                          <UserCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                          <span>Müşteri Girişi</span>
+                        </Button>
+
+                        <Button 
+                          onClick={() => setShowLoginForm('printer')}
+                          className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
+                        >
+                          <Building2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                          <span>Matbaa Girişi</span>
+                        </Button>
+
+                        <Button 
+                          onClick={() => setShowLoginForm('admin')}
+                          className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
+                        >
+                          <Crown className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                          <span>Admin Girişi</span>
+                        </Button>
                       </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            {showLoginForm === 'customer' && <UserCheck className="h-6 w-6 text-blue-600" />}
+                            {showLoginForm === 'printer' && <Building2 className="h-6 w-6 text-purple-600" />}
+                            {showLoginForm === 'admin' && <Crown className="h-6 w-6 text-orange-600" />}
+                            <div>
+                              <h3 className="text-xl font-semibold text-gray-900">
+                                {showLoginForm === 'customer' && 'Müşteri Girişi'}
+                                {showLoginForm === 'printer' && 'Matbaa Girişi'}
+                                {showLoginForm === 'admin' && 'Admin Girişi'}
+                              </h3>
+                              <p className="text-gray-600 text-sm">Hesap bilgilerinizi girin</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setShowLoginForm(null)}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
 
-                      <Button 
-                        onClick={() => setShowLoginForm('login')}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
-                      >
-                        <UserCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                        <span>Müşteri Girişi</span>
-                      </Button>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                          <div>
+                            <Label htmlFor="email">E-posta</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              value={formData.email}
+                              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                              placeholder="ornek@email.com"
+                              required
+                              className="mt-1"
+                            />
+                          </div>
 
-                      <Button 
-                        onClick={() => setShowLoginForm('login')}
-                        className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
-                      >
-                        <Building2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                        <span>Matbaa Girişi</span>
-                      </Button>
+                          <div>
+                            <Label htmlFor="password">Şifre</Label>
+                            <Input
+                              id="password"
+                              type="password"
+                              value={formData.password || ''}
+                              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                              placeholder="Şifrenizi girin"
+                              required
+                              className="mt-1"
+                            />
+                          </div>
 
-                      <Button 
-                        onClick={() => setShowLoginForm('login')}
-                        className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
-                      >
-                        <Crown className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                        <span>Admin Girişi</span>
-                      </Button>
-                    </div>
+                          <Button
+                            type="submit"
+                            disabled={isLoading}
+                            className={`w-full py-3 px-6 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
+                              showLoginForm === 'customer' 
+                                ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+                                : showLoginForm === 'printer'
+                                ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800'
+                                : 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700'
+                            }`}
+                          >
+                            {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+                          </Button>
+                        </form>
 
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                      <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-                        <Shield className="h-4 w-4 text-blue-600" />
-                        <span>SSL ile güvenli giriş • Kişisel verileriniz korunur</span>
+                        <div className="text-center text-sm text-gray-500">
+                          Hesabınız yok mu? 
+                          <Button 
+                            variant="link" 
+                            className="text-blue-600 hover:text-blue-700 p-0 ml-1"
+                            onClick={() => {
+                              setIsLoginModalOpen(false);
+                              setShowLoginForm(null);
+                              if (showLoginForm === 'customer') {
+                                window.location.href = '/customer-register';
+                              } else if (showLoginForm === 'printer') {
+                                window.location.href = '/printer-register';
+                              }
+                            }}
+                          >
+                            Kayıt olun
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {!showLoginForm && (
+                      <div className="mt-8 pt-6 border-t border-gray-200">
+                        <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                          <Shield className="h-4 w-4 text-blue-600" />
+                          <span>SSL ile güvenli giriş • Kişisel verileriniz korunur</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Info Panel */}
