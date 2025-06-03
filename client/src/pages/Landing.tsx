@@ -26,7 +26,8 @@ import {
   Award,
   Target,
   Send,
-  Settings
+  Settings,
+  CheckCircle
 } from "lucide-react";
 
 export default function Landing() {
@@ -104,23 +105,65 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold mb-2">10K+</div>
-              <div className="text-blue-200">Aktif Müşteri</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold mb-2">500+</div>
-              <div className="text-blue-200">Matbaa Partneri</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold mb-2">50K+</div>
-              <div className="text-blue-200">Tamamlanan Proje</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold mb-2">99%</div>
-              <div className="text-blue-200">Müşteri Memnuniyeti</div>
+          {/* Enhanced Stats Section */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10"></div>
+            <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-8 p-8 lg:p-12">
+              <div className="group text-center transform hover:scale-105 transition-all duration-300">
+                <div className="relative">
+                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent animate-pulse">
+                    12.5K+
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
+                </div>
+                <div className="text-blue-100 font-medium text-sm lg:text-base mb-2">Aktif Müşteri</div>
+                <div className="text-xs text-blue-200/80 flex items-center justify-center">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  <span>+15% bu ay</span>
+                </div>
+              </div>
+
+              <div className="group text-center transform hover:scale-105 transition-all duration-300">
+                <div className="relative">
+                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                    750+
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-3 h-3 bg-orange-400 rounded-full animate-ping delay-100"></div>
+                </div>
+                <div className="text-blue-100 font-medium text-sm lg:text-base mb-2">Matbaa Partneri</div>
+                <div className="text-xs text-blue-200/80 flex items-center justify-center">
+                  <Building2 className="h-3 w-3 mr-1" />
+                  <span>Türkiye geneli</span>
+                </div>
+              </div>
+
+              <div className="group text-center transform hover:scale-105 transition-all duration-300">
+                <div className="relative">
+                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                    127K+
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-3 h-3 bg-purple-400 rounded-full animate-ping delay-200"></div>
+                </div>
+                <div className="text-blue-100 font-medium text-sm lg:text-base mb-2">Tamamlanan Proje</div>
+                <div className="text-xs text-blue-200/80 flex items-center justify-center">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  <span>Başarıyla teslim</span>
+                </div>
+              </div>
+
+              <div className="group text-center transform hover:scale-105 transition-all duration-300">
+                <div className="relative">
+                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                    4.9/5
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping delay-300"></div>
+                </div>
+                <div className="text-blue-100 font-medium text-sm lg:text-base mb-2">Müşteri Puanı</div>
+                <div className="text-xs text-blue-200/80 flex items-center justify-center">
+                  <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                  <span>8.2K değerlendirme</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
