@@ -53,18 +53,24 @@ export default function Landing() {
   const handleRegister = async (role: string) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest('/api/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, role })
       });
       
-      if (response.success) {
+      const data = await response.json();
+      
+      if (data.success) {
         toast({
           title: "Kayıt Başarılı",
           description: "Hesabınız oluşturuldu, yönlendiriliyorsunuz...",
         });
-        window.location.href = '/';
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      } else {
+        throw new Error(data.message || "Kayıt işlemi başarısız");
       }
     } catch (error: any) {
       toast({
@@ -147,29 +153,29 @@ export default function Landing() {
                         <p className="text-gray-600">Hesabınızı seçin ve hemen başlayın</p>
                       </div>
                       
-                      <button 
+                      <Button 
                         onClick={() => setShowLoginForm('customer')}
                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <UserCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Müşteri Girişi</span>
-                      </button>
+                      </Button>
                       
-                      <button 
+                      <Button 
                         onClick={() => setShowLoginForm('printer')}
                         className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <Building2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Matbaa Girişi</span>
-                      </button>
+                      </Button>
                       
-                      <button 
+                      <Button 
                         onClick={() => setShowLoginForm('admin')}
                         className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-3 group"
                       >
                         <Crown className="h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Admin Girişi</span>
-                      </button>
+                      </Button>
                     </div>
                     
                     <div className="mt-8 pt-6 border-t border-gray-200">
