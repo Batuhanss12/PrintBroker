@@ -70,8 +70,6 @@ export default function Landing() {
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_50%)] bg-[size:80px_80px]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(99,102,241,0.1),transparent_50%)] bg-[size:120px_120px]"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Action Buttons at Top */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
