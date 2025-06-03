@@ -1,0 +1,20 @@
+
+name: Auto Commit
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 * * * *' # Her saat başı
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Auto commit
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git diff --staged --quiet || git commit -m "Auto commit: $(date)"
+        git push
