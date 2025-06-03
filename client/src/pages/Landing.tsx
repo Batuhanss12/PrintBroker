@@ -187,28 +187,6 @@ export default function Landing() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Quick Contact Form */}
-          <Card className="max-w-4xl mx-auto bg-gradient-to-r from-blue-50 to-indigo-50 border-0 shadow-xl">
-            <CardContent className="p-8">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Hızlı İletişim</h3>
-                <p className="text-gray-600">Size özel teklifler için iletişim bilgilerinizi bırakın</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Input placeholder="Adınız Soyadınız" className="border-white bg-white" />
-                <Input placeholder="E-posta Adresiniz" className="border-white bg-white" />
-                <Input placeholder="Telefon Numaranız" className="border-white bg-white" />
-                <Button 
-                  onClick={handleLogin}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Gönder
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </section>
 
