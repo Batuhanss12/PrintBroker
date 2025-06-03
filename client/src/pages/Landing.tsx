@@ -64,7 +64,8 @@ export default function Landing() {
               <a href="#pricing" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Fiyatlar</a>
               <a href="#contact" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">İletişim</a>
             </nav>
-            <div className="flex items-center space-x-4">
+            {/* Desktop Buttons */}
+            <div className="hidden md:flex items-center space-x-4">
               <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" className="text-gray-700 hover:text-blue-600">
@@ -281,92 +282,94 @@ export default function Landing() {
                 </DialogContent>
               </Dialog>
 
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-blue-600 text-white hover:bg-blue-700">
-                    <Menu className="h-4 w-4 mr-2" />
-                     Menü
+                  <Button variant="outline" size="sm" className="p-2">
+                    <Menu className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  <DropdownMenuItem><a href="#features" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Özellikler</a></DropdownMenuItem>
-                  <DropdownMenuItem><a href="#pricing" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Fiyatlar</a></DropdownMenuItem>
-                  <DropdownMenuItem><a href="#contact" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">İletişim</a></DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-48 mt-2">
+                  <DropdownMenuItem onClick={() => setIsLoginModalOpen(true)} className="flex items-center cursor-pointer">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Giriş Yap
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a href="#features" className="flex items-center cursor-pointer w-full">
+                      <Star className="h-4 w-4 mr-2" />
+                      Özellikler
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a href="#pricing" className="flex items-center cursor-pointer w-full">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Fiyatlar
+                    </a>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
-              
             </div>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white py-32 overflow-hidden animate-gradient">
+      <section className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white py-16 md:py-32 overflow-hidden animate-gradient">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_50%)] bg-[size:80px_80px]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(99,102,241,0.1),transparent_50%)] bg-[size:120px_120px]"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Action Buttons at Top */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4 sm:px-0">
             <Button 
-              onClick={() => {
-                try {
-                  window.location.href = "/customer-register";
-                } catch (error) {
-                  console.error('Navigation error:', error);
-                }
-              }}
+              onClick={() => setIsLoginModalOpen(true)}
               size="lg"
-              className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-12 py-5 text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 rounded-xl border-0 animate-gradient-fast animate-float"
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-8 sm:px-12 py-4 sm:py-5 text-base sm:text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 rounded-xl border-0"
             >
-              <Users className="h-6 w-6 mr-3" />
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3" />
               Müşteri Olarak Başla
             </Button>
             <Button 
-              onClick={() => {
-                try {
-                  window.location.href = "/printer-register";
-                } catch (error) {
-                  console.error('Navigation error:', error);
-                }
-              }}
+              onClick={() => setIsLoginModalOpen(true)}
               variant="outline"
               size="lg"
-              className="bg-white/10 backdrop-blur-xl border-white/20 text-white hover:bg-white/20 hover:border-white/30 font-bold px-12 py-5 text-lg shadow-2xl hover:shadow-white/10 transition-all duration-300 transform hover:scale-105 rounded-xl animate-float-delayed"
+              className="w-full sm:w-auto bg-white/10 backdrop-blur-xl border-white/20 text-white hover:bg-white/20 hover:border-white/30 font-bold px-8 sm:px-12 py-4 sm:py-5 text-base sm:text-lg shadow-2xl hover:shadow-white/10 transition-all duration-300 transform hover:scale-105 rounded-xl"
             >
-              <Building2 className="h-6 w-6 mr-3" />
+              <Building2 className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3" />
               Matbaa Olarak Katıl
             </Button>
           </div>
 
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-full px-6 py-3 mb-8 border border-white/10">
-              <Zap className="h-5 w-5 mr-3 text-yellow-400" />
-              <span className="text-lg font-semibold bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">Türkiye'nin En Yenilikçi B2B Matbaa Platformu</span>
+          <div className="text-center mb-12 sm:mb-20 px-4 sm:px-0">
+            <div className="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-full px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8 border border-white/10">
+              <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-yellow-400" />
+              <span className="text-sm sm:text-lg font-semibold bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">Türkiye'nin En Yenilikçi B2B Matbaa Platformu</span>
             </div>
-            <h1 className="text-6xl md:text-8xl font-black mb-8 leading-tight">
-              <span className="bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-transparent animate-gradient">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 leading-tight">
+              <span className="bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-transparent">
                 Matbaa Sektöründe
               </span>
-              <span className="block bg-gradient-to-r from-yellow-200 via-orange-200 to-red-200 bg-clip-text text-transparent animate-gradient-fast">
+              <span className="block bg-gradient-to-r from-yellow-200 via-orange-200 to-red-200 bg-clip-text text-transparent">
                 Dijital Devrim
               </span>
             </h1>
-            <p className="text-2xl md:text-3xl mb-16 leading-relaxed max-w-5xl mx-auto bg-gradient-to-r from-gray-200 to-blue-200 bg-clip-text text-transparent font-medium">
+            <p className="text-lg sm:text-2xl md:text-3xl mb-12 sm:mb-16 leading-relaxed max-w-5xl mx-auto bg-gradient-to-r from-gray-200 to-blue-200 bg-clip-text text-transparent font-medium px-4 sm:px-0">
               <strong className="text-white">Matbixx</strong> ile matbaa işlerinizi dijitalleştirin. AI destekli tasarım, anlık teklif karşılaştırması, 
               güvenli ödeme ve gerçek zamanlı takip ile profesyonel baskı deneyimi yaşayın.
             </p>
           </div>
 
           {/* Live Quote Tracking Section */}
-          <div className="relative mb-16">
+          <div className="relative mb-12 sm:mb-16 mx-4 sm:mx-0">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-xl rounded-3xl border border-white/20"></div>
-            <div className="relative p-8 lg:p-12">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl lg:text-3xl font-bold mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+            <div className="relative p-4 sm:p-8 lg:p-12">
+              <div className="text-center mb-6 sm:mb-8">
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
                   🔴 Canlı Teklif Takibi
                 </h3>
-                <p className="text-blue-200 text-lg">Anlık olarak platform üzerindeki teklif durumları</p>
+                <p className="text-blue-200 text-base sm:text-lg">Anlık olarak platform üzerindeki teklif durumları</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
