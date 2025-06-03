@@ -67,51 +67,120 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]"></div>
+      <section className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white py-32 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_50%)] bg-[size:80px_80px]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(99,102,241,0.1),transparent_50%)] bg-[size:120px_120px]"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center bg-blue-500/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-              <Zap className="h-4 w-4 mr-2" />
-              <span className="text-sm font-medium">Türkiye'nin En Yenilikçi B2B Matbaa Platformu</span>
+          {/* Action Buttons at Top */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Button 
+              onClick={() => window.location.href = "/customer-register"}
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-12 py-5 text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105 rounded-xl border-0"
+            >
+              <Users className="h-6 w-6 mr-3" />
+              Müşteri Olarak Başla
+            </Button>
+            <Button 
+              onClick={() => window.location.href = "/printer-register"}
+              variant="outline"
+              size="lg"
+              className="border-2 border-gradient-to-r from-purple-400 to-pink-400 text-white hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:border-transparent font-bold px-12 py-5 text-lg backdrop-blur-lg bg-white/10 transition-all duration-300 transform hover:scale-105 rounded-xl"
+            >
+              <Building2 className="h-6 w-6 mr-3" />
+              Matbaa Olarak Katıl
+            </Button>
+          </div>
+
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-full px-6 py-3 mb-8 border border-white/10">
+              <Zap className="h-5 w-5 mr-3 text-yellow-400" />
+              <span className="text-lg font-semibold bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">Türkiye'nin En Yenilikçi B2B Matbaa Platformu</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
-              Matbaa Sektöründe
-              <span className="block text-blue-200">Yeni Nesil Çözüm</span>
+            <h1 className="text-6xl md:text-8xl font-black mb-8 leading-tight">
+              <span className="bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-transparent">
+                Matbaa Sektöründe
+              </span>
+              <span className="block bg-gradient-to-r from-yellow-200 via-orange-200 to-red-200 bg-clip-text text-transparent">
+                Dijital Devrim
+              </span>
             </h1>
-            <p className="text-xl md:text-2xl mb-12 text-blue-100 leading-relaxed max-w-4xl mx-auto">
-              <strong>Matbixx</strong> ile matbaa işlerinizi dijitalleştirin. AI destekli tasarım, anlık teklif karşılaştırması, 
+            <p className="text-2xl md:text-3xl mb-16 leading-relaxed max-w-5xl mx-auto bg-gradient-to-r from-gray-200 to-blue-200 bg-clip-text text-transparent font-medium">
+              <strong className="text-white">Matbixx</strong> ile matbaa işlerinizi dijitalleştirin. AI destekli tasarım, anlık teklif karşılaştırması, 
               güvenli ödeme ve gerçek zamanlı takip ile profesyonel baskı deneyimi yaşayın.
             </p>
+          </div>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-              <Button 
-                onClick={() => window.location.href = "/customer-register"}
-                size="lg"
-                className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-10 py-4 text-lg shadow-2xl hover:shadow-white/20 transition-all duration-300 transform hover:scale-105"
-              >
-                <Users className="h-5 w-5 mr-2" />
-                Müşteri Olarak Başla
-              </Button>
-              <Button 
-                onClick={() => window.location.href = "/printer-register"}
-                variant="outline"
-                size="lg"
-                className="border-2 border-white text-white hover:bg-white hover:text-blue-600 font-semibold px-10 py-4 text-lg backdrop-blur-sm bg-white/10 transition-all duration-300 transform hover:scale-105"
-              >
-                <Building2 className="h-5 w-5 mr-2" />
-                Matbaa Olarak Katıl
-              </Button>
+          {/* Live Quote Tracking Section */}
+          <div className="relative mb-16">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-xl rounded-3xl border border-white/20"></div>
+            <div className="relative p-8 lg:p-12">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl lg:text-3xl font-bold mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                  🔴 Canlı Teklif Takibi
+                </h3>
+                <p className="text-blue-200 text-lg">Anlık olarak platform üzerindeki teklif durumları</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm rounded-2xl p-6 border border-green-400/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-green-200 font-semibold">Onaylanan Teklifler</h4>
+                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  </div>
+                  <div className="text-3xl font-bold text-green-300 mb-2">₺847.250</div>
+                  <div className="text-sm text-green-200">Son 24 saatte: 23 teklif</div>
+                </div>
+
+                <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-2xl p-6 border border-yellow-400/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-yellow-200 font-semibold">Bekleyen Teklifler</h4>
+                    <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                  </div>
+                  <div className="text-3xl font-bold text-yellow-300 mb-2">₺1.234.580</div>
+                  <div className="text-sm text-yellow-200">Aktif: 47 teklif</div>
+                </div>
+
+                <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-400/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-blue-200 font-semibold">Toplam İşlem Hacmi</h4>
+                    <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+                  </div>
+                  <div className="text-3xl font-bold text-blue-300 mb-2">₺15.7M</div>
+                  <div className="text-sm text-blue-200">Bu ay: +34% artış</div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-600/30">
+                <h4 className="text-white font-semibold mb-4 flex items-center">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-ping mr-3"></div>
+                  Son Dakika Teklifleri
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-300">Kartvizit Baskısı - 5000 adet</span>
+                    <span className="text-green-400 font-medium">₺450 onaylandı</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-300">Rulo Etiket - 50cm x 1000m</span>
+                    <span className="text-yellow-400 font-medium">₺1.250 beklemede</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-300">Katalog Baskısı - 500 sayfa</span>
+                    <span className="text-blue-400 font-medium">₺2.100 teklif alındı</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Enhanced Stats Section */}
           <div className="relative">
-            <div className="absolute inset-0 bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-blue-500/5 to-purple-500/5 backdrop-blur-sm rounded-3xl border border-white/10"></div>
             <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-8 p-8 lg:p-12">
               <div className="group text-center transform hover:scale-105 transition-all duration-300">
                 <div className="relative">
-                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent animate-pulse">
+                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-green-300 via-blue-300 to-purple-300 bg-clip-text text-transparent animate-pulse">
                     12.5K+
                   </div>
                   <div className="absolute -top-2 -right-2 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
@@ -125,7 +194,7 @@ export default function Landing() {
 
               <div className="group text-center transform hover:scale-105 transition-all duration-300">
                 <div className="relative">
-                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-orange-300 via-red-300 to-pink-300 bg-clip-text text-transparent">
                     750+
                   </div>
                   <div className="absolute -top-2 -right-2 w-3 h-3 bg-orange-400 rounded-full animate-ping delay-100"></div>
@@ -139,7 +208,7 @@ export default function Landing() {
 
               <div className="group text-center transform hover:scale-105 transition-all duration-300">
                 <div className="relative">
-                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-purple-300 via-indigo-300 to-blue-300 bg-clip-text text-transparent">
                     127K+
                   </div>
                   <div className="absolute -top-2 -right-2 w-3 h-3 bg-purple-400 rounded-full animate-ping delay-200"></div>
@@ -153,7 +222,7 @@ export default function Landing() {
 
               <div className="group text-center transform hover:scale-105 transition-all duration-300">
                 <div className="relative">
-                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                  <div className="text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 bg-clip-text text-transparent">
                     4.9/5
                   </div>
                   <div className="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping delay-300"></div>
