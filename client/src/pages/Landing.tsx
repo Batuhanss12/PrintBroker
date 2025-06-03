@@ -802,6 +802,112 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* Registration Modal */}
+      {showLoginForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                {showLoginForm === 'customer' && 'Müşteri Kayıt'}
+                {showLoginForm === 'printer' && 'Matbaa Kayıt'}
+                {showLoginForm === 'admin' && 'Admin Kayıt'}
+              </h3>
+              <button
+                onClick={() => setShowLoginForm(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleRegister(showLoginForm); }} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">Ad</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Soyad</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="email">E-posta</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="phone">Telefon</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  required
+                />
+              </div>
+
+              {showLoginForm === 'printer' && (
+                <div>
+                  <Label htmlFor="companyName">Şirket Adı</Label>
+                  <Input
+                    id="companyName"
+                    value={formData.companyName}
+                    onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+                    required
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="password">Şifre</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowLoginForm(null)}
+                  className="flex-1"
+                >
+                  İptal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  {isLoading ? 'Kayıt Oluşturuluyor...' : 'Kayıt Ol'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

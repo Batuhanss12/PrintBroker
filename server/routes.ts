@@ -45,6 +45,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Registration endpoint
+  app.post('/api/register', async (req, res) => {
+    try {
+      const { firstName, lastName, email, phone, companyName, password, role } = req.body;
+      
+      // Generate unique user ID
+      const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      
+      // Create user in database
+      const newUser = await storage.upsertUser({
+        id: userId,
+        email,
+        firstName,
+        lastName,
+        phone,
+        role: role || 'customer',
+        creditBalance: '100.00', // Starting credit
+        companyName: role === 'printer' ? companyName : undefined,
+        isActive: true,
+        subscriptionStatus: role === 'printer' ? 'active' : 'inactive'
+      });
+
+      // Create session
+      req.session.user = {
+        id: userId,
+        email: newUser.email || '',
+        role: newUser.role || 'customer',
+        claims: {
+          sub: userId,
+          email: newUser.email || '',
+          role: newUser.role || 'customer'
+        }
+      };
+
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ success: false, message: "Session creation failed" });
+        }
+        res.json({ success: true, user: newUser });
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ success: false, message: "Registration failed" });
+    }
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
