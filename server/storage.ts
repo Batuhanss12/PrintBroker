@@ -82,6 +82,16 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUserRole(id: string, role: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        role: role as any,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, id));
+  }
+
   // Quote operations
   async createQuote(quote: InsertQuote): Promise<Quote> {
     const [newQuote] = await db.insert(quotes).values(quote).returning();
