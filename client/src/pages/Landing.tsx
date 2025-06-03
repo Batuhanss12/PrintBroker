@@ -422,22 +422,7 @@ export default function Landing() {
             </Card>
           </div>
 
-          {/* Money Back Guarantee */}
-          <div className="text-center">
-            <Card className="inline-block bg-green-50 border-green-200 border-2">
-              <CardContent className="px-8 py-6">
-                <div className="flex items-center justify-center space-x-4">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                    <Shield className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-bold text-green-800">30 Gün Para İade Garantisi</h3>
-                    <p className="text-green-600">Memnun kalmazsan, paranı geri al</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          
         </div>
       </section>
 
