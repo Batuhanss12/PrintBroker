@@ -58,34 +58,17 @@ export default function Landing() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest('/api/auth/login', 'POST', {
-        email: formData.email,
-        password: formData.password,
-        role: showLoginForm
-      });
-
-      if (response.success) {
-        toast({
-          title: "Giriş başarılı",
-          description: "Hoş geldiniz!",
-        });
-        
-        // Redirect based on role
-        if (showLoginForm === 'customer') {
-          window.location.href = '/customer-dashboard';
-        } else if (showLoginForm === 'printer') {
-          window.location.href = '/printer-dashboard';
-        } else if (showLoginForm === 'admin') {
-          window.location.href = '/admin-dashboard';
-        }
-      }
+      // Store selected role in session storage for after auth
+      sessionStorage.setItem('selectedRole', showLoginForm || 'customer');
+      
+      // Redirect to Replit Auth login
+      window.location.href = '/api/login';
     } catch (error) {
       toast({
         title: "Giriş hatası",
-        description: "E-posta veya şifre hatalı",
+        description: "Giriş işlemi başlatılamadı",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -466,10 +449,9 @@ export default function Landing() {
           {/* Action Buttons at Top */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4 sm:px-0">
             <Button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                window.location.href = '/customer-register';
+              onClick={() => {
+                setIsLoginModalOpen(true);
+                setShowLoginForm('customer');
               }}
               size="lg" 
               className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto border-2 border-white"
@@ -478,10 +460,9 @@ export default function Landing() {
               <span className="text-blue-900 font-bold">Müşteri Olarak Başla</span>
             </Button>
             <Button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                window.location.href = '/printer-register';
+              onClick={() => {
+                setIsLoginModalOpen(true);
+                setShowLoginForm('printer');
               }}
               variant="outline" 
               size="lg" 
