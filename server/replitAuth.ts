@@ -2,6 +2,22 @@ import passport from "passport";
 import type { Express } from "express";
 import session from "express-session";
 
+// Extend session types
+declare module 'express-session' {
+  interface SessionData {
+    user?: {
+      id: string;
+      email: string;
+      role: string;
+      claims: {
+        sub: string;
+        email: string;
+        role: string;
+      };
+    };
+  }
+}
+
 export async function setupAuth(app: Express) {
   // Configure session first
   app.use(session({
@@ -166,21 +182,6 @@ export async function setupAuth(app: Express) {
 function setupFallbackAuth(app: Express) {
   console.log('Using fallback authentication for development');
 
-  // Setup passport serialization for fallback auth
-  passport.serializeUser((user: any, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: string, done) => {
-    try {
-      const { storage } = await import('./storage');
-      const user = await storage.getUser(id);
-      done(null, user);
-    } catch (error) {
-      done(error, null);
-    }
-  });
-
   app.get('/api/login', async (req, res) => {
     try {
       const role = req.query.role as string || 'customer';
@@ -203,26 +204,24 @@ function setupFallbackAuth(app: Express) {
         subscriptionStatus: role === 'printer' ? 'active' : undefined
       });
 
-      const sessionUser = {
+      // Direct session setup without passport
+      req.session.user = {
         id: userId,
         email: mockUser.email,
-        name: `${mockUser.firstName} ${mockUser.lastName}`,
+        role: mockUser.role,
         claims: {
           sub: userId,
           email: mockUser.email,
-          name: `${mockUser.firstName} ${mockUser.lastName}`
+          role: mockUser.role
         }
       };
 
-      // Use passport's login method
-      req.logIn(sessionUser, (err) => {
+      req.session.save((err) => {
         if (err) {
-          console.error('Mock login error:', err);
-          return res.redirect('/?error=mock_login_failed');
+          console.error('Session save error:', err);
+          return res.redirect('/?error=session_failed');
         }
-
-        const returnTo = req.query.returnTo as string || '/dashboard';
-        res.redirect(returnTo);
+        res.redirect('/');
       });
     } catch (error) {
       console.error('Fallback auth error:', error);
@@ -239,7 +238,7 @@ function setupFallbackAuth(app: Express) {
 }
 
 export function isAuthenticated(req: any, res: any, next: any) {
-  if (req.user && (req.user.claims || req.user.id)) {
+  if (req.session?.user) {
     return next();
   }
 
