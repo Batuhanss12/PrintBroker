@@ -49,13 +49,13 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch chat rooms
-  const { data: rooms = [] } = useQuery({
+  const { data: rooms = [] } = useQuery<ChatRoom[]>({
     queryKey: ['/api/chat/rooms'],
     enabled: isOpen && !!user,
   });
 
   // Fetch messages for current room
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ['/api/chat/rooms', currentRoom?.id, 'messages'],
     enabled: !!currentRoom,
   });
@@ -63,9 +63,9 @@ export default function Chat({ quoteId, customerId, printerId, isOpen, onClose }
   // Create or get chat room
   const createRoomMutation = useMutation({
     mutationFn: async (roomData: { quoteId: string; customerId: string; printerId: string }) => {
-      return await apiRequest(`/api/chat/rooms`, 'POST', roomData);
+      return await apiRequest(`/api/chat/rooms`, 'POST', roomData) as ChatRoom;
     },
-    onSuccess: (room) => {
+    onSuccess: (room: ChatRoom) => {
       setCurrentRoom(room);
       queryClient.invalidateQueries({ queryKey: ['/api/chat/rooms'] });
     },

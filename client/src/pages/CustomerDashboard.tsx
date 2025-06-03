@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
 import QuoteCard from "@/components/QuoteCard";
 import StatsCard from "@/components/StatsCard";
+import Chat from "@/components/Chat";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  MessageCircle,
   LayoutGrid,
   Disc,
   Printer
@@ -26,6 +28,7 @@ import {
 export default function CustomerDashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -45,6 +48,13 @@ export default function CustomerDashboard() {
   const { data: quotes, isLoading: quotesLoading } = useQuery({
     queryKey: ["/api/quotes"],
     enabled: isAuthenticated && user?.role === 'customer',
+  });
+
+  // Fetch unread message count
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['/api/chat/unread-count'],
+    enabled: isAuthenticated,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
@@ -241,6 +251,31 @@ export default function CustomerDashboard() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Floating Chat Button */}
+      <Button
+        onClick={() => setIsChatOpen(true)}
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-40"
+        size="sm"
+      >
+        <div className="relative">
+          <MessageCircle className="h-6 w-6" />
+          {unreadCount > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Badge>
+          )}
+        </div>
+      </Button>
+
+      {/* Chat Component */}
+      <Chat
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
     </div>
   );
 }
