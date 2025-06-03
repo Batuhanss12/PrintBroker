@@ -266,7 +266,10 @@ export default function Landing() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button 
-                  onClick={() => window.location.href = "/quote/sheet_label"}
+                  onClick={() => {
+                    console.log('Navigating to sheet_label form');
+                    window.location.href = "/quote/sheet_label";
+                  }}
                   className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
                 >
                   <LayoutGrid className="h-5 w-5 mr-3" />
@@ -277,7 +280,10 @@ export default function Landing() {
                 </Button>
 
                 <Button 
-                  onClick={() => window.location.href = "/quote/roll_label"}
+                  onClick={() => {
+                    console.log('Navigating to roll_label form');
+                    window.location.href = "/quote/roll_label";
+                  }}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
                 >
                   <Disc className="h-5 w-5 mr-3" />
@@ -288,7 +294,10 @@ export default function Landing() {
                 </Button>
 
                 <Button 
-                  onClick={() => window.location.href = "/quote/general_printing"}
+                  onClick={() => {
+                    console.log('Navigating to general_printing form');
+                    window.location.href = "/quote/general_printing";
+                  }}
                   className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-4 text-left justify-start animate-gradient-fast"
                 >
                   <Printer className="h-5 w-5 mr-3" />
