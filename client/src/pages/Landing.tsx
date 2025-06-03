@@ -308,127 +308,195 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16 max-w-6xl mx-auto">
             {/* Customer Plan */}
-            <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 border-0 shadow-xl bg-gradient-to-br from-blue-50 to-indigo-100">
-              <div className="absolute top-6 right-6">
-                <div className="bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-0 shadow-lg bg-white overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 transform rotate-45 translate-x-8 -translate-y-8"></div>
+              <div className="absolute top-4 right-4 z-10">
+                <div className="bg-white text-blue-600 text-xs font-bold px-2 py-1 rounded-full shadow-sm">
                   POPÜLER
                 </div>
               </div>
-              <CardHeader className="text-center pb-4">
-                <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Users className="h-10 w-10 text-white" />
+              
+              <CardHeader className="text-center pb-4 pt-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Users className="h-8 w-8 text-white" />
                 </div>
-                <CardTitle className="text-2xl font-bold text-gray-900">Müşteri Paketi</CardTitle>
-                <div className="mt-4">
-                  <div className="text-4xl font-bold text-blue-600">KREDİLİ</div>
-                  <div className="text-5xl font-bold text-gray-900 mt-2">SİSTEM</div>
-                  <p className="text-gray-600 mt-2">Kullandığın kadar öde</p>
+                <CardTitle className="text-xl font-bold text-gray-900 mb-2">Müşteri Paketi</CardTitle>
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold text-blue-600">KREDİLİ SİSTEM</div>
+                  <p className="text-sm text-gray-500">Kullandığın kadar öde</p>
                 </div>
               </CardHeader>
-              <CardContent className="px-8 pb-8">
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+              
+              <CardContent className="px-6 pb-6">
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-blue-600" />
                     </div>
-                    <span className="font-medium">Sınırsız teklif alma</span>
+                    <span>Sınırsız teklif alma</span>
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-blue-600" />
                     </div>
-                    <span className="font-medium">AI destekli otomatik tasarım</span>
+                    <span>AI destekli tasarım</span>
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-blue-600" />
                     </div>
-                    <span className="font-medium">100MB dosya yükleme</span>
+                    <span>100MB dosya yükleme</span>
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-blue-600" />
                     </div>
-                    <span className="font-medium">Gerçek zamanlı sipariş takibi</span>
+                    <span>Gerçek zamanlı takip</span>
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-blue-600" />
                     </div>
-                    <span className="font-medium">7/24 canlı destek</span>
+                    <span>7/24 canlı destek</span>
                   </li>
                 </ul>
                 <Button 
                   onClick={handleLogin}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
                 >
-                  <ArrowRight className="h-5 w-5 mr-2" />
+                  <ArrowRight className="h-4 w-4 mr-2" />
                   Hemen Başla
                 </Button>
               </CardContent>
             </Card>
 
             {/* Printer Plan */}
-            <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 border-0 shadow-xl bg-gradient-to-br from-orange-50 to-red-100">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg">
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-2 border-orange-200 shadow-xl bg-white overflow-hidden scale-105">
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 to-red-500"></div>
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-1 rounded-full font-bold text-xs shadow-lg">
                   EN ÇOK TERCİH EDİLEN
                 </div>
               </div>
+              
               <CardHeader className="text-center pb-4 pt-8">
-                <div className="w-20 h-20 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Building2 className="h-10 w-10 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Building2 className="h-8 w-8 text-white" />
                 </div>
-                <CardTitle className="text-2xl font-bold text-gray-900">Matbaa Paketi</CardTitle>
-                <div className="mt-4">
-                  <div className="text-5xl font-bold text-orange-600">₺299</div>
-                  <p className="text-gray-600 mt-1">aylık abonelik</p>
-                  <div className="bg-orange-100 text-orange-700 px-4 py-2 rounded-full text-sm font-medium mt-3">
-                    14 GÜN ÜCRETSİZ DENEME
+                <CardTitle className="text-xl font-bold text-gray-900 mb-2">Matbaa Paketi</CardTitle>
+                <div className="space-y-2">
+                  <div className="text-3xl font-bold text-orange-600">₺299</div>
+                  <p className="text-sm text-gray-500">aylık abonelik</p>
+                  <div className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-medium border border-orange-200">
+                    14 GÜN ÜCRETSİZ
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="px-8 pb-8">
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+              
+              <CardContent className="px-6 pb-6">
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span className="font-medium">Sınırsız teklif verme</span>
+                    <span>Sınırsız teklif verme</span>
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span className="font-medium">Gelişmiş analitik dashboard</span>
+                    <span>Gelişmiş analitik</span>
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span className="font-medium">Müşteri değerlendirme sistemi</span>
+                    <span>Müşteri değerlendirme</span>
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span className="font-medium">Otomatik sipariş yönetimi</span>
+                    <span>Otomatik sipariş</span>
                   </li>
-                  <li className="flex items-center">
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                      <Check className="h-4 w-4 text-white" />
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-orange-600" />
                     </div>
-                    <span className="font-medium">Premium öncelikli destek</span>
+                    <span>Premium destek</span>
                   </li>
                 </ul>
                 <Button 
                   onClick={handleLogin}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
                 >
-                  <Target className="h-5 w-5 mr-2" />
+                  <Target className="h-4 w-4 mr-2" />
                   Ücretsiz Deneyin
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Enterprise Plan - New Third Card */}
+            <Card className="relative group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border-0 shadow-lg bg-white overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500 transform rotate-45 translate-x-8 -translate-y-8"></div>
+              <div className="absolute top-4 right-4 z-10">
+                <div className="bg-white text-purple-600 text-xs font-bold px-2 py-1 rounded-full shadow-sm">
+                  KURUMSAL
+                </div>
+              </div>
+              
+              <CardHeader className="text-center pb-4 pt-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Award className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900 mb-2">Kurumsal Paket</CardTitle>
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold text-purple-600">ÖZEL FİYAT</div>
+                  <p className="text-sm text-gray-500">İhtiyacınıza özel</p>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="px-6 pb-6">
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-purple-600" />
+                    </div>
+                    <span>Sınırsız kullanıcı</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-purple-600" />
+                    </div>
+                    <span>API entegrasyonu</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-purple-600" />
+                    </div>
+                    <span>Özel raporlama</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-purple-600" />
+                    </div>
+                    <span>Özel domain</span>
+                  </li>
+                  <li className="flex items-center text-sm">
+                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <Check className="h-3 w-3 text-purple-600" />
+                    </div>
+                    <span>7/24 öncelikli destek</span>
+                  </li>
+                </ul>
+                <Button 
+                  onClick={handleLogin}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  İletişime Geç
                 </Button>
               </CardContent>
             </Card>
