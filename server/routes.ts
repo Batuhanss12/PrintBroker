@@ -1003,7 +1003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contract management routes
   app.get('/api/contracts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -1030,7 +1030,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { signature } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
       
       if (!signature || !signature.trim()) {
         return res.status(400).json({ message: "Signature is required" });
@@ -1047,7 +1047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reports and analytics routes
   app.post('/api/reports/business-metrics', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
       const user = await storage.getUser(userId);
       
       if (!user || user.role !== 'printer') {
@@ -1096,7 +1096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Automation routes - Plotter system
   app.get('/api/automation/plotter/layouts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
       const user = await storage.getUser(userId);
       
       if (!user || user.role !== 'printer') {
@@ -1137,7 +1137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/automation/plotter/save-layout', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
       const user = await storage.getUser(userId);
       
       if (!user || user.role !== 'printer') {
@@ -1166,21 +1166,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/automation/plotter/generate-pdf', isAuthenticated, async (req: any, res) => {
+  // Plotter design file upload
+  app.post('/api/automation/plotter/upload-designs', upload.array('designs', 10), isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
       const user = await storage.getUser(userId);
       
       if (!user || user.role !== 'printer') {
         return res.status(403).json({ message: "Printer access required" });
       }
 
-      // Mock PDF generation - in production, this would generate actual PDF
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+      }
+
+      const uploadedDesigns = [];
+      
+      for (const file of files) {
+        // Process each design file
+        const metadata = await fileProcessingService.processFile(file.path, file.mimetype);
+        
+        // Generate thumbnail for preview
+        let thumbnailPath = '';
+        try {
+          if (file.mimetype === 'application/pdf') {
+            thumbnailPath = await fileProcessingService.generatePDFThumbnail(file.path, file.filename);
+          } else {
+            thumbnailPath = await fileProcessingService.generateThumbnail(file.path, file.filename);
+          }
+        } catch (thumbError) {
+          console.warn("Could not generate thumbnail:", thumbError);
+        }
+
+        const designFile = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: file.originalname,
+          path: file.path,
+          thumbnailPath,
+          size: file.size,
+          type: file.mimetype,
+          dimensions: metadata.dimensions || 'Unknown',
+          userId,
+          uploadedAt: new Date().toISOString()
+        };
+
+        uploadedDesigns.push(designFile);
+      }
+
+      res.json({ 
+        message: "Design files uploaded successfully", 
+        designs: uploadedDesigns 
+      });
+    } catch (error) {
+      console.error("Error uploading design files:", error);
+      res.status(500).json({ message: "Failed to upload design files" });
+    }
+  });
+
+  // Get uploaded designs for plotter
+  app.get('/api/automation/plotter/designs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      // Mock designs - in production, this would be stored in database
+      const designs = [
+        {
+          id: "design1",
+          name: "Logo Tasarımı.pdf",
+          dimensions: "50x30mm",
+          thumbnailPath: "/uploads/thumbnails/logo-thumb.png",
+          uploadedAt: new Date().toISOString()
+        }
+      ];
+
+      res.json(designs);
+    } catch (error) {
+      console.error("Error fetching designs:", error);
+      res.status(500).json({ message: "Failed to fetch designs" });
+    }
+  });
+
+  // Auto-arrange designs in layout
+  app.post('/api/automation/plotter/auto-arrange', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { designIds, plotterSettings } = req.body;
+      
+      if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
+        return res.status(400).json({ message: "Design IDs are required" });
+      }
+
+      // Calculate optimal arrangement
+      const usableWidth = plotterSettings.sheetWidth - plotterSettings.marginLeft - plotterSettings.marginRight;
+      const usableHeight = plotterSettings.sheetHeight - plotterSettings.marginTop - plotterSettings.marginBottom;
+      
+      const arrangements = [];
+      let currentRow = 0;
+      let currentCol = 0;
+      let maxRowHeight = 0;
+
+      for (const designId of designIds) {
+        // Check if design fits in current row
+        const designWidth = plotterSettings.labelWidth;
+        const designHeight = plotterSettings.labelHeight;
+        
+        if (currentCol * (designWidth + plotterSettings.horizontalSpacing) + designWidth > usableWidth) {
+          // Move to next row
+          currentRow++;
+          currentCol = 0;
+          maxRowHeight = 0;
+        }
+
+        // Check if design fits in sheet height
+        if (currentRow * (designHeight + plotterSettings.verticalSpacing) + designHeight > usableHeight) {
+          break; // No more space
+        }
+
+        arrangements.push({
+          designId,
+          x: plotterSettings.marginLeft + currentCol * (designWidth + plotterSettings.horizontalSpacing),
+          y: plotterSettings.marginTop + currentRow * (designHeight + plotterSettings.verticalSpacing),
+          width: designWidth,
+          height: designHeight
+        });
+
+        currentCol++;
+        maxRowHeight = Math.max(maxRowHeight, designHeight);
+      }
+
+      res.json({
+        arrangements,
+        totalArranged: arrangements.length,
+        totalRequested: designIds.length,
+        efficiency: ((arrangements.length / designIds.length) * 100).toFixed(1) + '%'
+      });
+    } catch (error) {
+      console.error("Error auto-arranging designs:", error);
+      res.status(500).json({ message: "Failed to auto-arrange designs" });
+    }
+  });
+
+  app.post('/api/automation/plotter/generate-pdf', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { plotterSettings, arrangements } = req.body;
+
+      // Mock PDF generation - in production, this would generate actual PDF with arranged designs
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="plotter-layout.pdf"');
+      res.setHeader('Content-Disposition', 'attachment; filename="plotter-layout-with-designs.pdf"');
       
       // Simple mock PDF content
-      const pdfContent = Buffer.from('Mock PDF content for plotter layout');
+      const pdfContent = Buffer.from('Mock PDF content for plotter layout with arranged designs');
       res.send(pdfContent);
     } catch (error) {
       console.error("Error generating PDF:", error);

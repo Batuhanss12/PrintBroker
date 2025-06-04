@@ -23,7 +23,11 @@ import {
   Save,
   Eye,
   Calculator,
-  Zap
+  Zap,
+  Upload,
+  Image,
+  Trash2,
+  ArrowUpDown
 } from "lucide-react";
 
 interface PlotterSettings {
