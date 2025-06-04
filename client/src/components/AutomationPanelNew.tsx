@@ -711,50 +711,135 @@ export default function AutomationPanelNew() {
     };
   };
 
-  // Cost Analysis Functions
+  // Enhanced Cost Analysis Functions
   const calculateCostAnalysis = (
     layout: LayoutAlgorithmResult,
     pageSize: PageDimensions,
     itemCount: number
   ): CostAnalysis => {
-    const materialCostPerSqMM = 0.001; // Example: 0.001 TL per mm²
-    const cuttingCostPerMM = 0.01; // Example: 0.01 TL per mm cutting
-    const setupCost = 5; // Fixed setup cost
+    const materialCostPerSqMM = 0.0012; // Updated: 0.0012 TL per mm²
+    const cuttingCostPerMM = 0.015; // Updated: 0.015 TL per mm cutting
+    const setupCost = 8; // Updated: 8 TL fixed setup cost
+    const complexityCostPerItem = 0.5; // Cost for complex shapes
+    const rotationPenalty = 0.1; // Additional cost for rotated items
+    const scalingPenalty = 0.15; // Additional cost for scaled items
 
     const totalArea = pageSize.widthMM * pageSize.heightMM;
     const materialCost = totalArea * materialCostPerSqMM;
     const wasteCost = (totalArea - layout.usedArea) * materialCostPerSqMM;
     
+    // Calculate cutting cost with complexity
     const totalCuttingLength = layout.items.reduce((sum, item) => {
       const perimeter = 2 * (item.width + item.height);
-      return sum + perimeter;
+      let complexity = 1;
+      
+      // Add complexity for special cases
+      if (item.isRotated) complexity += rotationPenalty;
+      if (item.isScaled) complexity += scalingPenalty;
+      
+      return sum + (perimeter * complexity);
     }, 0);
     
     const cuttingCost = totalCuttingLength * cuttingCostPerMM + setupCost;
-    const totalCost = materialCost + cuttingCost;
-    const costPerItem = totalCost / itemCount;
+    
+    // Add complexity cost
+    const complexityCost = layout.items.reduce((sum, item) => {
+      let itemComplexity = complexityCostPerItem;
+      if (item.isRotated) itemComplexity += rotationPenalty;
+      if (item.isScaled) itemComplexity += scalingPenalty;
+      return sum + itemComplexity;
+    }, 0);
 
+    const totalCost = materialCost + cuttingCost + complexityCost;
+    const costPerItem = totalCost / Math.max(itemCount, 1);
+
+    // Enhanced suggestions with specific recommendations
     const suggestions = [];
-    if (layout.wastePercentage > 30) {
-      suggestions.push('Yüksek fire oranı - daha küçük sayfa boyutu deneyin');
+    const alternatives: { layout: LayoutAlgorithmResult; description: string; savings: number }[] = [];
+
+    if (layout.wastePercentage > 35) {
+      suggestions.push(`🔴 Çok yüksek fire oranı (%${layout.wastePercentage.toFixed(1)}) - Sayfa boyutunu küçültün`);
+      if (pageSize.widthMM > 200 && pageSize.heightMM > 200) {
+        suggestions.push('💡 A4 veya daha küçük boyut deneyin');
+      }
+    } else if (layout.wastePercentage > 20) {
+      suggestions.push(`🟡 Fire oranı yüksek (%${layout.wastePercentage.toFixed(1)}) - Optimizasyon gerekli`);
+    } else {
+      suggestions.push(`🟢 İyi fire oranı (%${layout.wastePercentage.toFixed(1)})`);
     }
-    if (layout.efficiency < 60) {
-      suggestions.push('Düşük verimlilik - rotasyon ayarlarını aktif edin');
+
+    if (layout.efficiency < 50) {
+      suggestions.push('🔴 Çok düşük verimlilik - Rotasyon ve ölçeklendirme ayarlarını kontrol edin');
+    } else if (layout.efficiency < 70) {
+      suggestions.push('🟡 Orta verimlilik - İyileştirme mümkün');
+    } else {
+      suggestions.push('🟢 Yüksek verimlilik');
     }
-    if (costPerItem > 2) {
-      suggestions.push('Yüksek birim maliyet - toplu üretim düşünün');
+
+    if (costPerItem > 3) {
+      suggestions.push('💰 Yüksek birim maliyet - Toplu üretim veya farklı sayfa boyutu değerlendirin');
+    }
+
+    // Rotation analysis
+    const rotatedItemsCount = layout.items.filter(item => item.isRotated).length;
+    if (rotatedItemsCount > 0) {
+      const rotationSavings = rotatedItemsCount * rotationPenalty;
+      suggestions.push(`🔄 ${rotatedItemsCount} parça döndürüldü (+${rotationSavings.toFixed(2)} TL)`);
+    }
+
+    // Scaling analysis
+    const scaledItemsCount = layout.items.filter(item => item.isScaled).length;
+    if (scaledItemsCount > 0) {
+      const scalingSavings = scaledItemsCount * scalingPenalty;
+      suggestions.push(`📏 ${scaledItemsCount} parça ölçeklendirildi (+${scalingSavings.toFixed(2)} TL)`);
+    }
+
+    // Algorithm performance insight
+    if (layout.performance.executionTime > 5000) {
+      suggestions.push('⏱️ Optimizasyon süresi uzun - Hızlı dizilim modunu deneyin');
     }
 
     return {
       materialCost,
       wasteCost,
-      cuttingCost,
+      cuttingCost: cuttingCost + complexityCost,
       totalCost,
       costPerItem,
       wastePercentage: layout.wastePercentage,
       suggestions,
-      alternatives: []
+      alternatives
     };
+  };
+
+  // Smart Format Recommendation Engine
+  const getSmartFormatRecommendations = (
+    items: Design[],
+    currentLayout: LayoutAlgorithmResult
+  ): string[] => {
+    const recommendations = [];
+    
+    // Analyze item sizes
+    const itemSizes = items.map(item => {
+      const dims = extractDimensions(item);
+      return dims.width * dims.height;
+    });
+    
+    const avgItemSize = itemSizes.reduce((a, b) => a + b, 0) / itemSizes.length;
+    const maxItemSize = Math.max(...itemSizes);
+    
+    if (avgItemSize < 2000) { // Small items (< 20cm²)
+      recommendations.push('📏 Küçük parçalar için A4 veya A5 boyutu ideal olabilir');
+    }
+    
+    if (maxItemSize > 10000) { // Large items (> 100cm²)
+      recommendations.push('📐 Büyük parçalar var - A3 veya daha büyük boyut gerekebilir');
+    }
+    
+    if (currentLayout.efficiency < 60) {
+      recommendations.push('⚡ Düşük verimlilik - Farklı sayfa oranları deneyin');
+    }
+    
+    return recommendations;
   };
 
   // Helper Functions
@@ -905,7 +990,7 @@ export default function AutomationPanelNew() {
     options: OptimizationOptions
   ): number => {
     const area = placement.width * placement.height;
-    const baseCost = area * 0.001; // Base material cost
+    let baseCost = area * 0.001; // Base material cost
     
     // Add cost for scaling
     if (placement.isScaled) {
@@ -918,6 +1003,313 @@ export default function AutomationPanelNew() {
     }
     
     return baseCost;
+  };
+
+  // Advanced Multi-Page Layout Algorithm
+  const multiPageOptimization = (
+    items: Design[],
+    pageWidth: number,
+    pageHeight: number,
+    options: OptimizationOptions
+  ): LayoutAlgorithmResult => {
+    const startTime = performance.now();
+    let totalItems: OptimizedArrangementItem[] = [];
+    let currentPageItems = [...items];
+    let pageCount = 0;
+    let totalEfficiency = 0;
+
+    while (currentPageItems.length > 0 && pageCount < 10) { // Max 10 pages
+      pageCount++;
+      
+      // Optimize current page
+      const pageResult = advancedBinPacking(currentPageItems, pageWidth, pageHeight, options);
+      
+      if (pageResult.items.length === 0) break; // No more items fit
+      
+      // Add page offset to positions
+      const pageOffset = pageCount > 1 ? pageHeight * (pageCount - 1) + 20 : 0; // 20mm gap between pages
+      const pageItems = pageResult.items.map(item => ({
+        ...item,
+        y: item.y + pageOffset,
+        pageNumber: pageCount
+      }));
+      
+      totalItems.push(...pageItems);
+      totalEfficiency += pageResult.efficiency;
+      
+      // Remove placed items from remaining items
+      const placedIds = pageResult.items.map(item => item.designId);
+      currentPageItems = currentPageItems.filter(item => !placedIds.includes(item.id));
+    }
+
+    const avgEfficiency = pageCount > 0 ? totalEfficiency / pageCount : 0;
+    const totalArea = pageWidth * pageHeight * pageCount;
+    const usedArea = totalItems.reduce((sum, item) => sum + (item.width * item.height), 0);
+
+    return {
+      items: totalItems,
+      efficiency: avgEfficiency,
+      wastePercentage: 100 - avgEfficiency,
+      totalArea,
+      usedArea,
+      estimatedCost: totalItems.reduce((sum, item) => sum + item.costContribution, 0),
+      performance: {
+        algorithmUsed: `Multi-Page Optimization (${pageCount} pages)`,
+        executionTime: performance.now() - startTime,
+        iterations: pageCount
+      },
+      alternativeLayouts: []
+    };
+  };
+
+  // Smart Nesting Algorithm for Complex Shapes
+  const smartNestingAlgorithm = (
+    items: Design[],
+    pageWidth: number,
+    pageHeight: number,
+    options: OptimizationOptions
+  ): LayoutAlgorithmResult => {
+    const startTime = performance.now();
+    
+    // Group items by aspect ratio for better nesting
+    const groupedItems = items.reduce((groups, item) => {
+      const dims = extractDimensions(item);
+      const aspectRatio = dims.width / dims.height;
+      const group = aspectRatio > 1.5 ? 'wide' : aspectRatio < 0.67 ? 'tall' : 'square';
+      
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(item);
+      return groups;
+    }, {} as Record<string, Design[]>);
+
+    let bestResult: LayoutAlgorithmResult | null = null;
+    let bestScore = -1;
+
+    // Try different grouping strategies
+    const strategies = [
+      'size_descending',
+      'aspect_ratio_grouping', 
+      'mixed_optimization',
+      'area_efficiency'
+    ];
+
+    for (const strategy of strategies) {
+      let arrangedItems: OptimizedArrangementItem[] = [];
+      let currentY = 0;
+      
+      const sortedGroups = Object.entries(groupedItems).sort(([, a], [, b]) => {
+        switch (strategy) {
+          case 'size_descending':
+            return b.length - a.length;
+          case 'aspect_ratio_grouping':
+            return a[0] && b[0] ? 
+              extractDimensions(b[0]).width * extractDimensions(b[0]).height - 
+              extractDimensions(a[0]).width * extractDimensions(a[0]).height : 0;
+          default:
+            return Math.random() - 0.5;
+        }
+      });
+
+      for (const [groupType, groupItems] of sortedGroups) {
+        if (currentY >= pageHeight - 50) break; // Page full
+
+        // Apply group-specific optimization
+        const availableHeight = pageHeight - currentY - options.minimumSpacing;
+        const groupResult = advancedBinPacking(groupItems, pageWidth, availableHeight, {
+          ...options,
+          mode: groupType === 'wide' ? 'fast_layout' : 'maximum_efficiency'
+        });
+
+        // Offset group items
+        const offsetItems = groupResult.items.map(item => ({
+          ...item,
+          y: item.y + currentY,
+          groupType
+        }));
+
+        arrangedItems.push(...offsetItems);
+        currentY += Math.max(...offsetItems.map(item => item.y + item.height)) + options.minimumSpacing;
+      }
+
+      const totalArea = pageWidth * pageHeight;
+      const usedArea = arrangedItems.reduce((sum, item) => sum + (item.width * item.height), 0);
+      const efficiency = (usedArea / totalArea) * 100;
+      const score = efficiency * arrangedItems.length; // Score combines efficiency and item count
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestResult = {
+          items: arrangedItems,
+          efficiency,
+          wastePercentage: 100 - efficiency,
+          totalArea,
+          usedArea,
+          estimatedCost: arrangedItems.reduce((sum, item) => sum + item.costContribution, 0),
+          performance: {
+            algorithmUsed: `Smart Nesting (${strategy})`,
+            executionTime: performance.now() - startTime,
+            iterations: strategies.length
+          }
+        };
+      }
+    }
+
+    return bestResult || {
+      items: [],
+      efficiency: 0,
+      wastePercentage: 100,
+      totalArea: pageWidth * pageHeight,
+      usedArea: 0,
+      estimatedCost: 0,
+      performance: {
+        algorithmUsed: 'Smart Nesting (failed)',
+        executionTime: performance.now() - startTime,
+        iterations: 0
+      }
+    };
+  };
+
+  // Dynamic Space Optimization Algorithm
+  const dynamicSpaceOptimization = (
+    items: Design[],
+    pageWidth: number,
+    pageHeight: number,
+    options: OptimizationOptions
+  ): LayoutAlgorithmResult => {
+    const startTime = performance.now();
+    
+    // Create a grid-based approach for precise space utilization
+    const gridSize = Math.min(5, options.minimumSpacing); // 5mm or minimum spacing
+    const gridWidth = Math.floor(pageWidth / gridSize);
+    const gridHeight = Math.floor(pageHeight / gridSize);
+    const occupancyGrid = Array(gridHeight).fill(null).map(() => Array(gridWidth).fill(false));
+
+    const placedItems: OptimizedArrangementItem[] = [];
+    const sortedItems = items
+      .map(item => ({
+        ...item,
+        dimensions: extractDimensions(item),
+        priority: calculateItemPriority(item, options)
+      }))
+      .sort((a, b) => b.priority - a.priority);
+
+    for (const item of sortedItems) {
+      let bestPlacement = null;
+      let bestScore = -1;
+
+      // Try different orientations
+      const orientations = options.allowRotation ? [0, 90, 180, 270] : [0];
+      
+      for (const rotation of orientations) {
+        const [width, height] = rotation % 180 === 0 ? 
+          [item.dimensions.width, item.dimensions.height] : 
+          [item.dimensions.height, item.dimensions.width];
+
+        const gridItemWidth = Math.ceil(width / gridSize);
+        const gridItemHeight = Math.ceil(height / gridSize);
+
+        // Find best position in grid
+        for (let gridY = 0; gridY <= gridHeight - gridItemHeight; gridY++) {
+          for (let gridX = 0; gridX <= gridWidth - gridItemWidth; gridX++) {
+            
+            // Check if space is available
+            let canPlace = true;
+            for (let y = gridY; y < gridY + gridItemHeight && canPlace; y++) {
+              for (let x = gridX; x < gridX + gridItemWidth && canPlace; x++) {
+                if (occupancyGrid[y][x]) canPlace = false;
+              }
+            }
+
+            if (canPlace) {
+              // Calculate placement score based on space utilization
+              const realX = gridX * gridSize;
+              const realY = gridY * gridSize;
+              const wastedSpace = calculateGridWastedSpace(gridX, gridY, gridItemWidth, gridItemHeight, occupancyGrid);
+              const score = (gridItemWidth * gridItemHeight) - wastedSpace * 0.5;
+
+              if (score > bestScore) {
+                bestScore = score;
+                bestPlacement = {
+                  x: realX,
+                  y: realY,
+                  width,
+                  height,
+                  rotation,
+                  gridX,
+                  gridY,
+                  gridWidth: gridItemWidth,
+                  gridHeight: gridItemHeight
+                };
+              }
+            }
+          }
+        }
+      }
+
+      if (bestPlacement) {
+        const optimizedItem: OptimizedArrangementItem = {
+          designId: item.id,
+          x: bestPlacement.x,
+          y: bestPlacement.y,
+          width: bestPlacement.width,
+          height: bestPlacement.height,
+          rotation: bestPlacement.rotation,
+          scaleFactor: 1,
+          isRotated: bestPlacement.rotation !== 0,
+          isScaled: false,
+          priority: item.priority,
+          originalItem: item,
+          costContribution: calculateItemCost(bestPlacement, options)
+        };
+
+        placedItems.push(optimizedItem);
+
+        // Mark grid cells as occupied
+        for (let y = bestPlacement.gridY; y < bestPlacement.gridY + bestPlacement.gridHeight; y++) {
+          for (let x = bestPlacement.gridX; x < bestPlacement.gridX + bestPlacement.gridWidth; x++) {
+            occupancyGrid[y][x] = true;
+          }
+        }
+      }
+    }
+
+    const totalArea = pageWidth * pageHeight;
+    const usedArea = placedItems.reduce((sum, item) => sum + (item.width * item.height), 0);
+    const efficiency = (usedArea / totalArea) * 100;
+
+    return {
+      items: placedItems,
+      efficiency,
+      wastePercentage: 100 - efficiency,
+      totalArea,
+      usedArea,
+      estimatedCost: placedItems.reduce((sum, item) => sum + item.costContribution, 0),
+      performance: {
+        algorithmUsed: 'Dynamic Space Optimization',
+        executionTime: performance.now() - startTime,
+        iterations: sortedItems.length
+      }
+    };
+  };
+
+  const calculateGridWastedSpace = (
+    gridX: number, gridY: number, gridWidth: number, gridHeight: number, 
+    occupancyGrid: boolean[][]
+  ): number => {
+    let wastedSpace = 0;
+    const endX = Math.min(gridX + gridWidth, occupancyGrid[0].length);
+    const endY = Math.min(gridY + gridHeight, occupancyGrid.length);
+
+    // Check surrounding cells for fragmentation
+    for (let y = Math.max(0, gridY - 1); y <= Math.min(occupancyGrid.length - 1, endY); y++) {
+      for (let x = Math.max(0, gridX - 1); x <= Math.min(occupancyGrid[0].length - 1, endX); x++) {
+        if (!occupancyGrid[y][x] && (x < gridX || x >= endX || y < gridY || y >= endY)) {
+          wastedSpace += 0.5; // Penalty for fragmented space
+        }
+      }
+    }
+
+    return wastedSpace;
   };
 
   // Genetic Algorithm Helper Functions
@@ -1070,13 +1462,35 @@ export default function AutomationPanelNew() {
     const pageHeight = pageSize.heightMM - bleedSettings.top - bleedSettings.bottom;
 
     let result: LayoutAlgorithmResult;
+    const algorithms: LayoutAlgorithmResult[] = [];
 
     switch (options.mode) {
       case 'maximum_efficiency':
-        if (items.length > 20) {
-          result = geneticLayoutOptimization(items, pageWidth, pageHeight, options);
+        // Run multiple algorithms and pick the best
+        if (items.length > 50) {
+          // For large datasets, use multi-page optimization
+          result = multiPageOptimization(items, pageWidth, pageHeight, options);
+        } else if (items.length > 20) {
+          // For medium datasets, try genetic algorithm
+          const geneticResult = geneticLayoutOptimization(items, pageWidth, pageHeight, options);
+          const nestingResult = smartNestingAlgorithm(items, pageWidth, pageHeight, options);
+          const spaceResult = dynamicSpaceOptimization(items, pageWidth, pageHeight, options);
+          
+          algorithms.push(geneticResult, nestingResult, spaceResult);
+          
+          // Pick best result based on efficiency and item count
+          result = algorithms.reduce((best, current) => {
+            const bestScore = (best.efficiency * 0.7) + (best.items.length / items.length * 100 * 0.3);
+            const currentScore = (current.efficiency * 0.7) + (current.items.length / items.length * 100 * 0.3);
+            return currentScore > bestScore ? current : best;
+          });
         } else {
-          result = advancedBinPacking(items, pageWidth, pageHeight, options);
+          // For small datasets, use smart nesting with bin packing fallback
+          const nestingResult = smartNestingAlgorithm(items, pageWidth, pageHeight, options);
+          const binPackingResult = advancedBinPacking(items, pageWidth, pageHeight, options);
+          
+          result = nestingResult.efficiency > binPackingResult.efficiency ? nestingResult : binPackingResult;
+          algorithms.push(nestingResult, binPackingResult);
         }
         break;
       
@@ -1084,23 +1498,86 @@ export default function AutomationPanelNew() {
         result = advancedBinPacking(items, pageWidth, pageHeight, options);
         break;
       
+      case 'balanced':
+        // Use dynamic space optimization for balanced approach
+        const spaceResult = dynamicSpaceOptimization(items, pageWidth, pageHeight, options);
+        const binPackingResult = advancedBinPacking(items, pageWidth, pageHeight, options);
+        
+        result = spaceResult.items.length >= binPackingResult.items.length ? spaceResult : binPackingResult;
+        algorithms.push(spaceResult, binPackingResult);
+        break;
+      
+      case 'custom':
+        // Run all algorithms for comparison
+        const allResults = [
+          advancedBinPacking(items, pageWidth, pageHeight, options),
+          smartNestingAlgorithm(items, pageWidth, pageHeight, options),
+          dynamicSpaceOptimization(items, pageWidth, pageHeight, options)
+        ];
+        
+        if (items.length > 15) {
+          allResults.push(geneticLayoutOptimization(items, pageWidth, pageHeight, options));
+        }
+        
+        // Score based on user preferences
+        result = allResults.reduce((best, current) => {
+          const bestScore = calculateCustomScore(best, options);
+          const currentScore = calculateCustomScore(current, options);
+          return currentScore > bestScore ? current : best;
+        });
+        
+        algorithms.push(...allResults);
+        break;
+      
       default:
         result = advancedBinPacking(items, pageWidth, pageHeight, options);
     }
 
-    // Generate alternative layouts if requested
-    if (options.mode === 'maximum_efficiency') {
-      const alternatives = [];
+    // Generate alternative layouts
+    if (options.mode === 'maximum_efficiency' || options.mode === 'custom') {
+      const alternatives = algorithms.filter(alg => alg !== result).slice(0, 3);
       
-      // Try with different settings
-      const altOptions = { ...options, allowRotation: !options.allowRotation };
-      const altResult = advancedBinPacking(items, pageWidth, pageHeight, altOptions);
-      alternatives.push(altResult);
+      // Try with rotation toggle if not already done
+      if (alternatives.length < 3) {
+        const altOptions = { ...options, allowRotation: !options.allowRotation };
+        const altResult = advancedBinPacking(items, pageWidth, pageHeight, altOptions);
+        alternatives.push(altResult);
+      }
       
       result.alternativeLayouts = alternatives;
     }
 
     return result;
+  };
+
+  // Custom scoring function for user preferences
+  const calculateCustomScore = (result: LayoutAlgorithmResult, options: OptimizationOptions): number => {
+    let score = 0;
+    
+    // Efficiency weight
+    score += result.efficiency * 0.4;
+    
+    // Item placement rate
+    const placementRate = (result.items.length / (result.items.length + (result.totalArea - result.usedArea) / 1000)) * 100;
+    score += placementRate * 0.3;
+    
+    // Speed consideration
+    if (options.mode === 'fast_layout') {
+      score += (10000 - result.performance.executionTime) * 0.001; // Bonus for speed
+    }
+    
+    // Rotation preference
+    if (options.allowRotation) {
+      const rotatedItems = result.items.filter(item => item.isRotated).length;
+      score += (rotatedItems / result.items.length) * 10; // Bonus for using rotation
+    }
+    
+    // Spacing optimization
+    if (options.prioritizeSpacing) {
+      score += (100 - result.wastePercentage) * 0.2;
+    }
+    
+    return score;
   };
 
   /**
