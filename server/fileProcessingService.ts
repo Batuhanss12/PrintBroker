@@ -57,15 +57,66 @@ export class FileProcessingService {
 
   private async processImage(filePath: string): Promise<FileMetadata> {
     try {
-      // Basic image processing without sharp dependency
       const stats = fs.statSync(filePath);
+      let dimensions = 'Unknown';
+      let resolution = 72;
+      let hasTransparency = false;
+      let colorProfile = 'RGB';
+
+      // Try to extract image dimensions using imagemagick if available
+      try {
+        const { stdout } = await execAsync(`identify -ping -format "%wx%h %r" "${filePath}" 2>/dev/null`);
+        const parts = stdout.trim().split(' ');
+        if (parts.length >= 2) {
+          dimensions = parts[0];
+          colorProfile = parts[1] || 'RGB';
+          
+          // Check for transparency
+          if (filePath.toLowerCase().endsWith('.png')) {
+            hasTransparency = true;
+          }
+        }
+      } catch {
+        // Try exiftool as fallback
+        try {
+          const { stdout } = await execAsync(`exiftool -ImageWidth -ImageHeight -ColorSpace "${filePath}" 2>/dev/null`);
+          const lines = stdout.split('\n');
+          let width, height;
+          
+          lines.forEach(line => {
+            if (line.includes('Image Width')) {
+              width = line.split(':')[1]?.trim();
+            }
+            if (line.includes('Image Height')) {
+              height = line.split(':')[1]?.trim();
+            }
+            if (line.includes('Color Space')) {
+              colorProfile = line.split(':')[1]?.trim() || 'RGB';
+            }
+          });
+          
+          if (width && height) {
+            dimensions = `${width}x${height}`;
+          }
+        } catch {
+          // Use file extension to guess format
+          const ext = path.extname(filePath).toLowerCase();
+          if (ext === '.png') {
+            hasTransparency = true;
+          }
+          if (ext === '.jpg' || ext === '.jpeg') {
+            colorProfile = 'YCbCr';
+          }
+        }
+      }
+
       const metadata: FileMetadata = {
-        dimensions: 'Unknown (image processing available with sharp)',
-        resolution: 72,
-        hasTransparency: false,
-        colorProfile: 'RGB',
+        dimensions,
+        resolution,
+        hasTransparency,
+        colorProfile,
         pageCount: 1,
-        processingNotes: `Image file size: ${this.formatFileSize(stats.size)}`
+        processingNotes: `Image file: ${this.formatFileSize(stats.size)}, Format: ${path.extname(filePath).toUpperCase()}`
       };
 
       return metadata;
@@ -121,12 +172,39 @@ export class FileProcessingService {
 
   async generateThumbnail(filePath: string, filename: string): Promise<string> {
     try {
-      // Placeholder thumbnail generation - returns original file path for now
-      // In production, this would use sharp or imagemagick for actual thumbnail generation
-      return path.relative(this.uploadDir, filePath);
+      const ext = path.extname(filename).toLowerCase();
+      const thumbnailFilename = `thumb_${Date.now()}_${filename.replace(/\.[^/.]+$/, '')}.jpg`;
+      const thumbnailPath = path.join(this.thumbnailDir, thumbnailFilename);
+      
+      // Try imagemagick for thumbnail generation
+      try {
+        await execAsync(`convert "${filePath}" -thumbnail 200x200 -quality 85 "${thumbnailPath}" 2>/dev/null`);
+        if (fs.existsSync(thumbnailPath)) {
+          return `/uploads/thumbnails/${thumbnailFilename}`;
+        }
+      } catch (convertError) {
+        console.log('ImageMagick not available, using original file');
+      }
+
+      // For SVG files, try to create a preview
+      if (ext === '.svg') {
+        try {
+          await execAsync(`rsvg-convert -w 200 -h 200 "${filePath}" -o "${thumbnailPath}" 2>/dev/null`);
+          if (fs.existsSync(thumbnailPath)) {
+            return `/uploads/thumbnails/${thumbnailFilename}`;
+          }
+        } catch (svgError) {
+          console.log('SVG conversion not available');
+        }
+      }
+
+      // Fallback: return original file path for direct display
+      const relativePath = path.relative(this.uploadDir, filePath);
+      return `/uploads/${relativePath}`;
     } catch (error) {
       console.error('Thumbnail generation failed:', error);
-      return '';
+      const relativePath = path.relative(this.uploadDir, filePath);
+      return `/uploads/${relativePath}`;
     }
   }
 

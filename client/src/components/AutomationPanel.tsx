@@ -308,22 +308,65 @@ export default function AutomationPanel() {
 
   const PlotterPreview = () => {
     const { usableWidth, usableHeight } = layout;
-    const scale = Math.min(400 / plotterSettings.sheetWidth, 300 / plotterSettings.sheetHeight);
+    const scale = Math.min(600 / plotterSettings.sheetWidth, 400 / plotterSettings.sheetHeight);
+    
+    // Get arranged designs if available
+    const arrangedDesigns = arrangements && arrangements.arrangements ? arrangements.arrangements : [];
     
     return (
       <div className="border rounded-lg p-4 bg-gray-50">
-        <h3 className="font-medium mb-4">Etiket Dizimi Önizlemesi</h3>
-        <div className="flex justify-center">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-medium">Tasarım Dizimi Önizlemesi</h3>
+          <div className="flex gap-2">
+            <div className="text-xs text-gray-600">
+              Ölçek: 1:{Math.round(1/scale)}
+            </div>
+            {showCropMarks && (
+              <div className="text-xs text-green-600">
+                ✓ Kesim İşaretleri
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex justify-center overflow-auto">
           <div 
-            className="border-2 border-gray-800 bg-white relative"
+            className="border-2 border-gray-800 bg-white relative shadow-lg"
             style={{
               width: plotterSettings.sheetWidth * scale,
               height: plotterSettings.sheetHeight * scale,
+              minWidth: plotterSettings.sheetWidth * scale,
+              minHeight: plotterSettings.sheetHeight * scale,
             }}
           >
-            {/* Margins */}
+            {/* Crop marks if enabled */}
+            {showCropMarks && (
+              <>
+                {/* Corner crop marks */}
+                {[
+                  { x: 0, y: 0 }, // Top-left
+                  { x: plotterSettings.sheetWidth * scale - 10, y: 0 }, // Top-right
+                  { x: 0, y: plotterSettings.sheetHeight * scale - 10 }, // Bottom-left
+                  { x: plotterSettings.sheetWidth * scale - 10, y: plotterSettings.sheetHeight * scale - 10 } // Bottom-right
+                ].map((mark, index) => (
+                  <div
+                    key={`crop-${index}`}
+                    className="absolute"
+                    style={{
+                      left: mark.x,
+                      top: mark.y,
+                    }}
+                  >
+                    <div className="w-2 h-0.5 bg-black absolute"></div>
+                    <div className="w-0.5 h-2 bg-black absolute"></div>
+                  </div>
+                ))}
+              </>
+            )}
+            
+            {/* Margins visualization */}
             <div 
-              className="absolute border border-red-300 bg-red-50 opacity-50"
+              className="absolute border border-red-300 bg-red-50 opacity-30"
               style={{
                 top: plotterSettings.marginTop * scale,
                 left: plotterSettings.marginLeft * scale,
@@ -332,28 +375,159 @@ export default function AutomationPanel() {
               }}
             />
             
-            {/* Labels */}
-            {Array.from({ length: layout.labelsPerColumn }).map((_, row) =>
-              Array.from({ length: layout.labelsPerRow }).map((_, col) => (
-                <div
-                  key={`${row}-${col}`}
-                  className="absolute border border-blue-400 bg-blue-100 opacity-75"
-                  style={{
-                    top: (plotterSettings.marginTop + row * (plotterSettings.labelHeight + plotterSettings.verticalSpacing)) * scale,
-                    left: (plotterSettings.marginLeft + col * (plotterSettings.labelWidth + plotterSettings.horizontalSpacing)) * scale,
-                    width: plotterSettings.labelWidth * scale,
-                    height: plotterSettings.labelHeight * scale,
-                  }}
+            {/* Grid lines for better visualization */}
+            <svg 
+              className="absolute inset-0 pointer-events-none"
+              width="100%"
+              height="100%"
+              style={{ opacity: 0.1 }}
+            >
+              {/* Vertical grid lines */}
+              {Array.from({ length: layout.labelsPerRow + 1 }).map((_, col) => (
+                <line
+                  key={`v-grid-${col}`}
+                  x1={(plotterSettings.marginLeft + col * (plotterSettings.labelWidth + plotterSettings.horizontalSpacing)) * scale}
+                  y1={plotterSettings.marginTop * scale}
+                  x2={(plotterSettings.marginLeft + col * (plotterSettings.labelWidth + plotterSettings.horizontalSpacing)) * scale}
+                  y2={(plotterSettings.sheetHeight - plotterSettings.marginBottom) * scale}
+                  stroke="#666"
+                  strokeWidth="0.5"
                 />
-              ))
+              ))}
+              {/* Horizontal grid lines */}
+              {Array.from({ length: layout.labelsPerColumn + 1 }).map((_, row) => (
+                <line
+                  key={`h-grid-${row}`}
+                  x1={plotterSettings.marginLeft * scale}
+                  y1={(plotterSettings.marginTop + row * (plotterSettings.labelHeight + plotterSettings.verticalSpacing)) * scale}
+                  x2={(plotterSettings.sheetWidth - plotterSettings.marginRight) * scale}
+                  y2={(plotterSettings.marginTop + row * (plotterSettings.labelHeight + plotterSettings.verticalSpacing)) * scale}
+                  stroke="#666"
+                  strokeWidth="0.5"
+                />
+              ))}
+            </svg>
+            
+            {/* Arranged designs with actual content */}
+            {arrangedDesigns.length > 0 ? (
+              arrangedDesigns.map((arrangement, index) => {
+                const designData = selectedDesigns[index] ? designs.find(d => d.id === selectedDesigns[index]) : null;
+                
+                return (
+                  <div
+                    key={`arranged-${index}`}
+                    className="absolute border-2 border-green-500 bg-white overflow-hidden shadow-sm"
+                    style={{
+                      left: arrangement.x * scale,
+                      top: arrangement.y * scale,
+                      width: arrangement.width * scale,
+                      height: arrangement.height * scale,
+                    }}
+                  >
+                    {designData && designData.thumbnailPath ? (
+                      <div className="w-full h-full relative">
+                        <img
+                          src={designData.thumbnailPath}
+                          alt={designData.name}
+                          className="w-full h-full object-contain"
+                          style={{
+                            imageRendering: 'crisp-edges',
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-green-500 bg-opacity-10"></div>
+                        <div className="absolute top-0.5 left-0.5 text-xs font-bold text-green-700 bg-white px-1 rounded">
+                          {index + 1}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-green-100">
+                        <div className="text-center">
+                          <div className="text-xs font-bold text-green-700">
+                            {index + 1}
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            Tasarım
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              /* Empty label positions */
+              Array.from({ length: layout.labelsPerColumn }).map((_, row) =>
+                Array.from({ length: layout.labelsPerRow }).map((_, col) => {
+                  const index = row * layout.labelsPerRow + col;
+                  const isSelected = index < selectedDesigns.length;
+                  
+                  return (
+                    <div
+                      key={`${row}-${col}`}
+                      className={`absolute border-2 transition-colors ${
+                        isSelected 
+                          ? 'border-blue-500 bg-blue-100' 
+                          : 'border-gray-300 bg-gray-50'
+                      } opacity-75`}
+                      style={{
+                        top: (plotterSettings.marginTop + row * (plotterSettings.labelHeight + plotterSettings.verticalSpacing)) * scale,
+                        left: (plotterSettings.marginLeft + col * (plotterSettings.labelWidth + plotterSettings.horizontalSpacing)) * scale,
+                        width: plotterSettings.labelWidth * scale,
+                        height: plotterSettings.labelHeight * scale,
+                      }}
+                    >
+                      {isSelected && (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="text-xs font-bold text-blue-700">
+                              {index + 1}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              Seçili
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )
             )}
           </div>
         </div>
         
-        <div className="mt-4 text-center text-sm text-gray-600">
-          <p>Kağıt: {plotterSettings.sheetWidth}x{plotterSettings.sheetHeight}mm</p>
-          <p>Kullanılabilir Alan: {usableWidth.toFixed(1)}x{usableHeight.toFixed(1)}mm</p>
+        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-gray-600">
+              <strong>Kağıt Boyutu:</strong> {plotterSettings.sheetWidth}×{plotterSettings.sheetHeight}mm
+            </p>
+            <p className="text-gray-600">
+              <strong>Kullanılabilir Alan:</strong> {usableWidth.toFixed(1)}×{usableHeight.toFixed(1)}mm
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-600">
+              <strong>Toplam Pozisyon:</strong> {layout.totalLabels}
+            </p>
+            <p className="text-gray-600">
+              <strong>Yerleştirilen:</strong> {arrangedDesigns.length} / {selectedDesigns.length}
+            </p>
+          </div>
         </div>
+        
+        {arrangedDesigns.length > 0 && (
+          <div className="mt-4 p-3 bg-green-50 rounded-lg">
+            <div className="flex items-center gap-2 text-green-800">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium">
+                Otomatik Dizim Tamamlandı
+              </span>
+            </div>
+            <p className="text-xs text-green-700 mt-1">
+              {arrangements.efficiency} verimlilik ile {arrangedDesigns.length} tasarım yerleştirildi
+            </p>
+          </div>
+        )}
       </div>
     );
   };
@@ -677,29 +851,59 @@ export default function AutomationPanel() {
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                        {designs.map((design: any) => (
+                        {designs.map((design: any, index: number) => (
                           <div
                             key={design.id}
-                            className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                            className={`border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
                               selectedDesigns.includes(design.id)
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-blue-500 bg-blue-50 shadow-md scale-105'
+                                : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                             }`}
                             onClick={() => toggleDesignSelection(design.id)}
                           >
-                            <div className="aspect-square bg-gray-100 rounded mb-2 flex items-center justify-center">
+                            <div className="aspect-square bg-white rounded border mb-2 flex items-center justify-center overflow-hidden relative">
                               {design.thumbnailPath ? (
                                 <img
                                   src={design.thumbnailPath}
                                   alt={design.name}
                                   className="max-w-full max-h-full object-contain"
+                                  style={{
+                                    imageRendering: design.fileType === 'image' ? 'crisp-edges' : 'auto'
+                                  }}
                                 />
                               ) : (
-                                <FileText className="h-8 w-8 text-gray-400" />
+                                <div className="text-center">
+                                  <FileText className="h-8 w-8 text-gray-400 mx-auto mb-1" />
+                                  <span className="text-xs text-gray-500">
+                                    {design.fileType?.toUpperCase() || 'FILE'}
+                                  </span>
+                                </div>
                               )}
+                              
+                              {/* Selection indicator */}
+                              {selectedDesigns.includes(design.id) && (
+                                <div className="absolute top-1 right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                  {selectedDesigns.indexOf(design.id) + 1}
+                                </div>
+                              )}
+                              
+                              {/* File type indicator */}
+                              <div className="absolute bottom-1 left-1 px-1 py-0.5 bg-black bg-opacity-70 text-white text-xs rounded">
+                                {design.name.split('.').pop()?.toUpperCase() || 'FILE'}
+                              </div>
                             </div>
-                            <p className="text-sm font-medium truncate">{design.name}</p>
-                            <p className="text-xs text-gray-600">{design.dimensions}</p>
+                            
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium truncate" title={design.name}>
+                                {design.name}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                {design.dimensions || 'Boyut bilinmiyor'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(design.uploadedAt).toLocaleDateString('tr-TR')}
+                              </p>
+                            </div>
                           </div>
                         ))}
                       </div>

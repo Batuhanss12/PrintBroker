@@ -1193,11 +1193,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           if (file.mimetype === 'application/pdf') {
             thumbnailPath = await fileProcessingService.generatePDFThumbnail(file.path, file.filename);
-          } else {
+          } else if (file.mimetype.startsWith('image/') || file.mimetype === 'image/svg+xml') {
             thumbnailPath = await fileProcessingService.generateThumbnail(file.path, file.filename);
+          } else {
+            // For other file types, use a default icon
+            thumbnailPath = '';
           }
         } catch (thumbError) {
           console.warn("Could not generate thumbnail:", thumbError);
+          // Fallback to original file for images
+          if (file.mimetype.startsWith('image/')) {
+            thumbnailPath = `/uploads/${file.filename}`;
+          }
         }
 
         // Save file to database
@@ -1253,12 +1260,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const designs = userFiles.map(file => ({
         id: file.id,
         name: file.originalName || file.filename,
-        dimensions: file.dimensions || "Bilinmiyor",
-        thumbnailPath: file.thumbnailPath || `/uploads/${file.filename}`,
+        dimensions: file.dimensions || "Boyut bilinmiyor",
+        thumbnailPath: file.thumbnailPath || (file.mimeType?.startsWith('image/') ? `/uploads/${file.filename}` : ''),
         filePath: `/uploads/${file.filename}`,
-        fileType: file.fileType,
-        uploadedAt: file.uploadedAt,
-        uploadedAt: file.createdAt
+        fileType: file.fileType || 'document',
+        mimeType: file.mimeType,
+        size: file.size,
+        uploadedAt: file.createdAt,
+        colorProfile: file.colorProfile,
+        hasTransparency: file.hasTransparency,
+        resolution: file.resolution
       }));
 
       res.json(designs);
