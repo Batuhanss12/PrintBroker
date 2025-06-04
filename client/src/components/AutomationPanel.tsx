@@ -900,27 +900,57 @@ export default function AutomationPanel() {
                         ))}
                       </div>
 
-                      {/* Auto Arrange Controls */}
-                      {selectedDesigns.length > 0 && (
-                        <div className="flex gap-3 p-4 bg-blue-50 rounded-lg">
+                      {/* Auto Arrange - Always visible when designs exist */}
+                      <div className="space-y-3">
+                        {/* Quick Auto Arrange for All */}
+                        <div className="flex gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-blue-900">
-                              {selectedDesigns.length} tasarım seçildi
+                            <p className="text-sm font-medium text-green-900">
+                              Tüm Tasarımları Otomatik Dizin
                             </p>
-                            <p className="text-xs text-blue-700">
-                              Otomatik dizim ile tasarımları kağıt üzerine yerleştirin
+                            <p className="text-xs text-green-700">
+                              {designs.length} tasarım sayfa ölçülerine göre baskıya hazır hale getirilecek
                             </p>
                           </div>
                           <Button
-                            onClick={handleAutoArrange}
+                            onClick={() => {
+                              const allDesignIds = designs.map((d: any) => d.id);
+                              setSelectedDesigns(allDesignIds);
+                              autoArrangeMutation.mutate({
+                                designIds: allDesignIds,
+                                plotterSettings
+                              });
+                            }}
                             disabled={autoArrangeMutation.isPending}
-                            className="bg-blue-600 hover:bg-blue-700"
+                            className="bg-green-600 hover:bg-green-700"
                           >
                             <ArrowUpDown className="h-4 w-4 mr-2" />
-                            {autoArrangeMutation.isPending ? "Diziliyor..." : "Otomatik Dizim"}
+                            {autoArrangeMutation.isPending ? "Diziliyor..." : "Hemen Dizin"}
                           </Button>
                         </div>
-                      )}
+
+                        {/* Selected designs control (if manual selection made) */}
+                        {selectedDesigns.length > 0 && selectedDesigns.length < designs.length && (
+                          <div className="flex gap-3 p-4 bg-blue-50 rounded-lg">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-900">
+                                {selectedDesigns.length} tasarım seçildi
+                              </p>
+                              <p className="text-xs text-blue-700">
+                                Sadece seçili tasarımları dizin
+                              </p>
+                            </div>
+                            <Button
+                              onClick={handleAutoArrange}
+                              disabled={autoArrangeMutation.isPending}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <ArrowUpDown className="h-4 w-4 mr-2" />
+                              {autoArrangeMutation.isPending ? "Diziliyor..." : "Seçilenleri Dizin"}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Arrangement Results */}
                       {arrangements && arrangements.arrangements && arrangements.arrangements.length > 0 && (
