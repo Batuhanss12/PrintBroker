@@ -393,6 +393,11 @@ export default function CustomerDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Files Tab */}
+          <TabsContent value="files">
+            <FileManager />
+          </TabsContent>
         </Tabs>
       </main>
 
