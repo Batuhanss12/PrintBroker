@@ -149,30 +149,105 @@ export class FileProcessingService {
     const metadata: FileMetadata = {};
 
     try {
-      // Basic file info
-      const stats = fs.statSync(filePath);
+      console.log(`Analyzing PDF: ${filePath}`);
       
-      // For vector labels, assume standard etiket dimensions
-      metadata.realDimensionsMM = '50x30mm';
-      metadata.dimensions = 'Vector Label';
-      metadata.pageCount = 1;
+      let realWidthMM = 50;
+      let realHeightMM = 30;
+      let pageCount = 1;
+      let shape = 'rectangle'; // default shape
       
-      // Try to get PDF info if tools available
+      // Try to extract PDF page dimensions using pdfinfo
       try {
-        const { stdout } = await execAsync(`pdfinfo "${filePath}" 2>/dev/null | grep Pages`);
-        const pageMatch = stdout.match(/Pages:\s+(\d+)/);
-        metadata.pageCount = pageMatch ? parseInt(pageMatch[1]) : 1;
-      } catch (error) {
-        // Default to single page
-        metadata.pageCount = 1;
+        const { stdout } = await execAsync(`pdfinfo "${filePath}" 2>/dev/null`);
+        console.log('PDF info:', stdout);
+        
+        // Extract page size in points
+        const pageSizeMatch = stdout.match(/Page size:\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/);
+        const pagesMatch = stdout.match(/Pages:\s*(\d+)/);
+        
+        if (pageSizeMatch) {
+          const widthPoints = parseFloat(pageSizeMatch[1]);
+          const heightPoints = parseFloat(pageSizeMatch[2]);
+          
+          // Convert points to mm (1 point = 0.352778 mm)
+          realWidthMM = Math.round(widthPoints * 0.352778);
+          realHeightMM = Math.round(heightPoints * 0.352778);
+          
+          // Determine shape based on dimensions
+          const ratio = widthPoints / heightPoints;
+          if (Math.abs(ratio - 1) < 0.1) {
+            shape = 'square';
+          } else if (ratio > 1.5) {
+            shape = 'landscape';
+          } else if (ratio < 0.67) {
+            shape = 'portrait';
+          } else {
+            shape = 'rectangle';
+          }
+          
+          console.log(`PDF dimensions: ${realWidthMM}x${realHeightMM}mm, shape: ${shape}`);
+        }
+        
+        if (pagesMatch) {
+          pageCount = parseInt(pagesMatch[1]);
+        }
+      } catch (pdfError) {
+        console.log('PDFInfo not available, trying alternative method...');
+        
+        // Fallback: try to read file content for basic analysis
+        try {
+          const fileBuffer = fs.readFileSync(filePath);
+          const fileContent = fileBuffer.toString('latin1');
+          
+          // Look for MediaBox or CropBox in PDF content
+          const mediaBoxMatch = fileContent.match(/\/MediaBox\s*\[\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s*\]/);
+          
+          if (mediaBoxMatch) {
+            const x1 = parseFloat(mediaBoxMatch[1]);
+            const y1 = parseFloat(mediaBoxMatch[2]);
+            const x2 = parseFloat(mediaBoxMatch[3]);
+            const y2 = parseFloat(mediaBoxMatch[4]);
+            
+            const widthPoints = x2 - x1;
+            const heightPoints = y2 - y1;
+            
+            realWidthMM = Math.round(widthPoints * 0.352778);
+            realHeightMM = Math.round(heightPoints * 0.352778);
+            
+            console.log(`Extracted from MediaBox: ${realWidthMM}x${realHeightMM}mm`);
+          }
+        } catch (fallbackError) {
+          console.log('PDF content analysis failed, using defaults');
+        }
       }
-
-      metadata.processingNotes = `PDF başarıyla işlendi - ${this.formatFileSize(fs.statSync(filePath).size)}`;
+      
+      // Validate and adjust dimensions
+      if (realWidthMM > 500 || realHeightMM > 500) {
+        // Likely wrong unit conversion
+        realWidthMM = Math.min(realWidthMM, 200);
+        realHeightMM = Math.min(realHeightMM, 200);
+      }
+      
+      if (realWidthMM < 10 || realHeightMM < 10) {
+        // Too small, use reasonable defaults
+        realWidthMM = 50;
+        realHeightMM = 30;
+        shape = 'rectangle';
+      }
+      
+      metadata.realDimensionsMM = `${realWidthMM}x${realHeightMM}mm`;
+      metadata.dimensions = `Vector ${shape.charAt(0).toUpperCase() + shape.slice(1)}`;
+      metadata.pageCount = pageCount;
+      metadata.processingNotes = `PDF analizi tamamlandı - ${realWidthMM}x${realHeightMM}mm ${shape} şeklinde`;
+      
+      console.log('Final PDF metadata:', metadata);
+      
     } catch (error) {
+      console.error('PDF processing error:', error);
       metadata.pageCount = 1;
       metadata.realDimensionsMM = '50x30mm';
-      metadata.dimensions = 'Vector Label';
-      metadata.processingNotes = 'PDF analizi tamamlanamadı - varsayılan boyut kullanıldı';
+      metadata.dimensions = 'Vector Rectangle';
+      metadata.processingNotes = 'PDF analizi başarısız - varsayılan boyutlar kullanıldı';
     }
 
     return metadata;
