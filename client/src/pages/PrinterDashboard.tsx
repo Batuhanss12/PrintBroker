@@ -7,12 +7,16 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Navigation from "@/components/Navigation";
 import StatsCard from "@/components/StatsCard";
+import ContractManager from "@/components/ContractManager";
+import ReportsAndAnalytics from "@/components/ReportsAndAnalytics";
+import AutomationPanel from "@/components/AutomationPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Building2, 
   Clock, 
@@ -32,6 +36,7 @@ export default function PrinterDashboard() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('overview');
   const [quoteForm, setQuoteForm] = useState({
     price: '',
     estimatedDays: '',

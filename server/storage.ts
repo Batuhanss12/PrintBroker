@@ -7,6 +7,7 @@ import {
   files,
   chatRooms,
   chatMessages,
+  contracts,
   type User,
   type UpsertUser,
   type InsertQuote,
@@ -23,6 +24,8 @@ import {
   type ChatRoom,
   type InsertChatMessage,
   type ChatMessage,
+  type InsertContract,
+  type Contract,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
