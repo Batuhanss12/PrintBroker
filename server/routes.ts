@@ -1168,7 +1168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Plotter design file upload
-  app.post('/api/automation/plotter/upload-designs', upload.array('designs', 10), isAuthenticated, async (req: any, res) => {
+  app.post('/api/automation/plotter/upload-designs', isAuthenticated, upload.array('designs', 10), async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.session?.user?.id;
       const user = await storage.getUser(userId);
@@ -1252,11 +1252,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userFiles = await storage.getFilesByUser(userId);
       const designs = userFiles.map(file => ({
         id: file.id,
-        name: file.originalName,
+        name: file.originalName || file.filename,
         dimensions: file.dimensions || "Bilinmiyor",
         thumbnailPath: file.thumbnailPath || `/uploads/${file.filename}`,
         filePath: `/uploads/${file.filename}`,
         fileType: file.fileType,
+        uploadedAt: file.uploadedAt,
         uploadedAt: file.createdAt
       }));
 

@@ -118,40 +118,52 @@ export default function AutomationPanel() {
       const response = await fetch('/api/automation/plotter/upload-designs', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
-      if (!response.ok) throw new Error('Upload failed');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || 'Upload failed');
+      }
+      
       return response.json();
     },
     onSuccess: (data) => {
       // Refresh designs list to get new uploads
       queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
       
-      // Auto-select uploaded designs for arrangement
-      const newDesignIds = data.designs.map((design: any) => design.id);
-      setSelectedDesigns(prev => {
-        const combined = [...prev, ...newDesignIds];
-        return Array.from(new Set(combined));
-      });
-      
-      toast({
-        title: "Başarılı",
-        description: `${data.designs.length} tasarım dosyası yüklendi ve seçildi.`,
-      });
+      // Auto-select uploaded designs for arrangement if data.designs exists
+      if (data.designs && data.designs.length > 0) {
+        const newDesignIds = data.designs.map((design: any) => design.id);
+        setSelectedDesigns(prev => {
+          const combined = [...prev, ...newDesignIds];
+          return Array.from(new Set(combined));
+        });
+        
+        toast({
+          title: "Başarılı",
+          description: `${data.designs.length} tasarım dosyası yüklendi ve seçildi.`,
+        });
 
-      // Auto-trigger arrangement after upload
-      if (newDesignIds.length > 0) {
+        // Auto-trigger arrangement after upload
         setTimeout(() => {
           autoArrangeMutation.mutate({
             designIds: newDesignIds,
             plotterSettings
           });
         }, 500);
+      } else {
+        toast({
+          title: "Başarılı",
+          description: "Dosyalar yüklendi.",
+        });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Upload error:', error);
       toast({
         title: "Hata",
-        description: "Dosya yüklenemedi.",
+        description: error.message || "Dosya yüklenemedi.",
         variant: "destructive",
       });
     },
@@ -248,6 +260,19 @@ export default function AutomationPanel() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
+
+    const formData = new FormData();
+    
+    // Add all selected files to FormData
+    Array.from(files).forEach(file => {
+      formData.append('designs', file);
+    });
+
+    uploadDesignsMutation.mutate(formData);
+    
+    // Reset file input
+    event.target.value = '';
+  };iles.length === 0) return;
 
     const formData = new FormData();
     Array.from(files).forEach((file) => {
