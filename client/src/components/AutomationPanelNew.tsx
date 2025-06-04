@@ -3316,6 +3316,10 @@ export default function AutomationPanelNew() {
               </div>
             </TabsContent>
           </Tabs>
+            </div>
+        </CardContent>
+      </Card>
+    </div>
         </CardContent>
       </Card>
     </div>
