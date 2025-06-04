@@ -225,12 +225,8 @@ export default function CustomerDashboard() {
           </CardHeader>
           <CardContent>
             {quotesLoading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-20 bg-gray-200 rounded-xl"></div>
-                  </div>
-                ))}
+              <div className="flex justify-center py-8">
+                <PrinterLoader size={100} color="#3B82F6" />
               </div>
             ) : quotes && quotes.length > 0 ? (
               <div className="space-y-3">
