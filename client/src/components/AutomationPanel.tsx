@@ -177,9 +177,14 @@ export default function AutomationPanel() {
     onSuccess: (data: any) => {
       setArrangements(data);
       toast({
-        title: "Başarılı",
-        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik).`,
+        title: "Dizim Tamamlandı",
+        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik). PDF oluşturuluyor...`,
       });
+      
+      // Auto-trigger PDF generation after successful arrangement
+      setTimeout(() => {
+        generatePdfMutation.mutate({ plotterSettings, arrangements: data });
+      }, 1000);
     },
     onError: () => {
       toast({
@@ -581,84 +586,32 @@ export default function AutomationPanel() {
                       </div>
                     </div>
 
-                    {/* Label Size */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Etiket Genişliği (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.labelWidth}
-                          onChange={(e) => updateSetting('labelWidth', Number(e.target.value))}
-                        />
+                    {/* Automated Design Info - Only show when designs are uploaded */}
+                    {Array.isArray(designs) && designs.length > 0 && (
+                      <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <h4 className="text-sm font-semibold text-green-900 mb-3">
+                          Yüklenen Tasarım Bilgileri
+                        </h4>
+                        <div className="space-y-2">
+                          {designs.map((design: any, index: number) => (
+                            <div key={design.id} className="flex justify-between items-center p-2 bg-white rounded border text-xs">
+                              <span className="font-medium">{index + 1}. {design.name}</span>
+                              <span className="text-green-700">
+                                {design.dimensions || 'Boyut algılanıyor...'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-green-200">
+                          <p className="text-xs text-green-700">
+                            ✓ Kesim payları otomatik ekleniyor (0.3cm)
+                          </p>
+                          <p className="text-xs text-green-700">
+                            ✓ Ölçüler dosyadan otomatik okunuyor
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <Label>Etiket Yüksekliği (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.labelHeight}
-                          onChange={(e) => updateSetting('labelHeight', Number(e.target.value))}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Margins */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Üst Kenar Boşluğu (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.marginTop}
-                          onChange={(e) => updateSetting('marginTop', Number(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <Label>Alt Kenar Boşluğu (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.marginBottom}
-                          onChange={(e) => updateSetting('marginBottom', Number(e.target.value))}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Sol Kenar Boşluğu (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.marginLeft}
-                          onChange={(e) => updateSetting('marginLeft', Number(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <Label>Sağ Kenar Boşluğu (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.marginRight}
-                          onChange={(e) => updateSetting('marginRight', Number(e.target.value))}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Spacing */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Yatay Boşluk (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.horizontalSpacing}
-                          onChange={(e) => updateSetting('horizontalSpacing', Number(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <Label>Dikey Boşluk (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.verticalSpacing}
-                          onChange={(e) => updateSetting('verticalSpacing', Number(e.target.value))}
-                        />
-                      </div>
-                    </div>
+                    )}
 
                     {/* Quick Presets */}
                     <div>
@@ -896,32 +849,43 @@ export default function AutomationPanel() {
                       </div>
 
                       {/* Auto Arrange - Always visible when designs exist */}
-                      <div className="space-y-3">
-                        {/* Quick Auto Arrange for All */}
-                        <div className="flex gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-green-900">
-                              Tüm Tasarımları Otomatik Dizin
-                            </p>
-                            <p className="text-xs text-green-700">
-                              {designs.length} tasarım sayfa ölçülerine göre baskıya hazır hale getirilecek
-                            </p>
+                      <div className="space-y-4">
+                        {/* Instant Auto Arrange for All Designs */}
+                        <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                <p className="text-sm font-bold text-green-900">
+                                  Hemen Otomatik Dizin
+                                </p>
+                              </div>
+                              <p className="text-xs text-green-700 mb-2">
+                                {Array.isArray(designs) ? designs.length : 0} tasarım → 33x48cm baskı alanında optimal yerleştirme
+                              </p>
+                              <div className="flex gap-4 text-xs text-gray-600">
+                                <span>✓ Kesim payı: 0.3cm</span>
+                                <span>✓ 2D Bin Packing</span>
+                                <span>✓ Otomatik PDF</span>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                if (!Array.isArray(designs) || designs.length === 0) return;
+                                const allDesignIds = designs.map((d: any) => d.id);
+                                setSelectedDesigns(allDesignIds);
+                                autoArrangeMutation.mutate({
+                                  designIds: allDesignIds,
+                                  plotterSettings
+                                });
+                              }}
+                              disabled={autoArrangeMutation.isPending || !Array.isArray(designs) || designs.length === 0}
+                              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 min-w-[120px]"
+                            >
+                              <ArrowUpDown className="h-5 w-5 mr-2" />
+                              {autoArrangeMutation.isPending ? "Diziliyor..." : "HEMEN DİZİN"}
+                            </Button>
                           </div>
-                          <Button
-                            onClick={() => {
-                              const allDesignIds = designs.map((d: any) => d.id);
-                              setSelectedDesigns(allDesignIds);
-                              autoArrangeMutation.mutate({
-                                designIds: allDesignIds,
-                                plotterSettings
-                              });
-                            }}
-                            disabled={autoArrangeMutation.isPending}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <ArrowUpDown className="h-4 w-4 mr-2" />
-                            {autoArrangeMutation.isPending ? "Diziliyor..." : "Hemen Dizin"}
-                          </Button>
                         </div>
 
                         {/* Selected designs control (if manual selection made) */}
