@@ -1372,22 +1372,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let width = 50; // default mm
         let height = 30; // default mm
         
-        // Parse real dimensions from metadata or dimensions field
-        if (file!.dimensions && file!.dimensions !== 'Unknown') {
+        console.log(`Processing design ${file!.id}: realDimensionsMM=${file!.realDimensionsMM}, dimensions=${file!.dimensions}`);
+        
+        // First try to parse realDimensionsMM field 
+        if (file!.realDimensionsMM && file!.realDimensionsMM !== 'Unknown') {
+          const realMatch = file!.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
+          if (realMatch) {
+            width = parseFloat(realMatch[1]);
+            height = parseFloat(realMatch[2]);
+            console.log(`Extracted from realDimensionsMM: ${width}x${height}mm`);
+          }
+        }
+        // Fallback to dimensions field if realDimensionsMM not available
+        else if (file!.dimensions && file!.dimensions !== 'Unknown') {
           const dimMatch = file!.dimensions.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
           if (dimMatch) {
             width = parseFloat(dimMatch[1]);
             height = parseFloat(dimMatch[2]);
             
-            // Convert pixels to mm if needed (assuming 72 DPI)
-            if (width > 1000 || height > 1000) {
-              width = width * 0.352778; // px to mm
-              height = height * 0.352778;
+            // Convert pixels to mm if needed (assuming 300 DPI for print quality)
+            if (width > 500 || height > 500) {
+              width = (width / 300) * 25.4; // px to mm at 300 DPI
+              height = (height / 300) * 25.4;
+              console.log(`Converted from pixels: ${width}x${height}mm`);
             }
           }
         }
         
-        return {
+        const design = {
           id: file!.id,
           width: width + 3, // Add 0.3cm cutting margin (3mm)
           height: height + 3,
@@ -1395,9 +1407,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           originalHeight: height,
           name: file!.originalName
         };
+        
+        console.log(`Final design dimensions: ${design.width}x${design.height}mm (with margins)`);
+        return design;
       });
 
-      // Advanced 2D Bin Packing Algorithm
+      console.log(`Processing ${validDesigns.length} valid designs for arrangement`);
+
+      if (validDesigns.length === 0) {
+        return res.status(400).json({ message: "No valid designs found for arrangement" });
+      }
+
+      // Advanced 2D Bin Packing Algorithm with real dimensions
       const SHEET_WIDTH = 330; // 33cm fixed
       const SHEET_HEIGHT = 480; // 48cm fixed
       const MARGIN = 5; // 0.5cm margin
@@ -1405,16 +1426,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usableWidth = SHEET_WIDTH - (MARGIN * 2);
       const usableHeight = SHEET_HEIGHT - (MARGIN * 2);
       
+      console.log(`Usable area: ${usableWidth}x${usableHeight}mm`);
+      
       // Bin packing using Best Fit Decreasing Height algorithm
-      const arrangements = [];
-      const levels = []; // Track horizontal levels
+      const arrangements: any[] = [];
+      const levels: any[] = []; // Track horizontal levels
       let totalArranged = 0;
       
       // Sort designs by height (descending) for better packing
       validDesigns.sort((a, b) => b.height - a.height);
+      
+      console.log(`Sorted designs by height:`, validDesigns.map(d => `${d.name}: ${d.width}x${d.height}mm`));
 
       for (const design of validDesigns) {
         let placed = false;
+        console.log(`\nTrying to place design: ${design.name} (${design.width}x${design.height}mm)`);
         
         // Try to place in existing levels
         for (let levelIndex = 0; levelIndex < levels.length && !placed; levelIndex++) {
@@ -1428,7 +1454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const x = MARGIN + (usableWidth - level.remainingWidth);
             const y = MARGIN + level.y;
             
-            arrangements.push({
+            const arrangement = {
               designId: design.id,
               x: x,
               y: y,
@@ -1438,7 +1464,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 width: design.width,
                 height: design.height
               }
-            });
+            };
+            
+            arrangements.push(arrangement);
+            console.log(`Placed design ${design.name} at (${x}, ${y}) in level ${levelIndex}`);
             
             level.remainingWidth -= design.width;
             totalArranged++;
@@ -1490,7 +1519,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usableArea = usableWidth * usableHeight;
       const efficiency = Math.round((totalDesignArea / usableArea) * 100);
 
-      res.json({
+      console.log(`\nArrangement completed:`);
+      console.log(`- Total arranged: ${totalArranged}/${designIds.length}`);
+      console.log(`- Arrangements count: ${arrangements.length}`);
+      console.log(`- Efficiency: ${efficiency}%`);
+
+      const result = {
         arrangements,
         totalArranged,
         totalRequested: designIds.length,
@@ -1499,7 +1533,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           width: usableWidth,
           height: usableHeight
         }
-      });
+      };
+
+      console.log('Sending arrangement result:', JSON.stringify(result, null, 2));
+      res.json(result);
     } catch (error) {
       console.error("Error in auto-arrange:", error);
       res.status(500).json({ message: "Auto-arrange failed" });
