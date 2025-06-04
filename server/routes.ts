@@ -1332,7 +1332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 // Enhanced PDF Generation Endpoint with Quality Controls
-app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
+app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async (req: any, res) => {
   try {
     console.log('📄 Enhanced PDF generation request received');
 
@@ -1371,13 +1371,14 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
       });
     }
 
-    // Get design files for PDF generation
-    const userId = req.session?.userId;
+    // Get user ID from authenticated session
+    const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
     if (!userId) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    const designFiles = await plotterDataService.getDesigns(userId);
+    const files = await storage.getFilesByUser(userId);
+    const designFiles = files.filter(f => f.fileType === 'design');
     console.log('📁 Design files found:', designFiles.length);
 
     // Enhanced PDF generation using PDFKit with quality settings
