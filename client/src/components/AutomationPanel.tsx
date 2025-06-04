@@ -575,7 +575,7 @@ export default function AutomationPanel() {
                       onChange={handleFileUpload}
                       className="hidden"
                     />
-                    <label htmlFor="design-upload" className="cursor-pointer">
+                    <div className="text-center">
                       <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-lg font-medium text-gray-900 mb-2">
                         Tasarım Dosyalarını Yükleyin
@@ -583,10 +583,16 @@ export default function AutomationPanel() {
                       <p className="text-gray-600 mb-4">
                         PDF, JPG, PNG, SVG formatları desteklenir
                       </p>
-                      <Button disabled={uploadDesignsMutation.isPending}>
+                      <Button 
+                        type="button"
+                        onClick={() => document.getElementById('design-upload')?.click()}
+                        disabled={uploadDesignsMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
                         {uploadDesignsMutation.isPending ? "Yükleniyor..." : "Dosya Seç"}
                       </Button>
-                    </label>
+                    </div>
                   </div>
 
                   {/* Design Gallery */}

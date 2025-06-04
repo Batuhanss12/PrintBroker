@@ -1,0 +1,344 @@
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+
+interface PlotterModel {
+  id: string;
+  brand: string;
+  model: string;
+  type: 'ecosolvent' | 'thermal' | 'digital';
+  maxWidth: number; // mm
+  maxLength: number; // mm
+  resolution: string;
+  speed: string;
+  features: string[];
+  priceRange: string;
+  specifications: {
+    cuttingForce?: string;
+    bladeTypes?: string[];
+    connectivity?: string[];
+    software?: string[];
+  };
+}
+
+interface MaterialSpec {
+  id: string;
+  name: string;
+  type: 'vinyl' | 'paper' | 'polyester' | 'fabric';
+  thickness: string;
+  adhesive: string;
+  durability: string;
+  applications: string[];
+  plotterCompatibility: string[];
+}
+
+class PlotterDataService {
+  private plotterModels: PlotterModel[] = [];
+  private materialSpecs: MaterialSpec[] = [];
+
+  constructor() {
+    this.initializeData();
+  }
+
+  private initializeData() {
+    // Summa plotter modelleri - gerçek teknik özellikler
+    this.plotterModels = [
+      {
+        id: 'summa-s3-t120',
+        brand: 'Summa',
+        model: 'S3 T120',
+        type: 'thermal',
+        maxWidth: 1200,
+        maxLength: 50000,
+        resolution: '0.0125mm',
+        speed: '1600 mm/s',
+        features: [
+          'OPOS X kamera sistemi',
+          'Otomatik materyal besleme',
+          'Çift kafa teknolojisi',
+          'Flexcut özelliği'
+        ],
+        priceRange: '150.000-200.000 TL',
+        specifications: {
+          cuttingForce: '600g',
+          bladeTypes: ['Drag knife', 'Tangential knife', 'Kiss cut'],
+          connectivity: ['USB', 'Ethernet', 'Wi-Fi'],
+          software: ['Summa GoSign', 'Summa Cutter Control', 'Barcode Scanner']
+        }
+      },
+      {
+        id: 'summa-s3-t75',
+        brand: 'Summa',
+        model: 'S3 T75',
+        type: 'thermal',
+        maxWidth: 750,
+        maxLength: 50000,
+        resolution: '0.0125mm',
+        speed: '1400 mm/s',
+        features: [
+          'OPOS X kamera sistemi',
+          'Flexcut teknolojisi',
+          'Otomatik bıçak derinlik ayarı',
+          'Media roller sistemi'
+        ],
+        priceRange: '100.000-150.000 TL',
+        specifications: {
+          cuttingForce: '600g',
+          bladeTypes: ['Drag knife', 'Kiss cut blade'],
+          connectivity: ['USB', 'Ethernet'],
+          software: ['Summa GoSign', 'Summa Cutter Control']
+        }
+      },
+      {
+        id: 'summa-s2-t140',
+        brand: 'Summa',
+        model: 'S2 T140',
+        type: 'thermal',
+        maxWidth: 1400,
+        maxLength: 50000,
+        resolution: '0.025mm',
+        speed: '1200 mm/s',
+        features: [
+          'OPOS kamera sistemi',
+          'Tangential bıçak teknolojisi',
+          'Yüksek kesim kuvveti',
+          'Endüstriyel dayanıklılık'
+        ],
+        priceRange: '200.000-300.000 TL',
+        specifications: {
+          cuttingForce: '1000g',
+          bladeTypes: ['Tangential knife', 'Drag knife', 'Creasing wheel'],
+          connectivity: ['USB', 'Ethernet', 'Serial'],
+          software: ['Summa Cutter Control', 'Barcode Scanner']
+        }
+      }
+    ];
+
+    // Ecosolvent etiket materyalleri
+    this.materialSpecs = [
+      {
+        id: 'eco-vinyl-gloss',
+        name: 'Ecosolvent Parlak Vinil',
+        type: 'vinyl',
+        thickness: '80 mikron',
+        adhesive: 'Permanent akrilik',
+        durability: '7 yıl dış mekan',
+        applications: [
+          'Araç giydirme',
+          'Dış mekan tabelaları',
+          'Promosyon etiketleri',
+          'Ürün etiketleri'
+        ],
+        plotterCompatibility: ['summa-s3-t120', 'summa-s3-t75', 'summa-s2-t140']
+      },
+      {
+        id: 'eco-vinyl-matte',
+        name: 'Ecosolvent Mat Vinil',
+        type: 'vinyl',
+        thickness: '85 mikron',
+        adhesive: 'Çıkarılabilir akrilik',
+        durability: '5 yıl dış mekan',
+        applications: [
+          'İç mekan dekorasyonu',
+          'Geçici etiketler',
+          'Vitrin uygulamaları',
+          'Duvar grafikleri'
+        ],
+        plotterCompatibility: ['summa-s3-t120', 'summa-s3-t75']
+      },
+      {
+        id: 'eco-label-paper',
+        name: 'Ecosolvent Etiket Kağıdı',
+        type: 'paper',
+        thickness: '70 mikron',
+        adhesive: 'Permanent akrilik',
+        durability: '2 yıl iç mekan',
+        applications: [
+          'Ürün etiketleri',
+          'Barkod etiketleri',
+          'Fiyat etiketleri',
+          'Adres etiketleri'
+        ],
+        plotterCompatibility: ['summa-s3-t120', 'summa-s3-t75', 'summa-s2-t140']
+      },
+      {
+        id: 'eco-clear-vinyl',
+        name: 'Ecosolvent Şeffaf Vinil',
+        type: 'vinyl',
+        thickness: '75 mikron',
+        adhesive: 'Permanent akrilik',
+        durability: '5 yıl dış mekan',
+        applications: [
+          'Cam uygulamaları',
+          'Şeffaf etiketler',
+          'Koruyucu filmler',
+          'Pencere grafikleri'
+        ],
+        plotterCompatibility: ['summa-s3-t120', 'summa-s3-t75']
+      }
+    ];
+  }
+
+  // API fonksiyonları
+  getPlotterModels(): PlotterModel[] {
+    return this.plotterModels;
+  }
+
+  getPlotterModel(id: string): PlotterModel | undefined {
+    return this.plotterModels.find(model => model.id === id);
+  }
+
+  getMaterialSpecs(): MaterialSpec[] {
+    return this.materialSpecs;
+  }
+
+  getMaterialSpec(id: string): MaterialSpec | undefined {
+    return this.materialSpecs.find(material => material.id === id);
+  }
+
+  getCompatibleMaterials(plotterId: string): MaterialSpec[] {
+    return this.materialSpecs.filter(material => 
+      material.plotterCompatibility.includes(plotterId)
+    );
+  }
+
+  getOptimalSettings(plotterId: string, materialId: string): {
+    speed: string;
+    pressure: string;
+    offset: string;
+    passCount: number;
+  } {
+    const plotter = this.getPlotterModel(plotterId);
+    const material = this.getMaterialSpec(materialId);
+
+    if (!plotter || !material) {
+      throw new Error('Plotter veya materyal bulunamadı');
+    }
+
+    // Materyal tipine göre optimal ayarlar
+    const settings = {
+      vinyl: {
+        speed: '800 mm/s',
+        pressure: '200g',
+        offset: '0.25mm',
+        passCount: 1
+      },
+      paper: {
+        speed: '1000 mm/s',
+        pressure: '150g',
+        offset: '0.20mm',
+        passCount: 1
+      },
+      polyester: {
+        speed: '600 mm/s',
+        pressure: '300g',
+        offset: '0.30mm',
+        passCount: 2
+      },
+      fabric: {
+        speed: '400 mm/s',
+        pressure: '400g',
+        offset: '0.35mm',
+        passCount: 2
+      }
+    };
+
+    return settings[material.type] || settings.vinyl;
+  }
+
+  calculateMaterialUsage(
+    designCount: number,
+    designWidth: number,
+    designHeight: number,
+    plotterWidth: number,
+    spacing: number = 2
+  ): {
+    totalLength: number;
+    materialEfficiency: number;
+    rollCount: number;
+    wastePercentage: number;
+  } {
+    const itemsPerRow = Math.floor(plotterWidth / (designWidth + spacing));
+    const rows = Math.ceil(designCount / itemsPerRow);
+    const totalLength = rows * (designHeight + spacing);
+    
+    const usedArea = designCount * designWidth * designHeight;
+    const totalArea = plotterWidth * totalLength;
+    const materialEfficiency = (usedArea / totalArea) * 100;
+    
+    // 50 metre rulo varsayımı
+    const rollLength = 50000;
+    const rollCount = Math.ceil(totalLength / rollLength);
+    const wastePercentage = 100 - materialEfficiency;
+
+    return {
+      totalLength,
+      materialEfficiency,
+      rollCount,
+      wastePercentage
+    };
+  }
+
+  generateCuttingPath(designs: any[], plotterSettings: any): {
+    gCode: string;
+    estimatedTime: number;
+    toolPath: Array<{ x: number; y: number; action: 'move' | 'cut' }>;
+  } {
+    // G-Code benzeri kesim yolu oluşturma
+    let gCode = '';
+    const toolPath: Array<{ x: number; y: number; action: 'move' | 'cut' }> = [];
+    let totalDistance = 0;
+
+    // Başlangıç komutları
+    gCode += 'G28 ; Home\n';
+    gCode += 'G90 ; Absolute positioning\n';
+    gCode += `M3 S${plotterSettings.pressure || 200} ; Set cutting pressure\n`;
+
+    designs.forEach((design, index) => {
+      const startX = (index % plotterSettings.labelsPerRow) * (plotterSettings.labelWidth + plotterSettings.horizontalSpacing);
+      const startY = Math.floor(index / plotterSettings.labelsPerRow) * (plotterSettings.labelHeight + plotterSettings.verticalSpacing);
+
+      // Kesim başlangıcına git
+      gCode += `G0 X${startX} Y${startY} ; Move to design ${index + 1}\n`;
+      toolPath.push({ x: startX, y: startY, action: 'move' });
+
+      // Kesim yolu (basit dikdörtgen)
+      const corners = [
+        { x: startX, y: startY },
+        { x: startX + plotterSettings.labelWidth, y: startY },
+        { x: startX + plotterSettings.labelWidth, y: startY + plotterSettings.labelHeight },
+        { x: startX, y: startY + plotterSettings.labelHeight },
+        { x: startX, y: startY }
+      ];
+
+      corners.forEach((corner, i) => {
+        if (i === 0) {
+          gCode += `G1 X${corner.x} Y${corner.y} ; Start cut\n`;
+        } else {
+          gCode += `G1 X${corner.x} Y${corner.y}\n`;
+          totalDistance += Math.sqrt(
+            Math.pow(corner.x - corners[i-1].x, 2) + 
+            Math.pow(corner.y - corners[i-1].y, 2)
+          );
+        }
+        toolPath.push({ x: corner.x, y: corner.y, action: 'cut' });
+      });
+    });
+
+    // Bitiş komutları
+    gCode += 'M5 ; Stop cutting\n';
+    gCode += 'G28 ; Return home\n';
+
+    // Tahmini süre hesaplama (mm/dakika olarak)
+    const cuttingSpeed = parseInt(plotterSettings.speed || '800');
+    const estimatedTime = Math.round((totalDistance / cuttingSpeed) * 60); // saniye
+
+    return {
+      gCode,
+      estimatedTime,
+      toolPath
+    };
+  }
+}
+
+export const plotterDataService = new PlotterDataService();
+export type { PlotterModel, MaterialSpec };

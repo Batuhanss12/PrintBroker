@@ -1436,5 +1436,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Extended Plotter Data Service API Endpoints
+  
+  // Plotter models endpoint
+  app.get('/api/automation/plotter/models', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { plotterDataService } = await import('./plotterDataService');
+      const models = plotterDataService.getPlotterModels();
+      res.json(models);
+    } catch (error) {
+      console.error("Plotter models fetch error:", error);
+      res.status(500).json({ message: "Plotter modelleri alınamadı" });
+    }
+  });
+
+  // Material specifications endpoint
+  app.get('/api/automation/plotter/materials', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { plotterDataService } = await import('./plotterDataService');
+      const materials = plotterDataService.getMaterialSpecs();
+      res.json(materials);
+    } catch (error) {
+      console.error("Materials fetch error:", error);
+      res.status(500).json({ message: "Materyal bilgileri alınamadı" });
+    }
+  });
+
+  // Compatible materials for specific plotter
+  app.get('/api/automation/plotter/materials/:plotterId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { plotterDataService } = await import('./plotterDataService');
+      const { plotterId } = req.params;
+      const compatibleMaterials = plotterDataService.getCompatibleMaterials(plotterId);
+      res.json(compatibleMaterials);
+    } catch (error) {
+      console.error("Compatible materials fetch error:", error);
+      res.status(500).json({ message: "Uyumlu materyal bilgileri alınamadı" });
+    }
+  });
+
+  // Optimal cutting settings
+  app.post('/api/automation/plotter/settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { plotterDataService } = await import('./plotterDataService');
+      const { plotterId, materialId } = req.body;
+      
+      if (!plotterId || !materialId) {
+        return res.status(400).json({ message: "Plotter ve materyal ID'si gerekli" });
+      }
+
+      const settings = plotterDataService.getOptimalSettings(plotterId, materialId);
+      res.json(settings);
+    } catch (error) {
+      console.error("Settings calculation error:", error);
+      res.status(500).json({ message: error.message || "Optimal ayarlar hesaplanamadı" });
+    }
+  });
+
+  // Material usage calculation
+  app.post('/api/automation/plotter/calculate-usage', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { plotterDataService } = await import('./plotterDataService');
+      const { designCount, designWidth, designHeight, plotterWidth, spacing } = req.body;
+      
+      if (!designCount || !designWidth || !designHeight || !plotterWidth) {
+        return res.status(400).json({ message: "Tüm boyut parametreleri gerekli" });
+      }
+
+      const usage = plotterDataService.calculateMaterialUsage(
+        designCount, designWidth, designHeight, plotterWidth, spacing || 2
+      );
+      res.json(usage);
+    } catch (error) {
+      console.error("Usage calculation error:", error);
+      res.status(500).json({ message: "Materyal kullanımı hesaplanamadı" });
+    }
+  });
+
+  // Generate cutting path
+  app.post('/api/automation/plotter/generate-path', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { plotterDataService } = await import('./plotterDataService');
+      const { designs, plotterSettings } = req.body;
+      
+      if (!designs || !plotterSettings) {
+        return res.status(400).json({ message: "Tasarım ve plotter ayarları gerekli" });
+      }
+
+      const cuttingPath = plotterDataService.generateCuttingPath(designs, plotterSettings);
+      res.json(cuttingPath);
+    } catch (error) {
+      console.error("Cutting path generation error:", error);
+      res.status(500).json({ message: "Kesim yolu oluşturulamadı" });
+    }
+  });
+
   return httpServer;
 }
