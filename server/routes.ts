@@ -258,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         size: req.file.size,
         uploadedBy: userId,
         quoteId: quoteId || null,
-        fileType: getFileType(req.file.mimetype),
+        fileType: getFileType(req.file.mimetype) as any,
         status: 'processing',
         downloadCount: 0,
         isPublic: false
@@ -298,6 +298,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading file:", error);
       res.status(500).json({ message: "Failed to upload file" });
+    }
+  });
+
+  // Get user files
+  app.get('/api/files', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const files = await storage.getFilesByUser(userId);
+      res.json(files);
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      res.status(500).json({ message: "Failed to fetch files" });
+    }
+  });
+
+  // Get file details
+  app.get('/api/files/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const fileId = req.params.id;
+      const files = await storage.getFilesByUser(req.user.claims.sub);
+      const file = files.find(f => f.id === fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      res.json(file);
+    } catch (error) {
+      console.error("Error fetching file:", error);
+      res.status(500).json({ message: "Failed to fetch file" });
     }
   });
 

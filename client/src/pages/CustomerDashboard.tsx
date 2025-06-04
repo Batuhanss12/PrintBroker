@@ -9,6 +9,7 @@ import QuoteCard from "@/components/QuoteCard";
 import StatsCard from "@/components/StatsCard";
 import Chat from "@/components/Chat";
 import DesignEngine from "@/components/DesignEngine";
+import FileManager from "@/components/FileManager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -132,9 +133,10 @@ export default function CustomerDashboard() {
 
         {/* Tabs for Dashboard Sections */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="designs">Tasarımlarım</TabsTrigger>
+            <TabsTrigger value="files">Dosyalarım</TabsTrigger>
             <TabsTrigger value="quotes">Tekliflerim</TabsTrigger>
           </TabsList>
 

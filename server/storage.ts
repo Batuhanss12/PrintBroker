@@ -60,7 +60,9 @@ export interface IStorage {
 
   // File operations
   createFile(file: InsertFile): Promise<File>;
+  updateFile(id: string, data: Partial<File>): Promise<File>;
   getFilesByQuote(quoteId: string): Promise<File[]>;
+  getFilesByUser(userId: string): Promise<File[]>;
 
   // Admin operations
   getAllUsers(): Promise<User[]>;
@@ -270,11 +272,28 @@ export class DatabaseStorage implements IStorage {
     return newFile;
   }
 
+  async updateFile(id: string, data: Partial<File>): Promise<File> {
+    const [updatedFile] = await db
+      .update(files)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(files.id, id))
+      .returning();
+    return updatedFile;
+  }
+
   async getFilesByQuote(quoteId: string): Promise<File[]> {
     return await db
       .select()
       .from(files)
       .where(eq(files.quoteId, quoteId))
+      .orderBy(desc(files.createdAt));
+  }
+
+  async getFilesByUser(userId: string): Promise<File[]> {
+    return await db
+      .select()
+      .from(files)
+      .where(eq(files.uploadedBy, userId))
       .orderBy(desc(files.createdAt));
   }
 
