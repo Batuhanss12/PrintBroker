@@ -516,7 +516,7 @@ export default function DesignEngine() {
         {/* Templates Tab */}
         <TabsContent value="templates">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.map((template: DesignTemplate) => (
+            {Array.isArray(templates) ? templates.map((template: DesignTemplate) => (
               <Card key={template.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg flex items-center justify-center">
@@ -552,13 +552,17 @@ export default function DesignEngine() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-500">Şablonlar yükleniyor...</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
         {/* History Tab */}
         <TabsContent value="history">
-          {history?.designs?.length > 0 ? (
+          {history && typeof history === 'object' && 'designs' in history && Array.isArray(history.designs) && history.designs.length > 0 ? (
             <div className="space-y-4">
               {history.designs.map((design: any, index: number) => (
                 <Card key={design.id}>
