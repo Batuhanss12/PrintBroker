@@ -362,11 +362,21 @@ export default function Payment() {
 
                 {paymentMethod === "credit_card" && (
                   <div className="mt-4 space-y-4">
+                    <Alert className="bg-yellow-50 border-yellow-200">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800">
+                        <strong>Test Modu:</strong> Aşağıdaki test kart bilgilerini kullanın:<br/>
+                        <strong>Kart No:</strong> 4355084355084358<br/>
+                        <strong>CVV:</strong> 000<br/>
+                        <strong>Son Kullanma:</strong> Herhangi bir tarih
+                      </AlertDescription>
+                    </Alert>
+                    
                     <div>
                       <Label htmlFor="cardNumber">Kart Numarası</Label>
                       <Input
                         id="cardNumber"
-                        placeholder="1234 5678 9012 3456"
+                        placeholder="4355 0843 5508 4358 (Test kartı)"
                         value={cardData.cardNumber}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 16);
@@ -375,6 +385,15 @@ export default function Payment() {
                         }}
                         maxLength={19}
                       />
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-1 text-xs"
+                        onClick={() => setCardData(prev => ({ ...prev, cardNumber: '4355 0843 5508 4358' }))}
+                      >
+                        Test Kartını Kullan
+                      </Button>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
@@ -397,7 +416,7 @@ export default function Payment() {
                         <Label htmlFor="cvv">CVV</Label>
                         <Input
                           id="cvv"
-                          placeholder="123"
+                          placeholder="000 (Test CVV)"
                           value={cardData.cvv}
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, '').slice(0, 3);
@@ -405,6 +424,21 @@ export default function Payment() {
                           }}
                           maxLength={3}
                         />
+                        <Button 
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-1 text-xs"
+                          onClick={() => setCardData(prev => ({ 
+                            ...prev, 
+                            cardNumber: '4355 0843 5508 4358',
+                            cvv: '000',
+                            expiryDate: '12/25',
+                            cardName: 'Test Kullanıcı'
+                          }))}
+                        >
+                          Tüm Test Bilgilerini Doldur
+                        </Button>
                       </div>
                     </div>
                     
