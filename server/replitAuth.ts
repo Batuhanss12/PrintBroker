@@ -151,13 +151,33 @@ export async function setupAuth(app: Express) {
             // Get selected role from query param
             const selectedRole = req.query.role as string || 'customer';
             const { storage } = await import('./storage');
-            const userId = user.claims?.sub || user.id;
+            // Create role-specific user ID to prevent data mixing
+            const baseUserId = user.claims?.sub || user.id;
+            const userId = `${selectedRole}_${baseUserId}`;
             
-            // Check if user already exists with different role
+            // Check if user already exists
             const existingUser = await storage.getUser(userId);
-            if (existingUser && existingUser.role !== selectedRole) {
-              // User trying to login with different role - redirect to logout
-              return res.redirect('/api/logout');
+            if (existingUser) {
+              // User already exists - use existing role, don't allow role change
+              if (existingUser.role !== selectedRole) {
+                return res.redirect(`/?error=role_mismatch&existing_role=${existingUser.role}`);
+              }
+              
+              // User exists with same role - just update session and redirect
+              req.session.user = {
+                id: userId,
+                email: existingUser.email || '',
+                role: existingUser.role,
+                claims: {
+                  sub: userId,
+                  email: existingUser.email || '',
+                  role: existingUser.role
+                }
+              };
+              
+              delete req.session?.selectedRole;
+              delete req.session?.returnTo;
+              return res.redirect('/dashboard');
             }
             
             // Create or update user with role-specific settings
@@ -233,7 +253,8 @@ function setupFallbackAuth(app: Express) {
     try {
       // Get role from session storage or query parameter
       const selectedRole = req.query.role || req.session?.selectedRole || 'customer';
-      const userId = 'dev-user-' + Date.now();
+      const baseUserId = Date.now();
+      const userId = `${selectedRole}_dev-user-${baseUserId}`;
       
       // Create a mock user in the database
       const { storage } = await import('./storage');

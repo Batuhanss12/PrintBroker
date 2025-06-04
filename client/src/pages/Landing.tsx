@@ -42,6 +42,21 @@ export default function Landing() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState<'customer' | 'printer' | 'admin' | 'login' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Check for URL parameters on component mount
+  useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const existingRole = urlParams.get('existing_role');
+    
+    if (error === 'role_mismatch' && existingRole) {
+      toast({
+        title: "Rol Çakışması",
+        description: `Bu hesap zaten ${getRoleDisplayName(existingRole)} olarak kayıtlı. Lütfen doğru role giriş yapın.`,
+        variant: "destructive",
+      });
+    }
+  });
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -52,6 +67,15 @@ export default function Landing() {
     taxNumber: ''
   });
   const { toast } = useToast();
+  
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'customer': return 'Müşteri';
+      case 'printer': return 'Matbaa';
+      case 'admin': return 'Admin';
+      default: return role;
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
