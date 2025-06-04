@@ -870,7 +870,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const stats = await storage.getUserStats();      res.json(stats);
+      const stats = await storage.getUserStats();
+      res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch stats" });
@@ -883,7 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
 
       if (!user || user.role !== 'admin') {
-        return res.status403).json({ message: "Admin access required" });
+        return res.status(403).json({ message: "Admin access required" });
       }
 
       const activity = await storage.getRecentActivity();
