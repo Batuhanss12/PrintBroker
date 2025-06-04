@@ -1197,6 +1197,353 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const files = req.files as Express.Multer.File[];
+
+
+// Enhanced PDF Generation Endpoint with Quality Controls
+app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
+  try {
+    console.log('📄 Enhanced PDF generation request received');
+    
+    const { plotterSettings, arrangements, qualitySettings, cuttingMarks, bleedSettings, outputValidation } = req.body;
+
+    if (!arrangements || !Array.isArray(arrangements) || arrangements.length === 0) {
+      return res.status(400).json({ message: 'No arrangements data provided' });
+    }
+
+    console.log('📋 Enhanced PDF data:', {
+      arrangements: arrangements.length,
+      qualitySettings,
+      cuttingMarks,
+      bleedSettings,
+      outputValidation
+    });
+
+    // Validate input data
+    const validationErrors: string[] = [];
+    
+    arrangements.forEach((item, index) => {
+      if (typeof item.x !== 'number' || typeof item.y !== 'number' ||
+          typeof item.width !== 'number' || typeof item.height !== 'number') {
+        validationErrors.push(`Invalid arrangement data at index ${index}`);
+      }
+      
+      if (item.width <= 0 || item.height <= 0) {
+        validationErrors.push(`Invalid dimensions at index ${index}: ${item.width}x${item.height}`);
+      }
+    });
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        message: 'Validation errors', 
+        errors: validationErrors 
+      });
+    }
+
+    // Get design files for PDF generation
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const designFiles = await plotterDataService.getDesigns(userId);
+    console.log('📁 Design files found:', designFiles.length);
+
+    // Enhanced PDF generation using PDFKit with quality settings
+    const PDFDocument = (await import('pdfkit')).default;
+    
+    // Calculate page dimensions based on plotter settings
+    const pageWidthMM = plotterSettings?.sheetWidth || 330; // Default 33cm
+    const pageHeightMM = plotterSettings?.sheetHeight || 480; // Default 48cm
+    
+    // Convert mm to points (1mm = 2.834645669 points)
+    const mmToPoints = 2.834645669;
+    const pageWidthPt = pageWidthMM * mmToPoints;
+    const pageHeightPt = pageHeightMM * mmToPoints;
+
+    // Create PDF with enhanced settings
+    const doc = new PDFDocument({
+      size: [pageWidthPt, pageHeightPt],
+      margins: { 
+        top: (bleedSettings?.top || 5) * mmToPoints, 
+        bottom: (bleedSettings?.bottom || 5) * mmToPoints, 
+        left: (bleedSettings?.left || 5) * mmToPoints, 
+        right: (bleedSettings?.right || 5) * mmToPoints 
+      },
+      info: {
+        Title: 'Matbixx - Professional Layout',
+        Author: 'Matbixx Automation System',
+        Subject: `Layout with ${arrangements.length} designs`,
+        Keywords: 'cutting, layout, vector, professional',
+        Creator: 'Matbixx PDF Engine v2.0',
+        Producer: 'Enhanced PDF Generator'
+      },
+      compress: !qualitySettings?.preserveVectorData,
+      autoFirstPage: true
+    });
+
+    // Set response headers for PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="matbixx-enhanced-layout.pdf"');
+    res.setHeader('Cache-Control', 'no-cache');
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // PDF Generation Status Tracking
+    let generationSteps = 0;
+    const totalSteps = 8;
+
+    const updateProgress = (step: string) => {
+      generationSteps++;
+      console.log(`📊 PDF Generation Progress (${generationSteps}/${totalSteps}): ${step}`);
+    };
+
+    updateProgress('PDF Document Initialized');
+
+    // Add document metadata and header
+    doc.fontSize(14)
+       .fillColor('#000000')
+       .font('Helvetica-Bold')
+       .text('MATBIXX - PROFESSIONAL CUTTING LAYOUT', 50, 50);
+
+    updateProgress('Header Added');
+
+    // Add technical information
+    const currentDate = new Date().toLocaleDateString('tr-TR');
+    const currentTime = new Date().toLocaleTimeString('tr-TR');
+    
+    doc.fontSize(8)
+       .font('Helvetica')
+       .fillColor('#333333')
+       .text(`Oluşturma Tarihi: ${currentDate} ${currentTime}`, 50, 75)
+       .text(`Sayfa Boyutu: ${pageWidthMM}mm × ${pageHeightMM}mm`, 50, 88)
+       .text(`Toplam Tasarım: ${arrangements.length}`, 50, 101)
+       .text(`Kalite: ${qualitySettings?.dpi || 300} DPI, ${qualitySettings?.colorProfile || 'CMYK'}`, 50, 114)
+       .text(`Kesim Payı: ${bleedSettings?.top || 3}mm`, 50, 127);
+
+    updateProgress('Technical Info Added');
+
+    // Draw page border with bleed marks
+    const borderColor = '#000000';
+    const bleedColor = bleedSettings?.bleedColor || '#ff0000';
+    const safeAreaColor = bleedSettings?.safeAreaColor || '#00ff00';
+    
+    // Main page border
+    doc.strokeColor(borderColor)
+       .lineWidth(1)
+       .rect(20, 20, pageWidthPt - 40, pageHeightPt - 40)
+       .stroke();
+
+    updateProgress('Page Border Added');
+
+    // Add cutting marks if enabled
+    if (cuttingMarks?.enabled) {
+      const markLength = (cuttingMarks.length || 5) * mmToPoints;
+      const markOffset = (cuttingMarks.offset || 3) * mmToPoints;
+      const markWidth = cuttingMarks.lineWidth || 0.25;
+      
+      doc.strokeColor(borderColor)
+         .lineWidth(markWidth);
+      
+      // Corner marks - Top Left
+      doc.moveTo(markOffset, markOffset + markLength)
+         .lineTo(markOffset, markOffset)
+         .lineTo(markOffset + markLength, markOffset)
+         .stroke();
+      
+      // Corner marks - Top Right  
+      doc.moveTo(pageWidthPt - markOffset - markLength, markOffset)
+         .lineTo(pageWidthPt - markOffset, markOffset)
+         .lineTo(pageWidthPt - markOffset, markOffset + markLength)
+         .stroke();
+      
+      // Corner marks - Bottom Left
+      doc.moveTo(markOffset, pageHeightPt - markOffset - markLength)
+         .lineTo(markOffset, pageHeightPt - markOffset)
+         .lineTo(markOffset + markLength, pageHeightPt - markOffset)
+         .stroke();
+      
+      // Corner marks - Bottom Right
+      doc.moveTo(pageWidthPt - markOffset - markLength, pageHeightPt - markOffset)
+         .lineTo(pageWidthPt - markOffset, pageHeightPt - markOffset)
+         .lineTo(pageWidthPt - markOffset, pageHeightPt - markOffset - markLength)
+         .stroke();
+      
+      console.log('✂️ Cutting marks added');
+    }
+
+    updateProgress('Cutting Marks Added');
+
+    // Process and draw arrangements
+    let validArrangements = 0;
+    let totalArrangementArea = 0;
+    const arrangementErrors: string[] = [];
+
+    for (let i = 0; i < arrangements.length; i++) {
+      const arrangement = arrangements[i];
+      
+      try {
+        // Convert mm to points for PDF coordinates
+        const xPt = arrangement.x * mmToPoints;
+        const yPt = (pageHeightMM - arrangement.y - arrangement.height) * mmToPoints; // Flip Y coordinate
+        const widthPt = arrangement.width * mmToPoints;
+        const heightPt = arrangement.height * mmToPoints;
+        
+        // Validate arrangement bounds
+        if (xPt < 0 || yPt < 0 || xPt + widthPt > pageWidthPt || yPt + heightPt > pageHeightPt) {
+          arrangementErrors.push(`Arrangement ${i + 1} is out of bounds`);
+          continue;
+        }
+        
+        validArrangements++;
+        totalArrangementArea += arrangement.width * arrangement.height;
+        
+        // Find corresponding design file
+        const designFile = designFiles.find(d => d.id === arrangement.designId);
+        const designName = designFile?.filename || `Design_${i + 1}`;
+        
+        // Draw bleed area if specified
+        if (arrangement.withMargins) {
+          const bleedMargin = 3 * mmToPoints; // 3mm bleed
+          doc.strokeColor('#ff9999')
+             .lineWidth(0.5)
+             .setLineDash([2, 2])
+             .rect(xPt - bleedMargin, yPt - bleedMargin, 
+                   widthPt + 2 * bleedMargin, heightPt + 2 * bleedMargin)
+             .stroke()
+             .setLineDash([]);
+        }
+        
+        // Draw main design area
+        const hue = (i * 137.5) % 360;
+        const designColor = `hsl(${hue}, 70%, 85%)`;
+        
+        doc.fillColor(designColor)
+           .fillOpacity(0.3)
+           .rect(xPt, yPt, widthPt, heightPt)
+           .fill();
+        
+        // Draw design border
+        doc.strokeColor('#333333')
+           .lineWidth(1)
+           .fillOpacity(1)
+           .rect(xPt, yPt, widthPt, heightPt)
+           .stroke();
+        
+        // Add design label
+        const fontSize = Math.max(6, Math.min(widthPt / 20, heightPt / 8, 10));
+        doc.fillColor('#000000')
+           .fontSize(fontSize)
+           .font('Helvetica-Bold')
+           .text(String(i + 1), xPt + 3, yPt + 3, {
+             width: widthPt - 6,
+             height: heightPt - 6,
+             align: 'left'
+           });
+        
+        // Add dimensions
+        if (widthPt > 60 && heightPt > 30) {
+          doc.fontSize(Math.max(4, fontSize * 0.7))
+             .font('Helvetica')
+             .text(`${arrangement.width.toFixed(1)}×${arrangement.height.toFixed(1)}mm`, 
+                    xPt + 3, yPt + heightPt - 15, {
+                      width: widthPt - 6,
+                      align: 'left'
+                    });
+        }
+        
+        // Add filename if space allows
+        if (widthPt > 100 && heightPt > 50) {
+          const maxLength = Math.floor(widthPt / 4);
+          const shortName = designName.length > maxLength ? 
+                           designName.substring(0, maxLength - 3) + '...' : 
+                           designName;
+          
+          doc.fontSize(Math.max(4, fontSize * 0.6))
+             .text(shortName, xPt + 3, yPt + fontSize + 5, {
+               width: widthPt - 6,
+               align: 'left'
+             });
+        }
+        
+      } catch (error) {
+        console.error(`Error processing arrangement ${i + 1}:`, error);
+        arrangementErrors.push(`Processing error for arrangement ${i + 1}: ${error}`);
+      }
+    }
+
+    updateProgress('Arrangements Processed');
+
+    // Add statistics and quality information
+    const pageArea = pageWidthMM * pageHeightMM;
+    const efficiency = pageArea > 0 ? (totalArrangementArea / pageArea) * 100 : 0;
+    const wastePercentage = 100 - efficiency;
+    
+    doc.fontSize(7)
+       .fillColor('#000000')
+       .font('Helvetica')
+       .text('LAYOUT STATISTICS', 50, pageHeightPt - 120);
+    
+    doc.fontSize(6)
+       .text(`✓ Valid Arrangements: ${validArrangements}/${arrangements.length}`, 50, pageHeightPt - 105)
+       .text(`✓ Layout Efficiency: ${efficiency.toFixed(1)}%`, 50, pageHeightPt - 95)
+       .text(`✓ Waste Percentage: ${wastePercentage.toFixed(1)}%`, 50, pageHeightPt - 85)
+       .text(`✓ Total Design Area: ${totalArrangementArea.toFixed(1)}mm²`, 50, pageHeightPt - 75)
+       .text(`✓ Page Area: ${pageArea.toFixed(1)}mm²`, 50, pageHeightPt - 65);
+
+    updateProgress('Statistics Added');
+
+    // Add quality control information
+    doc.fontSize(7)
+       .text('QUALITY CONTROL', 250, pageHeightPt - 120);
+    
+    doc.fontSize(6)
+       .text(`✓ Resolution: ${qualitySettings?.dpi || 300} DPI`, 250, pageHeightPt - 105)
+       .text(`✓ Color Profile: ${qualitySettings?.colorProfile || 'CMYK'}`, 250, pageHeightPt - 95)
+       .text(`✓ Vector Quality: ${qualitySettings?.preserveVectorData ? 'Preserved' : 'Optimized'}`, 250, pageHeightPt - 85)
+       .text(`✓ Cutting Marks: ${cuttingMarks?.enabled ? 'Enabled' : 'Disabled'}`, 250, pageHeightPt - 75)
+       .text(`✓ Bleed Area: ${bleedSettings?.top || 3}mm`, 250, pageHeightPt - 65);
+
+    // Add errors if any
+    if (arrangementErrors.length > 0) {
+      doc.fontSize(7)
+         .fillColor('#cc0000')
+         .text('WARNINGS', 450, pageHeightPt - 120);
+      
+      doc.fontSize(5)
+         .text(arrangementErrors.slice(0, 8).join('\n'), 450, pageHeightPt - 105, {
+           width: 150,
+           height: 60
+         });
+    }
+
+    updateProgress('Quality Control Info Added');
+
+    // Finalize PDF
+    doc.end();
+    
+    updateProgress('PDF Generation Complete');
+
+    console.log('✅ Enhanced PDF generated successfully', {
+      validArrangements,
+      totalArrangements: arrangements.length,
+      efficiency: efficiency.toFixed(1) + '%',
+      errors: arrangementErrors.length
+    });
+
+  } catch (error) {
+    console.error('❌ Enhanced PDF generation error:', error);
+    
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        message: 'Enhanced PDF generation failed', 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+});
+
       if (!files || files.length === 0) {
         console.log('No files found in request');
         return res.status(400).json({ message: "No files uploaded - please select files" });
