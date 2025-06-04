@@ -127,7 +127,10 @@ export default function AutomationPanel() {
       
       // Auto-select uploaded designs for arrangement
       const newDesignIds = data.designs.map((design: any) => design.id);
-      setSelectedDesigns(prev => [...new Set([...prev, ...newDesignIds])]);
+      setSelectedDesigns(prev => {
+        const combined = [...prev, ...newDesignIds];
+        return Array.from(new Set(combined));
+      });
       
       toast({
         title: "Başarılı",

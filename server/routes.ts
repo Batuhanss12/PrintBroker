@@ -1240,9 +1240,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const designs = userFiles.map(file => ({
         id: file.id,
         name: file.originalName,
-        dimensions: file.metadata?.dimensions || "Bilinmiyor",
-        thumbnailPath: file.thumbnailPath || file.filePath,
-        filePath: file.filePath,
+        dimensions: file.dimensions || "Bilinmiyor",
+        thumbnailPath: file.thumbnailPath || `/uploads/${file.filename}`,
+        filePath: `/uploads/${file.filename}`,
         fileType: file.fileType,
         uploadedAt: file.createdAt
       }));
