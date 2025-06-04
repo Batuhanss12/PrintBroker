@@ -387,11 +387,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/quotes', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.id || req.user?.claims?.sub || req.session?.user?.id;
-      
+
       if (!userId) {
         return res.status(401).json({ message: "User session not found" });
       }
-      
+
       const user = await storage.getUser(userId);
 
       if (!user) {
@@ -568,11 +568,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.id || req.user?.claims?.sub || req.session?.user?.id;
-      
+
       if (!userId) {
         return res.status(401).json({ message: "User session not found" });
       }
-      
+
       const user = await storage.getUser(userId);
 
       if (!user) {
@@ -1383,7 +1383,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
     // Use Python PDF generator for better content embedding
     const path = await import('path');
-    const { exec } = await import('child_process');
+    const { exec, spawn } = await import('child_process');
     const { promisify } = await import('util');
     const execAsync = promisify(exec);
 
@@ -1426,17 +1426,18 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       outputPath
     });
 
+    
+    // Python PDF generator çağrısı
     try {
-      // Call Python script
       const pythonScriptPath = path.join(process.cwd(), 'server', 'pdfGenerator.py');
       const command = `python3 "${pythonScriptPath}" '${JSON.stringify(pythonInput)}'`;
-      
+
       const { stdout, stderr } = await execAsync(command);
-      
+
       if (stderr) {
         console.warn('Python script warnings:', stderr);
       }
-      
+
       console.log('Python script output:', stdout);
 
       // Check if PDF was created
@@ -1450,7 +1451,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
         // Stream the generated PDF
         const stream = fs.createReadStream(outputPath);
         stream.pipe(res);
-        
+
         // Clean up the file after streaming
         stream.on('end', () => {
           setTimeout(() => {
@@ -1461,7 +1462,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
             }
           }, 5000);
         });
-        
+
         console.log('✅ Python PDF generated and streamed successfully');
         return;
       } else {
@@ -1483,6 +1484,15 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     };
 
     updateProgress('PDF Document Initialized');
+
+    const PDFDocument = require('pdfkit');
+    const fs = require('fs');
+    const mmToPoints = 2.8346456693; // 1mm = 2.8346456693 points
+    const pageWidthPt = pageWidthMM * mmToPoints;
+    const pageHeightPt = pageHeightMM * mmToPoints;
+
+    const doc = new PDFDocument({ size: [pageWidthPt, pageHeightPt] });
+    doc.pipe(res);
 
     // Add document metadata and header
     doc.fontSize(14)
@@ -1703,8 +1713,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
     updateProgress('Quality Control Info Added');
 
-    // Finalize PDF
-    doc.end();
+    // Finalize PDF    doc.end();
 
     updateProgress('PDF Generation Complete');
 
@@ -1928,7 +1937,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
           currentX += width + spacing;
           rowHeight = Math.max(rowHeight, height);
           arranged++;
-          
+
           console.log(`✅ Arranged design at (${currentX - width - spacing}, ${currentY})`);
         } else {
           // Move to next row
@@ -1951,7 +1960,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
             currentX += width + spacing;
             rowHeight = height;
             arranged++;
-            
+
             console.log(`✅ Arranged design in new row at (${currentX - width - spacing}, ${currentY})`);
           } else {
             console.log(`❌ Design doesn't fit anywhere: ${width}x${height}mm`);
