@@ -130,8 +130,8 @@ class PayTRService {
       // Generate PayTR token
       paymentData.paytr_token = this.createPayTRToken(paymentData);
 
-      // PayTR Basic API - Link çözümü kullan
-      const response = await fetch("https://www.paytr.com/odeme", {
+      // PayTR Basic API - Token al
+      const response = await fetch("https://www.paytr.com/odeme/api/get-token", {
         method: "POST", 
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -142,13 +142,17 @@ class PayTRService {
       const result = await response.text();
       console.log("PayTR Response:", result);
       
-      if (result.includes("SUCCESS") || result.includes("form")) {
-        // Basic API başarılı - ödeme formu HTML'i döndürür
+      if (result.startsWith("SUCCESS")) {
+        // Token başarılı şekilde alındı
+        const token = result.split(":")[1];
+        const paymentUrl = `https://www.paytr.com/odeme/guvenli/${token}`;
+        
         return {
           success: true,
-          paymentForm: result,
+          paymentUrl,
           data: {
             orderId,
+            token,
             amount: amount / 100
           }
         };
@@ -156,7 +160,7 @@ class PayTRService {
         console.error("PayTR Error:", result);
         return {
           success: false,
-          message: "Ödeme sistemi hatası"
+          message: result.includes("Test islem") ? "Test modunda doğru kart bilgilerini kullanın" : "Ödeme sistemi hatası"
         };
       }
     } catch (error) {
