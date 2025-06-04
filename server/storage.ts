@@ -308,6 +308,16 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(files.createdAt));
   }
 
+  async deleteFilesByUserAndType(userId: string, fileType: string): Promise<number> {
+    const result = await db
+      .delete(files)
+      .where(
+        sql`${files.uploadedBy} = ${userId} AND ${files.fileType} = ${fileType}`
+      )
+      .returning({ id: files.id });
+    return result.length;
+  }
+
   // Admin operations
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(desc(users.createdAt));

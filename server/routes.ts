@@ -1287,18 +1287,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Printer access required" });
       }
 
-      // Get and delete all design files for this user
-      const userFiles = await storage.getFilesByUser(userId);
-      const designFiles = userFiles.filter(file => file.fileType === 'design');
+      // Actually delete design files from database
+      const deletedCount = await storage.deleteFilesByUserAndType(userId, 'design');
       
-      console.log(`Clearing ${designFiles.length} design files for user ${userId}`);
-      
-      // In production, you would delete the actual files and database records
-      // For now, we'll just log the action
+      console.log(`Cleared ${deletedCount} design files for user ${userId}`);
       
       res.json({ 
         message: "All design files cleared", 
-        deletedCount: designFiles.length 
+        deletedCount 
       });
     } catch (error) {
       console.error("Error clearing design files:", error);
@@ -1521,25 +1517,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { plotterSettings, arrangements } = req.body;
       
-      console.log('PDF generation request:', { 
-        hasArrangements: !!arrangements,
-        arrangementsType: typeof arrangements,
-        structure: arrangements ? Object.keys(arrangements) : [],
-        fullBody: req.body
-      });
+      console.log('PDF generation request received');
+      console.log('Arrangements data:', JSON.stringify(arrangements, null, 2));
 
-      // Handle arrangement data structure
+      // Extract arrangement items from the data structure
       let arrangedItems = [];
-      if (arrangements && arrangements.arrangements && Array.isArray(arrangements.arrangements)) {
-        arrangedItems = arrangements.arrangements;
-      } else if (Array.isArray(arrangements)) {
+      
+      if (Array.isArray(arrangements)) {
+        // Direct array of arrangements
         arrangedItems = arrangements;
-      } else {
-        console.log('Invalid arrangement structure:', arrangements);
+      } else if (arrangements && typeof arrangements === 'object') {
+        // Could be nested in arrangements property or direct object
+        if (Array.isArray(arrangements.arrangements)) {
+          arrangedItems = arrangements.arrangements;
+        } else {
+          // Try to find arrangement data in the object
+          const keys = Object.keys(arrangements);
+          if (keys.length > 0) {
+            for (const key of keys) {
+              if (Array.isArray(arrangements[key])) {
+                arrangedItems = arrangements[key];
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      console.log('Extracted arranged items:', arrangedItems.length);
+
+      if (!arrangedItems || arrangedItems.length === 0) {
+        console.log('No valid arrangement items found');
         return res.status(400).json({ 
-          message: "Invalid arrangement data structure",
-          received: typeof arrangements,
-          expected: "object with arrangements array"
+          message: "No arrangement items found for PDF generation",
+          debug: {
+            arrangementsType: typeof arrangements,
+            arrangementsKeys: arrangements ? Object.keys(arrangements) : [],
+            hasArrangements: !!arrangements
+          }
         });
       }
 

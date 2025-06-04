@@ -110,9 +110,13 @@ export default function AutomationPanelNew() {
         description: `${data.totalArranged} tasarım dizildi. PDF oluşturuluyor...`,
       });
       
-      // Auto-generate PDF after 1 second
+      // Auto-generate PDF after 1 second - pass the full arrangement data
       setTimeout(() => {
-        generatePdfMutation.mutate({ plotterSettings, arrangements: data });
+        console.log('Sending to PDF generation:', { plotterSettings, arrangements: data });
+        generatePdfMutation.mutate({ 
+          plotterSettings: plotterSettings, 
+          arrangements: data.arrangements || []
+        });
       }, 1000);
     },
     onError: () => {
