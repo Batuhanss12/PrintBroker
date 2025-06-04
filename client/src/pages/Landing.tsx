@@ -59,10 +59,11 @@ export default function Landing() {
 
     try {
       // Store selected role in session storage for after auth
-      sessionStorage.setItem('selectedRole', showLoginForm || 'customer');
+      const selectedRole = showLoginForm || 'customer';
+      sessionStorage.setItem('selectedRole', selectedRole);
       
-      // Redirect to Replit Auth login with return URL
-      window.location.href = '/api/login?returnTo=/dashboard';
+      // Redirect to Replit Auth login with role and return URL
+      window.location.href = `/api/login?role=${selectedRole}&returnTo=/dashboard`;
     } catch (error) {
       toast({
         title: "Giriş hatası",
@@ -1016,7 +1017,7 @@ export default function Landing() {
                       onClick={(e) => {
                         e.preventDefault();
                         sessionStorage.setItem('selectedRole', 'customer');
-                        window.location.href = '/api/login?returnTo=/dashboard';
+                        window.location.href = '/api/login?role=customer&returnTo=/dashboard';
                       }}
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 group"
                     >
@@ -1029,7 +1030,7 @@ export default function Landing() {
                       onClick={(e) => {
                         e.preventDefault();
                         sessionStorage.setItem('selectedRole', 'printer');
-                        window.location.href = '/api/login?returnTo=/dashboard';
+                        window.location.href = '/api/login?role=printer&returnTo=/dashboard';
                       }}
                       className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 group"
                     >
@@ -1042,7 +1043,7 @@ export default function Landing() {
                       onClick={(e) => {
                         e.preventDefault();
                         sessionStorage.setItem('selectedRole', 'admin');
-                        window.location.href = '/api/login?returnTo=/dashboard';
+                        window.location.href = '/api/login?role=admin&returnTo=/dashboard';
                       }}
                       className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 group"
                     >

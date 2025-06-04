@@ -141,15 +141,44 @@ export async function setupAuth(app: Express) {
           return res.redirect('/login-failed');
         }
 
-        req.logIn(user, (loginErr) => {
+        req.logIn(user, async (loginErr) => {
           if (loginErr) {
             console.error('Login error:', loginErr);
             return res.redirect('/login-error');
           }
 
-          const returnTo = req.session?.returnTo || '/dashboard';
-          delete req.session?.returnTo;
-          res.redirect(returnTo);
+          try {
+            // Get selected role from session storage (sent via query param)
+            const selectedRole = req.query.role || req.session?.selectedRole || 'customer';
+            
+            // Update user role in database
+            const { storage } = await import('./storage');
+            const userId = user.claims?.sub || user.id;
+            
+            await storage.upsertUser({
+              id: userId,
+              email: user.claims?.email || user.email,
+              firstName: user.claims?.name?.split(' ')[0] || 'User',
+              lastName: user.claims?.name?.split(' ')[1] || 'Name',
+              role: selectedRole as 'customer' | 'printer' | 'admin',
+              creditBalance: '1000.00',
+              companyName: selectedRole === 'printer' ? 'Matbaa' : undefined,
+              phone: '+90 555 123 4567',
+              companyAddress: 'Address',
+              isActive: true,
+              subscriptionStatus: selectedRole === 'printer' ? 'active' : undefined
+            });
+
+            // Clear session storage
+            delete req.session?.selectedRole;
+            delete req.session?.returnTo;
+            
+            // Redirect to appropriate dashboard
+            res.redirect('/dashboard');
+          } catch (error) {
+            console.error('User creation error:', error);
+            res.redirect('/dashboard');
+          }
         });
       })(req, res, next);
     });
@@ -184,7 +213,8 @@ function setupFallbackAuth(app: Express) {
 
   app.get('/api/login', async (req, res) => {
     try {
-      const role = req.query.role as string || 'customer';
+      // Get role from session storage or query parameter
+      const selectedRole = req.query.role || req.session?.selectedRole || 'customer';
       const userId = 'dev-user-' + Date.now();
       
       // Create a mock user in the database
@@ -192,16 +222,16 @@ function setupFallbackAuth(app: Express) {
       
       const mockUser = await storage.upsertUser({
         id: userId,
-        email: `dev-${role}-${Date.now()}@example.com`,
+        email: `dev-${selectedRole}-${Date.now()}@example.com`,
         firstName: 'Development',
         lastName: 'User',
-        role: role as 'customer' | 'printer' | 'admin',
+        role: selectedRole as 'customer' | 'printer' | 'admin',
         creditBalance: '1000.00',
-        companyName: role === 'printer' ? 'Dev Matbaa' : undefined,
+        companyName: selectedRole === 'printer' ? 'Dev Matbaa' : undefined,
         phone: '+90 555 123 4567',
         companyAddress: 'Development Address',
         isActive: true,
-        subscriptionStatus: role === 'printer' ? 'active' : undefined
+        subscriptionStatus: selectedRole === 'printer' ? 'active' : undefined
       });
 
       // Direct session setup without passport
@@ -221,7 +251,10 @@ function setupFallbackAuth(app: Express) {
           console.error('Session save error:', err);
           return res.redirect('/?error=session_failed');
         }
-        res.redirect('/');
+        
+        // Clear session storage and redirect to dashboard
+        delete req.session?.selectedRole;
+        res.redirect('/dashboard');
       });
     } catch (error) {
       console.error('Fallback auth error:', error);
