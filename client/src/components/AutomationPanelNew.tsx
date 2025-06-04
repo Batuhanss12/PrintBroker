@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import ValidationPanel from "./ValidationPanel";
+import OptimizedPreview from "./OptimizedPreview";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -3675,6 +3676,21 @@ export default function AutomationPanelNew() {
               boyutuna {optimizationOptions.mode === 'maximum_efficiency' ? 'maksimum verimlilik' : 'hızlı dizilim'} ile yerleştirme.
               {optimizationOptions.allowRotation && ' Otomatik rotasyon aktif.'}
             </p>
+
+            {/* Preview Display */}
+            {arrangeResult && arrangeResult.arrangements && arrangeResult.arrangements.length > 0 && (
+              <div className="mt-6">
+                <OptimizedPreview
+                  arrangements={arrangeResult.arrangements}
+                  pageWidth={currentPageDimensions.widthMM}
+                  pageHeight={currentPageDimensions.heightMM}
+                  designs={designs}
+                  efficiency={arrangeResult.efficiency}
+                  onGeneratePDF={() => generatePdfMutation.mutate()}
+                  className="w-full"
+                />
+              </div>
+            )}
 
             {/* Status indicators */}
             <div className="flex items-center gap-4 text-xs text-gray-500">
