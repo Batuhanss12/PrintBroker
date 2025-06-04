@@ -39,8 +39,9 @@ class PlotterDataService {
   }
 
   private initializeData() {
-    // Summa plotter modelleri - gerçek teknik özellikler
+    // Kapsamlı plotter modelleri - gerçek teknik özellikler
     this.plotterModels = [
+      // Summa Serisi
       {
         id: 'summa-s3-t120',
         brand: 'Summa',
@@ -87,27 +88,169 @@ class PlotterDataService {
           software: ['Summa GoSign', 'Summa Cutter Control']
         }
       },
+      // Vulcan Serisi
       {
-        id: 'summa-s2-t140',
-        brand: 'Summa',
-        model: 'S2 T140',
+        id: 'vulcan-vc630',
+        brand: 'Vulcan',
+        model: 'VC630',
         type: 'thermal',
-        maxWidth: 1400,
+        maxWidth: 630,
+        maxLength: 25000,
+        resolution: '0.025mm',
+        speed: '1000 mm/s',
+        features: [
+          'Optik konum sistemi',
+          'Yüksek hassasiyet',
+          'Hızlı kesim',
+          'Çoklu materyal desteği'
+        ],
+        priceRange: '75.000-100.000 TL',
+        specifications: {
+          cuttingForce: '500g',
+          bladeTypes: ['Drag knife', 'Kiss cut blade'],
+          connectivity: ['USB', 'Serial'],
+          software: ['FlexiSign', 'VinylMaster']
+        }
+      },
+      {
+        id: 'vulcan-vc1350',
+        brand: 'Vulcan',
+        model: 'VC1350',
+        type: 'thermal',
+        maxWidth: 1350,
         maxLength: 50000,
         resolution: '0.025mm',
         speed: '1200 mm/s',
         features: [
-          'OPOS kamera sistemi',
-          'Tangential bıçak teknolojisi',
-          'Yüksek kesim kuvveti',
-          'Endüstriyel dayanıklılık'
+          'Geniş format desteği',
+          'Endüstriyel motor',
+          'Yüksek dayanıklılık',
+          'Hızlı üretim'
         ],
-        priceRange: '200.000-300.000 TL',
+        priceRange: '120.000-150.000 TL',
         specifications: {
-          cuttingForce: '1000g',
-          bladeTypes: ['Tangential knife', 'Drag knife', 'Creasing wheel'],
-          connectivity: ['USB', 'Ethernet', 'Serial'],
-          software: ['Summa Cutter Control', 'Barcode Scanner']
+          cuttingForce: '750g',
+          bladeTypes: ['Drag knife', 'Tangential knife'],
+          connectivity: ['USB', 'Ethernet'],
+          software: ['SignCut', 'FlexiSign']
+        }
+      },
+      // SignCut Uyumlu Çin Markaları
+      {
+        id: 'signcut-sc720',
+        brand: 'SignCut',
+        model: 'SC720',
+        type: 'thermal',
+        maxWidth: 720,
+        maxLength: 30000,
+        resolution: '0.025mm',
+        speed: '800 mm/s',
+        features: [
+          'SignCut yazılım desteği',
+          'Uygun fiyat',
+          'Basit kullanım',
+          'Güvenilir performans'
+        ],
+        priceRange: '25.000-40.000 TL',
+        specifications: {
+          cuttingForce: '350g',
+          bladeTypes: ['Drag knife', 'Kiss cut blade'],
+          connectivity: ['USB'],
+          software: ['SignCut Pro', 'SignCut X2']
+        }
+      },
+      {
+        id: 'signcut-sc1350',
+        brand: 'SignCut',
+        model: 'SC1350',
+        type: 'thermal',
+        maxWidth: 1350,
+        maxLength: 50000,
+        resolution: '0.025mm',
+        speed: '1000 mm/s',
+        features: [
+          'Geniş format',
+          'SignCut tam uyumluluk',
+          'Ekonomik çözüm',
+          'Yedek parça bulunabilirliği'
+        ],
+        priceRange: '45.000-65.000 TL',
+        specifications: {
+          cuttingForce: '500g',
+          bladeTypes: ['Drag knife', 'Kiss cut blade'],
+          connectivity: ['USB', 'Serial'],
+          software: ['SignCut Pro', 'SignCut X2']
+        }
+      },
+      // Toyocut Serisi
+      {
+        id: 'toyocut-tc630',
+        brand: 'Toyocut',
+        model: 'TC630',
+        type: 'thermal',
+        maxWidth: 630,
+        maxLength: 25000,
+        resolution: '0.025mm',
+        speed: '900 mm/s',
+        features: [
+          'Japonya kalitesi',
+          'Sessiz çalışma',
+          'Uzun ömür',
+          'Hassas kesim'
+        ],
+        priceRange: '80.000-110.000 TL',
+        specifications: {
+          cuttingForce: '450g',
+          bladeTypes: ['Drag knife', 'Kiss cut blade'],
+          connectivity: ['USB', 'Serial'],
+          software: ['CutStudio', 'FlexiSign']
+        }
+      },
+      // Skycut Serisi
+      {
+        id: 'skycut-sk870',
+        brand: 'Skycut',
+        model: 'SK870',
+        type: 'thermal',
+        maxWidth: 870,
+        maxLength: 30000,
+        resolution: '0.025mm',
+        speed: '1100 mm/s',
+        features: [
+          'Hızlı kesim',
+          'Çoklu yazılım desteği',
+          'Kolay bakım',
+          'Güçlü motor'
+        ],
+        priceRange: '60.000-85.000 TL',
+        specifications: {
+          cuttingForce: '600g',
+          bladeTypes: ['Drag knife', 'Kiss cut blade', 'Tangential knife'],
+          connectivity: ['USB', 'Ethernet'],
+          software: ['SignCut', 'VinylMaster', 'FlexiSign']
+        }
+      },
+      {
+        id: 'skycut-sk1350',
+        brand: 'Skycut',
+        model: 'SK1350',
+        type: 'thermal',
+        maxWidth: 1350,
+        maxLength: 50000,
+        resolution: '0.025mm',
+        speed: '1300 mm/s',
+        features: [
+          'Geniş format desteği',
+          'Yüksek hız',
+          'Profesyonel kalite',
+          'Çoklu bağlantı seçeneği'
+        ],
+        priceRange: '90.000-120.000 TL',
+        specifications: {
+          cuttingForce: '750g',
+          bladeTypes: ['Drag knife', 'Kiss cut blade', 'Tangential knife'],
+          connectivity: ['USB', 'Ethernet', 'Wi-Fi'],
+          software: ['SignCut', 'VinylMaster', 'FlexiSign', 'CorelDRAW']
         }
       }
     ];

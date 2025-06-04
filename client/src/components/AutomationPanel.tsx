@@ -72,7 +72,9 @@ export default function AutomationPanel() {
   const [layoutName, setLayoutName] = useState("");
   const [uploadedDesigns, setUploadedDesigns] = useState<any[]>([]);
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
-  const [arrangements, setArrangements] = useState<any[]>([]);
+  const [arrangements, setArrangements] = useState<any>(null);
+  const [selectedPlotter, setSelectedPlotter] = useState<string>('');
+  const [showCropMarks, setShowCropMarks] = useState(true);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -87,6 +89,12 @@ export default function AutomationPanel() {
   const { data: designs = [] } = useQuery({
     queryKey: ['/api/automation/plotter/designs'],
     queryFn: () => apiRequest('GET', '/api/automation/plotter/designs'),
+  });
+
+  // Fetch plotter models
+  const { data: plotterModels = [] } = useQuery({
+    queryKey: ['/api/automation/plotter/models'],
+    queryFn: () => apiRequest('GET', '/api/automation/plotter/models'),
   });
 
   // Save layout mutation
@@ -161,8 +169,8 @@ export default function AutomationPanel() {
     mutationFn: async (data: { designIds: string[]; plotterSettings: PlotterSettings }) => {
       return await apiRequest('POST', '/api/automation/plotter/auto-arrange', data);
     },
-    onSuccess: (data) => {
-      setArrangements(data.arrangements);
+    onSuccess: (data: any) => {
+      setArrangements(data);
       toast({
         title: "Başarılı",
         description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik).`,
@@ -360,6 +368,49 @@ export default function AutomationPanel() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Plotter Selection */}
+                    <div>
+                      <Label>Plotter Modeli</Label>
+                      <Select value={selectedPlotter} onValueChange={setSelectedPlotter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Plotter modelini seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.isArray(plotterModels) && plotterModels.map((plotter: any) => (
+                            <SelectItem key={plotter.id} value={plotter.id}>
+                              {plotter.brand} {plotter.model} - {plotter.maxWidth}mm
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedPlotter && plotterModels.length > 0 && (
+                        <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
+                          {(() => {
+                            const plotter = plotterModels.find((p: any) => p.id === selectedPlotter);
+                            return plotter ? (
+                              <div>
+                                <strong>{plotter.brand} {plotter.model}</strong><br/>
+                                Maksimum genişlik: {plotter.maxWidth}mm | Hız: {plotter.speed}<br/>
+                                Yazılım: {plotter.specifications.software.join(', ')}
+                              </div>
+                            ) : null;
+                          })()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Crop Marks Setting */}
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="cropMarks"
+                        checked={showCropMarks}
+                        onChange={(e) => setShowCropMarks(e.target.checked)}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="cropMarks">Kesim işaretlerini göster</Label>
+                    </div>
+
                     {/* Sheet Size */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -687,14 +738,127 @@ export default function AutomationPanel() {
                       )}
 
                       {/* Arrangement Results */}
-                      {arrangements.length > 0 && (
+                      {arrangements && arrangements.arrangements && arrangements.arrangements.length > 0 && (
                         <div className="p-4 bg-green-50 rounded-lg">
                           <p className="text-sm font-medium text-green-900 mb-2">
                             Dizim Tamamlandı
                           </p>
                           <p className="text-xs text-green-700">
-                            {arrangements.length} tasarım başarıyla dizildi
+                            {arrangements.totalArranged}/{arrangements.totalRequested} tasarım başarıyla dizildi ({arrangements.efficiency} verimlilik)
                           </p>
+                        </div>
+                      )}
+
+                      {/* Preview Panel */}
+                      {arrangements && arrangements.arrangements && arrangements.arrangements.length > 0 && (
+                        <div className="mt-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-medium">Dizim Önizlemesi</h3>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setPreviewMode(!previewMode)}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                {previewMode ? "Normal Görünüm" : "Önizleme"}
+                              </Button>
+                              <Button 
+                                size="sm"
+                                onClick={() => generatePdfMutation.mutate({ plotterSettings, arrangements })}
+                                disabled={generatePdfMutation.isPending}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                {generatePdfMutation.isPending ? "Oluşturuluyor..." : "PDF İndir"}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Preview Canvas */}
+                          <div className="border rounded-lg p-4 bg-white">
+                            <div 
+                              className="relative border-2 border-dashed border-gray-300 mx-auto"
+                              style={{
+                                width: `${Math.min(400, plotterSettings.sheetWidth * 0.5)}px`,
+                                height: `${Math.min(300, plotterSettings.sheetHeight * 0.5)}px`,
+                                backgroundColor: '#fafafa'
+                              }}
+                            >
+                              {/* Crop Marks */}
+                              {showCropMarks && (
+                                <>
+                                  {/* Top-left crop mark */}
+                                  <div className="absolute -top-2 -left-2 w-4 h-4">
+                                    <div className="absolute top-2 left-0 w-2 h-0.5 bg-black"></div>
+                                    <div className="absolute top-0 left-2 w-0.5 h-2 bg-black"></div>
+                                  </div>
+                                  
+                                  {/* Top-right crop mark */}
+                                  <div className="absolute -top-2 -right-2 w-4 h-4">
+                                    <div className="absolute top-2 right-0 w-2 h-0.5 bg-black"></div>
+                                    <div className="absolute top-0 right-2 w-0.5 h-2 bg-black"></div>
+                                  </div>
+                                  
+                                  {/* Bottom-left crop mark */}
+                                  <div className="absolute -bottom-2 -left-2 w-4 h-4">
+                                    <div className="absolute bottom-2 left-0 w-2 h-0.5 bg-black"></div>
+                                    <div className="absolute bottom-0 left-2 w-0.5 h-2 bg-black"></div>
+                                  </div>
+                                  
+                                  {/* Bottom-right crop mark */}
+                                  <div className="absolute -bottom-2 -right-2 w-4 h-4">
+                                    <div className="absolute bottom-2 right-0 w-2 h-0.5 bg-black"></div>
+                                    <div className="absolute bottom-0 right-2 w-0.5 h-2 bg-black"></div>
+                                  </div>
+                                </>
+                              )}
+
+                              {/* Margins */}
+                              <div 
+                                className="absolute border border-blue-200 bg-blue-50 bg-opacity-30"
+                                style={{
+                                  left: `${(plotterSettings.marginLeft / plotterSettings.sheetWidth) * 100}%`,
+                                  top: `${(plotterSettings.marginTop / plotterSettings.sheetHeight) * 100}%`,
+                                  right: `${(plotterSettings.marginRight / plotterSettings.sheetWidth) * 100}%`,
+                                  bottom: `${(plotterSettings.marginBottom / plotterSettings.sheetHeight) * 100}%`,
+                                }}
+                              />
+
+                              {/* Arranged items */}
+                              {arrangements.arrangements.map((item: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="absolute bg-green-200 border border-green-400 rounded flex items-center justify-center text-xs font-medium"
+                                  style={{
+                                    left: `${(item.x / plotterSettings.sheetWidth) * 100}%`,
+                                    top: `${(item.y / plotterSettings.sheetHeight) * 100}%`,
+                                    width: `${(item.width / plotterSettings.sheetWidth) * 100}%`,
+                                    height: `${(item.height / plotterSettings.sheetHeight) * 100}%`,
+                                  }}
+                                >
+                                  {index + 1}
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Design List */}
+                            <div className="mt-4">
+                              <h4 className="text-sm font-medium mb-2">Dizilen Tasarımlar:</h4>
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                {selectedDesigns.slice(0, arrangements.totalArranged || 0).map((designId, index) => {
+                                  const design = Array.isArray(designs) ? designs.find((d: any) => d.id === designId) : null;
+                                  return design ? (
+                                    <div key={designId} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs">
+                                      <span className="flex-shrink-0 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs">
+                                        {index + 1}
+                                      </span>
+                                      <span className="truncate">{design.name}</span>
+                                    </div>
+                                  ) : null;
+                                })}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
