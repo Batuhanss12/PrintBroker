@@ -49,24 +49,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registration endpoint
   app.post('/api/register', async (req, res) => {
     try {
-      const { firstName, lastName, email, phone, companyName, password, role } = req.body;
+      const { firstName, lastName, email, phone, companyName, password, role, address, city, postalCode, taxNumber } = req.body;
       
-      // Generate unique user ID
-      const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      // Validate required fields based on role
+      if (!firstName || !lastName || !email || !phone || !role) {
+        return res.status(400).json({ success: false, message: "Gerekli alanlar eksik" });
+      }
+
+      // Check if email already exists
+      const existingUsers = await storage.getAllUsers();
+      const emailExists = existingUsers.find(user => user.email === email);
+      if (emailExists) {
+        return res.status(400).json({ success: false, message: "Bu e-posta adresi zaten kayıtlı" });
+      }
       
-      // Create user in database
-      const newUser = await storage.upsertUser({
+      // Generate unique user ID with role prefix
+      const rolePrefix = role === 'customer' ? 'CUS' : role === 'printer' ? 'PRT' : 'ADM';
+      const userId = `${rolePrefix}-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      
+      // Role-specific user data configuration
+      const userData: any = {
         id: userId,
         email,
         firstName,
         lastName,
         phone,
-        role: role || 'customer',
-        creditBalance: '100.00', // Starting credit
-        companyName: role === 'printer' ? companyName : undefined,
-        isActive: true,
-        subscriptionStatus: role === 'printer' ? 'active' : 'inactive'
-      });
+        role,
+        isActive: true
+      };
+
+      // Configure based on role
+      if (role === 'customer') {
+        userData.creditBalance = '1000.00'; // Starting credit for customers
+        userData.subscriptionStatus = 'inactive';
+        userData.companyAddress = address ? `${address}, ${city} ${postalCode}` : '';
+        userData.companyName = companyName || '';
+      } else if (role === 'printer') {
+        userData.creditBalance = '0.00'; // Printers don't get credits
+        userData.subscriptionStatus = 'active'; // Active subscription for printers
+        userData.companyName = companyName || 'Matbaa Firması';
+        userData.companyAddress = address ? `${address}, ${city} ${postalCode}` : 'İstanbul, Türkiye';
+        userData.taxNumber = taxNumber || '';
+      } else if (role === 'admin') {
+        userData.creditBalance = '999999.00'; // Admin unlimited credits
+        userData.subscriptionStatus = 'active';
+        userData.companyName = 'Matbixx Admin';
+      }
+      
+      // Create user in database
+      const newUser = await storage.upsertUser(userData);
 
       // Create session
       req.session.user = {

@@ -37,19 +37,58 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/" component={Home} />
-          {/* Tüm paneller aktif - role'e göre dashboard yönlendirme */}
-          <Route path="/dashboard" component={() => {
+          <Route path="/" component={() => {
+            // Auto-redirect to appropriate dashboard based on role
             const userRole = (user as any)?.role || 'customer';
-            if (userRole === 'admin') return <AdminDashboard />;
-            if (userRole === 'printer') return <PrinterDashboard />;
+            if (userRole === 'admin') {
+              window.location.href = '/admin-dashboard';
+              return null;
+            }
+            if (userRole === 'printer') {
+              window.location.href = '/printer-dashboard';
+              return null;
+            }
+            window.location.href = '/customer-dashboard';
+            return null;
+          }} />
+          
+          {/* Role-based protected routes */}
+          <Route path="/customer-dashboard" component={() => {
+            const userRole = (user as any)?.role;
+            if (userRole !== 'customer') {
+              window.location.href = '/';
+              return null;
+            }
             return <CustomerDashboard />;
           }} />
-          <Route path="/quote/:type" component={QuoteForm} />
-          {/* Test için tüm panellere erişim */}
-          <Route path="/customer-dashboard" component={CustomerDashboard} />
-          <Route path="/printer-dashboard" component={PrinterDashboard} />
-          <Route path="/admin-dashboard" component={AdminDashboard} />
+          
+          <Route path="/printer-dashboard" component={() => {
+            const userRole = (user as any)?.role;
+            if (userRole !== 'printer') {
+              window.location.href = '/';
+              return null;
+            }
+            return <PrinterDashboard />;
+          }} />
+          
+          <Route path="/admin-dashboard" component={() => {
+            const userRole = (user as any)?.role;
+            if (userRole !== 'admin') {
+              window.location.href = '/';
+              return null;
+            }
+            return <AdminDashboard />;
+          }} />
+          
+          <Route path="/quote/:type" component={() => {
+            const userRole = (user as any)?.role;
+            if (userRole !== 'customer') {
+              window.location.href = '/';
+              return null;
+            }
+            return <QuoteForm />;
+          }} />
+          
           <Route path="/payment" component={Payment} />
         </>
       )}

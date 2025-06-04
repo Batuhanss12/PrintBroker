@@ -148,26 +148,44 @@ export async function setupAuth(app: Express) {
           }
 
           try {
-            // Get selected role from session storage (sent via query param)
-            const selectedRole = req.query.role || req.session?.selectedRole || 'customer';
-            
-            // Update user role in database
+            // Get selected role from query param
+            const selectedRole = req.query.role as string || 'customer';
             const { storage } = await import('./storage');
             const userId = user.claims?.sub || user.id;
             
-            await storage.upsertUser({
+            // Check if user already exists with different role
+            const existingUser = await storage.getUser(userId);
+            if (existingUser && existingUser.role !== selectedRole) {
+              // User trying to login with different role - redirect to logout
+              return res.redirect('/api/logout');
+            }
+            
+            // Create or update user with role-specific settings
+            const userData: any = {
               id: userId,
               email: user.claims?.email || user.email,
               firstName: user.claims?.name?.split(' ')[0] || 'User',
               lastName: user.claims?.name?.split(' ')[1] || 'Name',
               role: selectedRole as 'customer' | 'printer' | 'admin',
-              creditBalance: '1000.00',
-              companyName: selectedRole === 'printer' ? 'Matbaa' : undefined,
               phone: '+90 555 123 4567',
-              companyAddress: 'Address',
-              isActive: true,
-              subscriptionStatus: selectedRole === 'printer' ? 'active' : undefined
-            });
+              isActive: true
+            };
+
+            // Role-specific configurations
+            if (selectedRole === 'customer') {
+              userData.creditBalance = '1000.00';
+              userData.subscriptionStatus = 'inactive';
+            } else if (selectedRole === 'printer') {
+              userData.companyName = 'Matbaa Firması';
+              userData.companyAddress = 'İstanbul, Türkiye';
+              userData.subscriptionStatus = 'active';
+              userData.creditBalance = '0.00';
+            } else if (selectedRole === 'admin') {
+              userData.creditBalance = '999999.00';
+              userData.subscriptionStatus = 'active';
+            }
+            
+            await storage.upsertUser(userData);
 
             // Clear session storage
             delete req.session?.selectedRole;
