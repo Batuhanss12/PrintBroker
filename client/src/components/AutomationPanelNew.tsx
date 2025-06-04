@@ -139,6 +139,75 @@ interface ProcessedVectorFile {
   cropMarks?: CropMarkSettings;
 }
 
+// Advanced Layout Optimization Interfaces
+interface OptimizationOptions {
+  mode: 'maximum_efficiency' | 'fast_layout' | 'balanced' | 'custom';
+  allowRotation: boolean;
+  rotationSteps: number; // 45, 90, 180 degrees
+  prioritizeSpacing: boolean;
+  minimumSpacing: number; // mm
+  maximumSpacing: number; // mm
+  packingTightness: number; // 0-1 scale
+  allowUpscaling: boolean;
+  maxUpscaleRatio: number;
+  allowDownscaling: boolean;
+  minDownscaleRatio: number;
+}
+
+interface LayoutAlgorithmResult {
+  items: OptimizedArrangementItem[];
+  efficiency: number;
+  wastePercentage: number;
+  totalArea: number;
+  usedArea: number;
+  estimatedCost: number;
+  alternativeLayouts?: LayoutAlgorithmResult[];
+  performance: {
+    algorithmUsed: string;
+    executionTime: number;
+    iterations: number;
+  };
+}
+
+interface OptimizedArrangementItem extends ArrangementItem {
+  rotation: number; // degrees
+  scaleFactor: number;
+  isRotated: boolean;
+  isScaled: boolean;
+  priority: number;
+  originalItem: Design;
+  costContribution: number;
+}
+
+interface CostAnalysis {
+  materialCost: number;
+  wasteCost: number;
+  cuttingCost: number;
+  totalCost: number;
+  costPerItem: number;
+  wastePercentage: number;
+  suggestions: string[];
+  alternatives: {
+    layout: LayoutAlgorithmResult;
+    description: string;
+    savings: number;
+  }[];
+}
+
+interface MultiFormatLayout {
+  formats: {
+    pageSize: PageDimensions;
+    layout: LayoutAlgorithmResult;
+    costAnalysis: CostAnalysis;
+  }[];
+  recommended: number; // index of best option
+  comparison: {
+    efficiency: number[];
+    cost: number[];
+    waste: number[];
+  };
+}
+
 interface ScalingInfo {
   scaleFactor: number;
   fitsInPage: boolean;
@@ -218,6 +287,25 @@ export default function AutomationPanelNew() {
     allowUpscaling: false,
     maxScaleFactor: 2.0
   });
+
+  // Advanced optimization settings
+  const [optimizationOptions, setOptimizationOptions] = useState<OptimizationOptions>({
+    mode: 'maximum_efficiency',
+    allowRotation: true,
+    rotationSteps: 90,
+    prioritizeSpacing: false,
+    minimumSpacing: 2,
+    maximumSpacing: 5,
+    packingTightness: 0.8,
+    allowUpscaling: false,
+    maxUpscaleRatio: 1.2,
+    allowDownscaling: true,
+    minDownscaleRatio: 0.8
+  });
+
+  const [costAnalysis, setCostAnalysis] = useState<CostAnalysis | null>(null);
+  const [multiFormatResults, setMultiFormatResults] = useState<MultiFormatLayout | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
 
   const [bleedSettings, setBleedSettings] = useState<BleedSettings>({
     top: 3,
@@ -355,6 +443,664 @@ export default function AutomationPanelNew() {
     if (selectedTemplate !== 'custom') {
       setSelectedTemplate('custom');
     }
+  };
+
+  /**
+   * Advanced Layout Optimization Algorithms
+   */
+  
+  // Bin Packing Algorithm with Rotation Support
+  const advancedBinPacking = (
+    items: Design[],
+    pageWidth: number,
+    pageHeight: number,
+    options: OptimizationOptions
+  ): LayoutAlgorithmResult => {
+    const startTime = performance.now();
+    let iterations = 0;
+    
+    const processedItems = items.map((item, index) => {
+      const dims = extractDimensions(item);
+      return {
+        id: item.id,
+        originalWidth: dims.width,
+        originalHeight: dims.height,
+        width: dims.width,
+        height: dims.height,
+        area: dims.width * dims.height,
+        aspectRatio: dims.width / dims.height,
+        priority: calculateItemPriority(item, options),
+        originalItem: item,
+        placed: false,
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scaleFactor: 1,
+        isRotated: false,
+        isScaled: false
+      };
+    });
+
+    // Sort by priority and area
+    processedItems.sort((a, b) => {
+      if (options.mode === 'maximum_efficiency') {
+        return b.area - a.area; // Largest first
+      } else if (options.mode === 'fast_layout') {
+        return a.priority - b.priority; // Priority first
+      }
+      return b.area * b.priority - a.area * a.priority; // Balanced
+    });
+
+    const placedItems: OptimizedArrangementItem[] = [];
+    const freeRectangles = [{ x: 0, y: 0, width: pageWidth, height: pageHeight }];
+
+    for (const item of processedItems) {
+      iterations++;
+      let bestPlacement = null;
+      let bestScore = -1;
+
+      // Try different orientations if rotation is allowed
+      const orientations = options.allowRotation ? 
+        [0, options.rotationSteps, options.rotationSteps * 2, options.rotationSteps * 3].filter(r => r < 360) : 
+        [0];
+
+      for (const rotation of orientations) {
+        const [itemWidth, itemHeight] = rotation % 180 === 0 ? 
+          [item.width, item.height] : [item.height, item.width];
+
+        // Try different scale factors
+        const scaleFactors = generateScaleFactors(options);
+        
+        for (const scaleFactor of scaleFactors) {
+          const scaledWidth = itemWidth * scaleFactor + options.minimumSpacing;
+          const scaledHeight = itemHeight * scaleFactor + options.minimumSpacing;
+
+          if (scaledWidth > pageWidth || scaledHeight > pageHeight) continue;
+
+          // Find best position using Bottom-Left-Fill heuristic
+          for (let rectIndex = 0; rectIndex < freeRectangles.length; rectIndex++) {
+            const rect = freeRectangles[rectIndex];
+            
+            if (scaledWidth <= rect.width && scaledHeight <= rect.height) {
+              const score = calculatePlacementScore(
+                rect.x, rect.y, scaledWidth, scaledHeight, 
+                placedItems, options, pageWidth, pageHeight
+              );
+
+              if (score > bestScore) {
+                bestScore = score;
+                bestPlacement = {
+                  x: rect.x,
+                  y: rect.y,
+                  width: scaledWidth - options.minimumSpacing,
+                  height: scaledHeight - options.minimumSpacing,
+                  rotation,
+                  scaleFactor,
+                  rectIndex,
+                  isRotated: rotation !== 0,
+                  isScaled: Math.abs(scaleFactor - 1) > 0.01
+                };
+              }
+            }
+          }
+        }
+      }
+
+      if (bestPlacement) {
+        const optimizedItem: OptimizedArrangementItem = {
+          designId: item.id,
+          x: bestPlacement.x,
+          y: bestPlacement.y,
+          width: bestPlacement.width,
+          height: bestPlacement.height,
+          rotation: bestPlacement.rotation,
+          scaleFactor: bestPlacement.scaleFactor,
+          isRotated: bestPlacement.isRotated,
+          isScaled: bestPlacement.isScaled,
+          priority: item.priority,
+          originalItem: item.originalItem,
+          costContribution: calculateItemCost(bestPlacement, options)
+        };
+
+        placedItems.push(optimizedItem);
+        
+        // Update free rectangles using maximal rectangles algorithm
+        updateFreeRectangles(
+          freeRectangles, 
+          bestPlacement.x, 
+          bestPlacement.y, 
+          bestPlacement.width + options.minimumSpacing, 
+          bestPlacement.height + options.minimumSpacing
+        );
+      }
+    }
+
+    const totalArea = pageWidth * pageHeight;
+    const usedArea = placedItems.reduce((sum, item) => sum + (item.width * item.height), 0);
+    const efficiency = (usedArea / totalArea) * 100;
+    const wastePercentage = 100 - efficiency;
+
+    return {
+      items: placedItems,
+      efficiency,
+      wastePercentage,
+      totalArea,
+      usedArea,
+      estimatedCost: placedItems.reduce((sum, item) => sum + item.costContribution, 0),
+      performance: {
+        algorithmUsed: 'Advanced Bin Packing with Rotation',
+        executionTime: performance.now() - startTime,
+        iterations
+      }
+    };
+  };
+
+  // Genetic Algorithm for Complex Layouts
+  const geneticLayoutOptimization = (
+    items: Design[],
+    pageWidth: number,
+    pageHeight: number,
+    options: OptimizationOptions
+  ): LayoutAlgorithmResult => {
+    const startTime = performance.now();
+    const populationSize = Math.min(50, items.length * 2);
+    const generations = Math.min(100, items.length * 5);
+    const mutationRate = 0.1;
+    
+    let population = initializePopulation(items, pageWidth, pageHeight, populationSize, options);
+    let bestSolution = population[0];
+    let iterations = 0;
+
+    for (let generation = 0; generation < generations; generation++) {
+      iterations++;
+      
+      // Evaluate fitness
+      population.forEach(individual => {
+        individual.fitness = calculateFitness(individual, pageWidth, pageHeight, options);
+      });
+
+      // Sort by fitness
+      population.sort((a, b) => b.fitness - a.fitness);
+      
+      if (population[0].fitness > bestSolution.fitness) {
+        bestSolution = { ...population[0] };
+      }
+
+      // Create next generation
+      const newPopulation = [];
+      
+      // Keep best 20%
+      const eliteCount = Math.floor(populationSize * 0.2);
+      for (let i = 0; i < eliteCount; i++) {
+        newPopulation.push({ ...population[i] });
+      }
+
+      // Crossover and mutation
+      while (newPopulation.length < populationSize) {
+        const parent1 = tournamentSelection(population);
+        const parent2 = tournamentSelection(population);
+        const child = crossover(parent1, parent2, options);
+        
+        if (Math.random() < mutationRate) {
+          mutate(child, pageWidth, pageHeight, options);
+        }
+        
+        newPopulation.push(child);
+      }
+
+      population = newPopulation;
+    }
+
+    const result = convertGeneticSolutionToLayout(bestSolution, items, pageWidth, pageHeight);
+    result.performance = {
+      algorithmUsed: 'Genetic Algorithm',
+      executionTime: performance.now() - startTime,
+      iterations
+    };
+
+    return result;
+  };
+
+  // Multi-Format Layout Comparison
+  const generateMultiFormatLayouts = async (
+    items: Design[],
+    options: OptimizationOptions
+  ): Promise<MultiFormatLayout> => {
+    const testFormats = [
+      currentPageDimensions,
+      ...PAPER_TEMPLATES.slice(0, 5).map(template => ({
+        width: { value: template.widthMM, unit: 'mm' as Unit },
+        height: { value: template.heightMM, unit: 'mm' as Unit },
+        widthMM: template.widthMM,
+        heightMM: template.heightMM,
+        orientation: 'portrait' as const
+      }))
+    ];
+
+    const results = await Promise.all(
+      testFormats.map(async (format) => {
+        const layout = await optimizeLayout(items, format, options);
+        const costAnalysis = calculateCostAnalysis(layout, format, items.length);
+        
+        return {
+          pageSize: format,
+          layout,
+          costAnalysis
+        };
+      })
+    );
+
+    // Find best option based on cost-efficiency balance
+    const scores = results.map((result, index) => ({
+      index,
+      score: (result.layout.efficiency * 0.6) + ((100 - result.costAnalysis.wastePercentage) * 0.4)
+    }));
+
+    const recommendedIndex = scores.reduce((best, current) => 
+      current.score > best.score ? current : best
+    ).index;
+
+    return {
+      formats: results,
+      recommended: recommendedIndex,
+      comparison: {
+        efficiency: results.map(r => r.layout.efficiency),
+        cost: results.map(r => r.costAnalysis.totalCost),
+        waste: results.map(r => r.costAnalysis.wastePercentage)
+      }
+    };
+  };
+
+  // Cost Analysis Functions
+  const calculateCostAnalysis = (
+    layout: LayoutAlgorithmResult,
+    pageSize: PageDimensions,
+    itemCount: number
+  ): CostAnalysis => {
+    const materialCostPerSqMM = 0.001; // Example: 0.001 TL per mm²
+    const cuttingCostPerMM = 0.01; // Example: 0.01 TL per mm cutting
+    const setupCost = 5; // Fixed setup cost
+
+    const totalArea = pageSize.widthMM * pageSize.heightMM;
+    const materialCost = totalArea * materialCostPerSqMM;
+    const wasteCost = (totalArea - layout.usedArea) * materialCostPerSqMM;
+    
+    const totalCuttingLength = layout.items.reduce((sum, item) => {
+      const perimeter = 2 * (item.width + item.height);
+      return sum + perimeter;
+    }, 0);
+    
+    const cuttingCost = totalCuttingLength * cuttingCostPerMM + setupCost;
+    const totalCost = materialCost + cuttingCost;
+    const costPerItem = totalCost / itemCount;
+
+    const suggestions = [];
+    if (layout.wastePercentage > 30) {
+      suggestions.push('Yüksek fire oranı - daha küçük sayfa boyutu deneyin');
+    }
+    if (layout.efficiency < 60) {
+      suggestions.push('Düşük verimlilik - rotasyon ayarlarını aktif edin');
+    }
+    if (costPerItem > 2) {
+      suggestions.push('Yüksek birim maliyet - toplu üretim düşünün');
+    }
+
+    return {
+      materialCost,
+      wasteCost,
+      cuttingCost,
+      totalCost,
+      costPerItem,
+      wastePercentage: layout.wastePercentage,
+      suggestions,
+      alternatives: []
+    };
+  };
+
+  // Helper Functions
+  const extractDimensions = (design: Design): { width: number; height: number } => {
+    if (design.realDimensionsMM && design.realDimensionsMM !== 'Unknown') {
+      const match = design.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
+      if (match) {
+        return { width: parseFloat(match[1]), height: parseFloat(match[2]) };
+      }
+    }
+    return { width: 50, height: 30 };
+  };
+
+  const calculateItemPriority = (item: Design, options: OptimizationOptions): number => {
+    const dims = extractDimensions(item);
+    const area = dims.width * dims.height;
+    
+    // Priority based on area, complexity, and user preferences
+    let priority = area * 0.5; // Base priority from area
+    
+    if (item.type === 'PDF') priority += 10; // PDF files get higher priority
+    if (dims.width > dims.height) priority += 5; // Landscape orientation bonus
+    
+    return priority;
+  };
+
+  const generateScaleFactors = (options: OptimizationOptions): number[] => {
+    const factors = [1]; // Always include original size
+    
+    if (options.allowDownscaling) {
+      for (let scale = options.minDownscaleRatio; scale < 1; scale += 0.1) {
+        factors.push(Number(scale.toFixed(1)));
+      }
+    }
+    
+    if (options.allowUpscaling) {
+      for (let scale = 1.1; scale <= options.maxUpscaleRatio; scale += 0.1) {
+        factors.push(Number(scale.toFixed(1)));
+      }
+    }
+    
+    return factors;
+  };
+
+  const calculatePlacementScore = (
+    x: number, y: number, width: number, height: number,
+    placedItems: OptimizedArrangementItem[],
+    options: OptimizationOptions,
+    pageWidth: number, pageHeight: number
+  ): number => {
+    let score = 0;
+    
+    // Bottom-left preference
+    score += (pageHeight - y) * 0.3;
+    score += (pageWidth - x) * 0.2;
+    
+    // Area efficiency
+    const area = width * height;
+    score += area * 0.4;
+    
+    // Spacing efficiency
+    const wastedSpace = calculateWastedSpace(x, y, width, height, placedItems);
+    score -= wastedSpace * 0.1;
+    
+    return score;
+  };
+
+  const calculateWastedSpace = (
+    x: number, y: number, width: number, height: number,
+    placedItems: OptimizedArrangementItem[]
+  ): number => {
+    // Calculate unusable space created by this placement
+    // This is a simplified version - could be more sophisticated
+    return 0;
+  };
+
+  const updateFreeRectangles = (
+    freeRects: Array<{x: number, y: number, width: number, height: number}>,
+    x: number, y: number, width: number, height: number
+  ) => {
+    // Remove overlapping rectangles and create new ones
+    const newRects = [];
+    
+    for (let i = freeRects.length - 1; i >= 0; i--) {
+      const rect = freeRects[i];
+      
+      if (!(x >= rect.x + rect.width || x + width <= rect.x || 
+            y >= rect.y + rect.height || y + height <= rect.y)) {
+        // Rectangle overlaps, split it
+        freeRects.splice(i, 1);
+        
+        // Create up to 4 new rectangles
+        if (rect.x < x) {
+          newRects.push({
+            x: rect.x, y: rect.y,
+            width: x - rect.x, height: rect.height
+          });
+        }
+        if (x + width < rect.x + rect.width) {
+          newRects.push({
+            x: x + width, y: rect.y,
+            width: rect.x + rect.width - (x + width), height: rect.height
+          });
+        }
+        if (rect.y < y) {
+          newRects.push({
+            x: rect.x, y: rect.y,
+            width: rect.width, height: y - rect.y
+          });
+        }
+        if (y + height < rect.y + rect.height) {
+          newRects.push({
+            x: rect.x, y: y + height,
+            width: rect.width, height: rect.y + rect.height - (y + height)
+          });
+        }
+      }
+    }
+    
+    freeRects.push(...newRects);
+    
+    // Remove redundant rectangles
+    for (let i = 0; i < freeRects.length; i++) {
+      for (let j = i + 1; j < freeRects.length; j++) {
+        if (isRectangleInside(freeRects[i], freeRects[j])) {
+          freeRects.splice(i, 1);
+          i--;
+          break;
+        } else if (isRectangleInside(freeRects[j], freeRects[i])) {
+          freeRects.splice(j, 1);
+          j--;
+        }
+      }
+    }
+  };
+
+  const isRectangleInside = (
+    inner: {x: number, y: number, width: number, height: number},
+    outer: {x: number, y: number, width: number, height: number}
+  ): boolean => {
+    return inner.x >= outer.x && inner.y >= outer.y &&
+           inner.x + inner.width <= outer.x + outer.width &&
+           inner.y + inner.height <= outer.y + outer.height;
+  };
+
+  const calculateItemCost = (
+    placement: any,
+    options: OptimizationOptions
+  ): number => {
+    const area = placement.width * placement.height;
+    const baseCost = area * 0.001; // Base material cost
+    
+    // Add cost for scaling
+    if (placement.isScaled) {
+      baseCost *= 1.1; // 10% penalty for scaling
+    }
+    
+    // Add cost for rotation
+    if (placement.isRotated) {
+      baseCost *= 1.05; // 5% penalty for rotation
+    }
+    
+    return baseCost;
+  };
+
+  // Genetic Algorithm Helper Functions
+  const initializePopulation = (
+    items: Design[], pageWidth: number, pageHeight: number,
+    populationSize: number, options: OptimizationOptions
+  ) => {
+    const population = [];
+    for (let i = 0; i < populationSize; i++) {
+      population.push(createRandomIndividual(items, pageWidth, pageHeight, options));
+    }
+    return population;
+  };
+
+  const createRandomIndividual = (
+    items: Design[], pageWidth: number, pageHeight: number, options: OptimizationOptions
+  ) => {
+    const genes = items.map(item => {
+      const dims = extractDimensions(item);
+      return {
+        itemId: item.id,
+        x: Math.random() * (pageWidth - dims.width),
+        y: Math.random() * (pageHeight - dims.height),
+        rotation: options.allowRotation ? Math.floor(Math.random() * 4) * options.rotationSteps : 0,
+        scale: 0.8 + Math.random() * 0.4 // 0.8 to 1.2
+      };
+    });
+    
+    return { genes, fitness: 0 };
+  };
+
+  const calculateFitness = (individual: any, pageWidth: number, pageHeight: number, options: OptimizationOptions) => {
+    // Implement fitness calculation based on overlap, area usage, etc.
+    let fitness = 0;
+    let totalArea = 0;
+    let overlaps = 0;
+    
+    // Check for overlaps and calculate total area
+    for (let i = 0; i < individual.genes.length; i++) {
+      const gene1 = individual.genes[i];
+      totalArea += gene1.scale * gene1.scale * 100; // Simplified area calculation
+      
+      for (let j = i + 1; j < individual.genes.length; j++) {
+        const gene2 = individual.genes[j];
+        if (isOverlapping(gene1, gene2)) {
+          overlaps++;
+        }
+      }
+    }
+    
+    fitness = totalArea - (overlaps * 1000); // Penalty for overlaps
+    return fitness;
+  };
+
+  const isOverlapping = (gene1: any, gene2: any): boolean => {
+    // Simplified overlap detection
+    const margin = 5;
+    return !(gene1.x + 50 + margin < gene2.x || 
+             gene2.x + 50 + margin < gene1.x ||
+             gene1.y + 30 + margin < gene2.y || 
+             gene2.y + 30 + margin < gene1.y);
+  };
+
+  const tournamentSelection = (population: any[]) => {
+    const tournamentSize = 3;
+    let best = population[Math.floor(Math.random() * population.length)];
+    
+    for (let i = 1; i < tournamentSize; i++) {
+      const competitor = population[Math.floor(Math.random() * population.length)];
+      if (competitor.fitness > best.fitness) {
+        best = competitor;
+      }
+    }
+    
+    return best;
+  };
+
+  const crossover = (parent1: any, parent2: any, options: OptimizationOptions) => {
+    const crossoverPoint = Math.floor(Math.random() * parent1.genes.length);
+    const childGenes = [];
+    
+    for (let i = 0; i < parent1.genes.length; i++) {
+      if (i < crossoverPoint) {
+        childGenes.push({ ...parent1.genes[i] });
+      } else {
+        childGenes.push({ ...parent2.genes[i] });
+      }
+    }
+    
+    return { genes: childGenes, fitness: 0 };
+  };
+
+  const mutate = (individual: any, pageWidth: number, pageHeight: number, options: OptimizationOptions) => {
+    const mutationStrength = 0.1;
+    
+    individual.genes.forEach((gene: any) => {
+      if (Math.random() < mutationStrength) {
+        gene.x += (Math.random() - 0.5) * 20;
+        gene.y += (Math.random() - 0.5) * 20;
+        gene.x = Math.max(0, Math.min(pageWidth - 50, gene.x));
+        gene.y = Math.max(0, Math.min(pageHeight - 30, gene.y));
+      }
+    });
+  };
+
+  const convertGeneticSolutionToLayout = (
+    solution: any, items: Design[], pageWidth: number, pageHeight: number
+  ): LayoutAlgorithmResult => {
+    const optimizedItems: OptimizedArrangementItem[] = solution.genes.map((gene: any, index: number) => ({
+      designId: gene.itemId,
+      x: gene.x,
+      y: gene.y,
+      width: 50 * gene.scale,
+      height: 30 * gene.scale,
+      rotation: gene.rotation,
+      scaleFactor: gene.scale,
+      isRotated: gene.rotation !== 0,
+      isScaled: Math.abs(gene.scale - 1) > 0.01,
+      priority: 1,
+      originalItem: items[index],
+      costContribution: 0
+    }));
+
+    const totalArea = pageWidth * pageHeight;
+    const usedArea = optimizedItems.reduce((sum, item) => sum + (item.width * item.height), 0);
+    const efficiency = (usedArea / totalArea) * 100;
+
+    return {
+      items: optimizedItems,
+      efficiency,
+      wastePercentage: 100 - efficiency,
+      totalArea,
+      usedArea,
+      estimatedCost: 0,
+      performance: {
+        algorithmUsed: 'Genetic Algorithm',
+        executionTime: 0,
+        iterations: 0
+      }
+    };
+  };
+
+  // Main optimization function
+  const optimizeLayout = async (
+    items: Design[],
+    pageSize: PageDimensions,
+    options: OptimizationOptions
+  ): Promise<LayoutAlgorithmResult> => {
+    const pageWidth = pageSize.widthMM - bleedSettings.left - bleedSettings.right;
+    const pageHeight = pageSize.heightMM - bleedSettings.top - bleedSettings.bottom;
+
+    let result: LayoutAlgorithmResult;
+
+    switch (options.mode) {
+      case 'maximum_efficiency':
+        if (items.length > 20) {
+          result = geneticLayoutOptimization(items, pageWidth, pageHeight, options);
+        } else {
+          result = advancedBinPacking(items, pageWidth, pageHeight, options);
+        }
+        break;
+      
+      case 'fast_layout':
+        result = advancedBinPacking(items, pageWidth, pageHeight, options);
+        break;
+      
+      default:
+        result = advancedBinPacking(items, pageWidth, pageHeight, options);
+    }
+
+    // Generate alternative layouts if requested
+    if (options.mode === 'maximum_efficiency') {
+      const alternatives = [];
+      
+      // Try with different settings
+      const altOptions = { ...options, allowRotation: !options.allowRotation };
+      const altResult = advancedBinPacking(items, pageWidth, pageHeight, altOptions);
+      alternatives.push(altResult);
+      
+      result.alternativeLayouts = alternatives;
+    }
+
+    return result;
   };
 
   /**
@@ -779,34 +1525,71 @@ export default function AutomationPanelNew() {
     },
   });
 
-  // Auto-arrange mutation
+  // Enhanced auto-arrange mutation with optimization
   const autoArrangeMutation = useMutation({
     mutationFn: async (): Promise<ArrangementResult> => {
       if (!Array.isArray(designs) || designs.length === 0) {
         throw new Error('Dizim yapılacak tasarım bulunamadı');
       }
 
-      const designIds = designs.map((d: Design) => d.id);
-      console.log('Starting auto-arrange with designs:', designIds);
+      setIsOptimizing(true);
 
       try {
-        const result = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
-          designIds,
-          plotterSettings
-        });
+        // Run local optimization first
+        const optimizedLayout = await optimizeLayout(designs, currentPageDimensions, optimizationOptions);
+        
+        // Calculate cost analysis
+        const costAnalysis = calculateCostAnalysis(optimizedLayout, currentPageDimensions, designs.length);
+        setCostAnalysis(costAnalysis);
 
-        if (!result || typeof result !== 'object') {
-          throw new Error('Geçersiz dizim sonucu alındı');
+        // Convert optimized layout to API format
+        const arrangements = optimizedLayout.items.map(item => ({
+          designId: item.designId,
+          x: item.x,
+          y: item.y,
+          width: item.width,
+          height: item.height,
+          withMargins: {
+            width: item.width + bleedSettings.left + bleedSettings.right,
+            height: item.height + bleedSettings.top + bleedSettings.bottom
+          }
+        }));
+
+        const result: ArrangementResult = {
+          arrangements,
+          totalArranged: optimizedLayout.items.length,
+          totalRequested: designs.length,
+          efficiency: `${optimizedLayout.efficiency.toFixed(1)}%`,
+          usedArea: {
+            width: currentPageDimensions.widthMM - bleedSettings.left - bleedSettings.right,
+            height: currentPageDimensions.heightMM - bleedSettings.top - bleedSettings.bottom
+          }
+        };
+
+        // Also try the original API for comparison if needed
+        if (optimizationOptions.mode !== 'maximum_efficiency') {
+          try {
+            const designIds = designs.map((d: Design) => d.id);
+            const apiResult = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
+              designIds,
+              plotterSettings
+            });
+
+            // Use API result if it's better
+            if (apiResult && parseFloat(apiResult.efficiency) > optimizedLayout.efficiency) {
+              setIsOptimizing(false);
+              return apiResult;
+            }
+          } catch (apiError) {
+            console.warn('API fallback failed:', apiError);
+          }
         }
 
-        if (!Array.isArray(result.arrangements)) {
-          console.warn('Arrangements is not an array:', result.arrangements);
-          result.arrangements = [];
-        }
-
+        setIsOptimizing(false);
         return result;
       } catch (error) {
-        console.error('Auto-arrange API error:', error);
+        setIsOptimizing(false);
+        console.error('Optimization error:', error);
         throw error;
       }
     },
@@ -1366,10 +2149,229 @@ export default function AutomationPanelNew() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              Gelişmiş Ayarlar
+              Gelişmiş Ayarlar & Optimizasyon
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Optimization Mode Selection */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Optimizasyon Modu</Label>
+              <Select value={optimizationOptions.mode} 
+                      onValueChange={(mode: 'maximum_efficiency' | 'fast_layout' | 'balanced' | 'custom') => 
+                        setOptimizationOptions(prev => ({ ...prev, mode }))}>
+                <SelectTrigger className="text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="maximum_efficiency">🎯 Maksimum Verimlilik</SelectItem>
+                  <SelectItem value="fast_layout">⚡ Hızlı Dizilim</SelectItem>
+                  <SelectItem value="balanced">⚖️ Dengeli</SelectItem>
+                  <SelectItem value="custom">🔧 Özel Ayarlar</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="text-xs text-gray-600 mt-1">
+                {optimizationOptions.mode === 'maximum_efficiency' && 'Genetik algoritma ile en yüksek alan verimliliği'}
+                {optimizationOptions.mode === 'fast_layout' && 'Hızlı bin packing algoritması'}
+                {optimizationOptions.mode === 'balanced' && 'Hız ve verimlilik dengesi'}
+                {optimizationOptions.mode === 'custom' && 'Manuel optimizasyon ayarları'}
+              </div>
+            </div>
+
+            {/* Rotation Settings */}
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Rotasyon Ayarları</Label>
+                <Switch
+                  checked={optimizationOptions.allowRotation}
+                  onCheckedChange={(checked) => 
+                    setOptimizationOptions(prev => ({ ...prev, allowRotation: checked }))}
+                />
+              </div>
+              
+              {optimizationOptions.allowRotation && (
+                <div>
+                  <Label htmlFor="rotation-steps" className="text-xs">Rotasyon Adımları: {optimizationOptions.rotationSteps}°</Label>
+                  <Select value={optimizationOptions.rotationSteps.toString()} 
+                          onValueChange={(value) => 
+                            setOptimizationOptions(prev => ({ ...prev, rotationSteps: parseInt(value) }))}>
+                    <SelectTrigger className="text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="45">45° adımlar</SelectItem>
+                      <SelectItem value="90">90° adımlar</SelectItem>
+                      <SelectItem value="180">180° adımlar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            {/* Spacing Optimization */}
+            <div className="space-y-3 pt-3 border-t">
+              <Label className="text-sm font-medium">Boşluk Optimizasyonu</Label>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="min-spacing" className="text-xs">Min. Boşluk (mm)</Label>
+                  <input
+                    id="min-spacing"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.5"
+                    value={optimizationOptions.minimumSpacing}
+                    onChange={(e) => setOptimizationOptions(prev => ({ ...prev, minimumSpacing: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-2 py-1 text-xs border rounded"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="max-spacing" className="text-xs">Max. Boşluk (mm)</Label>
+                  <input
+                    id="max-spacing"
+                    type="number"
+                    min="1"
+                    max="20"
+                    step="0.5"
+                    value={optimizationOptions.maximumSpacing}
+                    onChange={(e) => setOptimizationOptions(prev => ({ ...prev, maximumSpacing: parseFloat(e.target.value) || 5 }))}
+                    className="w-full px-2 py-1 text-xs border rounded"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="packing-tightness" className="text-xs">Yerleştirme Sıkılığı: {(optimizationOptions.packingTightness * 100).toFixed(0)}%</Label>
+                <input
+                  id="packing-tightness"
+                  type="range"
+                  min="0.5"
+                  max="1"
+                  step="0.1"
+                  value={optimizationOptions.packingTightness}
+                  onChange={(e) => setOptimizationOptions(prev => ({ ...prev, packingTightness: parseFloat(e.target.value) }))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Scale Settings */}
+            <div className="space-y-3 pt-3 border-t">
+              <Label className="text-sm font-medium">Ölçeklendirme Seçenekleri</Label>
+              
+              <div className="flex items-center space-x-2 mb-2">
+                <Switch
+                  id="allow-downscaling"
+                  checked={optimizationOptions.allowDownscaling}
+                  onCheckedChange={(checked) => 
+                    setOptimizationOptions(prev => ({ ...prev, allowDownscaling: checked }))}
+                />
+                <Label htmlFor="allow-downscaling" className="text-xs cursor-pointer">
+                  Küçültme İzni ({(optimizationOptions.minDownscaleRatio * 100).toFixed(0)}% min)
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="allow-upscaling-opt"
+                  checked={optimizationOptions.allowUpscaling}
+                  onCheckedChange={(checked) => 
+                    setOptimizationOptions(prev => ({ ...prev, allowUpscaling: checked }))}
+                />
+                <Label htmlFor="allow-upscaling-opt" className="text-xs cursor-pointer">
+                  Büyütme İzni ({(optimizationOptions.maxUpscaleRatio * 100).toFixed(0)}% max)
+                </Label>
+              </div>
+            </div>
+
+            {/* Cost Analysis Display */}
+            {costAnalysis && (
+              <div className="space-y-3 pt-3 border-t">
+                <Label className="text-sm font-medium flex items-center gap-1">
+                  💰 Maliyet Analizi
+                </Label>
+                
+                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="font-medium text-green-800">Toplam Maliyet:</span>
+                      <p className="text-green-900 font-bold">{costAnalysis.totalCost.toFixed(2)} ₺</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-green-800">Birim Maliyet:</span>
+                      <p className="text-green-900 font-bold">{costAnalysis.costPerItem.toFixed(2)} ₺</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-green-800">Fire Oranı:</span>
+                      <p className="text-green-900">{costAnalysis.wastePercentage.toFixed(1)}%</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-green-800">İsraf Maliyeti:</span>
+                      <p className="text-green-900">{costAnalysis.wasteCost.toFixed(2)} ₺</p>
+                    </div>
+                  </div>
+                  
+                  {costAnalysis.suggestions.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-green-300">
+                      <span className="text-xs font-medium text-green-800">💡 Öneriler:</span>
+                      {costAnalysis.suggestions.map((suggestion, index) => (
+                        <p key={index} className="text-xs text-green-700 mt-1">• {suggestion}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Multi-Format Comparison */}
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">📊 Format Karşılaştırması</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (designs.length > 0) {
+                      setIsOptimizing(true);
+                      generateMultiFormatLayouts(designs, optimizationOptions)
+                        .then(results => {
+                          setMultiFormatResults(results);
+                          setIsOptimizing(false);
+                        })
+                        .catch(() => setIsOptimizing(false));
+                    }
+                  }}
+                  disabled={designs.length === 0 || isOptimizing}
+                  className="text-xs h-6 px-2"
+                >
+                  {isOptimizing ? '⏳' : '🔍'} Analiz Et
+                </Button>
+              </div>
+              
+              {multiFormatResults && (
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <div className="text-xs">
+                    <p className="font-medium text-blue-800 mb-2">
+                      🏆 Önerilen: {PAPER_TEMPLATES.find(t => 
+                        t.widthMM === multiFormatResults.formats[multiFormatResults.recommended]?.pageSize.widthMM
+                      )?.name || 'Özel Boyut'}
+                    </p>
+                    
+                    <div className="space-y-1">
+                      {multiFormatResults.formats.slice(0, 3).map((format, index) => (
+                        <div key={index} className={`flex justify-between ${
+                          index === multiFormatResults.recommended ? 'font-bold text-blue-900' : 'text-blue-700'
+                        }`}>
+                          <span>{format.pageSize.widthMM}×{format.pageSize.heightMM}mm</span>
+                          <span>{format.layout.efficiency.toFixed(1)}% | {format.costAnalysis.totalCost.toFixed(1)}₺</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             {/* Scaling Options */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Ölçeklendirme Seçenekleri</Label>
@@ -1621,21 +2623,37 @@ export default function AutomationPanelNew() {
             <Button
               size="lg"
               onClick={() => autoArrangeMutation.mutate()}
-              disabled={designs.length === 0 || isBusy}
+              disabled={designs.length === 0 || isBusy || isOptimizing}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-4 text-lg font-bold disabled:opacity-50"
             >
-              {autoArrangeMutation.isPending ? (
+              {isOptimizing || autoArrangeMutation.isPending ? (
                 <>
                   <Play className="animate-spin h-6 w-6 mr-3" />
-                  DİZİLİYOR...
+                  {isOptimizing ? 'OPTİMİZE EDİLİYOR...' : 'DİZİLİYOR...'}
                 </>
               ) : (
                 <>
                   <Play className="h-6 w-6 mr-3" />
-                  HEMEN DİZİN
+                  AKILLI DİZİN
                 </>
               )}
             </Button>
+
+            {costAnalysis && (
+              <div className="text-center mt-4">
+                <div className="inline-flex items-center gap-4 px-4 py-2 bg-green-100 rounded-lg text-sm">
+                  <span className="text-green-800">
+                    <strong>Tahmini Maliyet:</strong> {costAnalysis.totalCost.toFixed(2)} ₺
+                  </span>
+                  <span className="text-green-700">
+                    <strong>Verimlilik:</strong> {(100 - costAnalysis.wastePercentage).toFixed(1)}%
+                  </span>
+                  <span className="text-green-700">
+                    <strong>Birim:</strong> {costAnalysis.costPerItem.toFixed(2)} ₺
+                  </span>
+                </div>
+              </div>
+            )}
 
             {generatePdfMutation.isPending && (
               <div className="text-center">
@@ -1647,8 +2665,9 @@ export default function AutomationPanelNew() {
             )}
 
             <p className="text-sm text-gray-500 text-center max-w-md">
-              Tüm vektörel dosyalarınız {formatDimension(currentPageDimensions.widthMM, 'mm')} × {formatDimension(currentPageDimensions.heightMM, 'mm')} 
-              boyutundaki sayfaya otomatik olarak yerleştirilecek ve PDF olarak indirilecek.
+              Gelişmiş algoritma ile {formatDimension(currentPageDimensions.widthMM, 'mm')} × {formatDimension(currentPageDimensions.heightMM, 'mm')} 
+              boyutuna {optimizationOptions.mode === 'maximum_efficiency' ? 'maksimum verimlilik' : 'hızlı dizilim'} ile yerleştirme.
+              {optimizationOptions.allowRotation && ' Otomatik rotasyon aktif.'}
             </p>
 
             {/* Status indicators */}
