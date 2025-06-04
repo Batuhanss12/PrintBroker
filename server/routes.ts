@@ -883,7 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
 
       if (!user || user.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
+        return res.status403).json({ message: "Admin access required" });
       }
 
       const activity = await storage.getRecentActivity();
@@ -1427,7 +1427,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       outputPath
     });
 
-    
+
     // Python PDF generator çağrısı
     try {
       const pythonScriptPath = path.join(process.cwd(), 'server', 'pdfGenerator.py');
@@ -1486,8 +1486,8 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
     updateProgress('PDF Document Initialized');
 
-    const PDFDocument = require('pdfkit');
-    const fs = require('fs');
+    const { PDFDocument } = await import('pdfkit');
+    const fs = await import('fs');
     const mmToPoints = 2.8346456693; // 1mm = 2.8346456693 points
     const pageWidthPt = pageWidthMM * mmToPoints;
     const pageHeightPt = pageHeightMM * mmToPoints;
@@ -1749,16 +1749,16 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       }
 
       const { plotterSettings, arrangements } = req.body;
-      
+
       console.log('📄 PDF generation request received');
       console.log('📋 Extracted arranged items:', arrangements?.length || 0);
-      
+
       // Use Node.js PDF generator
       const result = await nodePDFGenerator.generateArrangementPDF({
         plotterSettings,
         arrangements
       });
-      
+
       if (result.success) {
         console.log('✅ PDF generation successful');
         res.json({
