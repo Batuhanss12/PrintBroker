@@ -108,15 +108,20 @@ export default function Landing() {
       }
 
       // Make login request
-      const response = await apiRequest('/api/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
-        body: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: formData.email,
           password: formData.password
-        }
+        })
       });
 
-      if (response.success) {
+      const result = await response.json();
+
+      if (result.success) {
         toast({
           title: "Giriş başarılı",
           description: "Hoş geldiniz!",
@@ -127,7 +132,7 @@ export default function Landing() {
       } else {
         toast({
           title: "Giriş hatası",
-          description: response.message || "Email veya şifre hatalı",
+          description: result.message || "Email veya şifre hatalı",
           variant: "destructive",
         });
       }

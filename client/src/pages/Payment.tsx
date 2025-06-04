@@ -121,37 +121,22 @@ export default function Payment() {
     return true;
   };
 
-  // Load registration data if available
+  // Load user data automatically
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Load saved registration data
-      const savedData = sessionStorage.getItem(planType === 'customer' ? 'customerRegistration' : 'printerRegistration');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        setFormData(prev => ({
-          ...prev,
-          firstName: data.firstName || user.firstName || "",
-          lastName: data.lastName || user.lastName || "",
-          email: data.email || user.email || "",
-          phone: data.phone || "",
-          address: data.address || "",
-          city: data.city || "",
-          postalCode: data.postalCode || "",
-          companyName: data.companyName || user.companyName || "",
-          taxNumber: data.taxNumber || ""
-        }));
-        // Clear the session storage
-        sessionStorage.removeItem(planType === 'customer' ? 'customerRegistration' : 'printerRegistration');
-      } else {
-        // Fill with existing user data
-        setFormData(prev => ({
-          ...prev,
-          firstName: user.firstName || "",
-          lastName: user.lastName || "",
-          email: user.email || "",
-          companyName: user.companyName || "",
-        }));
-      }
+      // Fill form with existing user data
+      setFormData(prev => ({
+        ...prev,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        city: user.city || "",
+        postalCode: user.postalCode || "",
+        companyName: user.companyName || "",
+        taxNumber: user.taxNumber || ""
+      }));
     }
   }, [isAuthenticated, user, planType]);
 
