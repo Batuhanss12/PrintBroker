@@ -23,7 +23,6 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: (req, file, cb) => {
-<<<<<<< HEAD
     console.log('File upload attempt:', {
       fieldname: file.fieldname,
       originalname: file.originalname,
@@ -53,27 +52,6 @@ const upload = multer({
     } else {
       console.log('Rejected file type:', file.mimetype, 'Extension:', fileExt);
       cb(new Error(`Invalid file type: ${file.mimetype}. Only PDF, SVG, AI, EPS files are allowed.`));
-=======
-    // Allow only vector file types for precise measurements
-    const allowedTypes = [
-      'application/pdf',
-      'application/postscript', // .ai files
-      'image/svg+xml',
-      'application/illustrator', // Adobe Illustrator
-      'application/x-eps', // EPS files
-      'application/eps',
-      'image/eps'
-    ];
-
-    // Also check file extensions for better validation
-    const allowedExtensions = ['.pdf', '.ai', '.svg', '.eps', '.ps'];
-    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
-
-    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Sadece vektörel dosya formatları kabul edilir: PDF, AI, SVG, EPS'));
->>>>>>> c31c710b20fac8d4d13b045002cad97c445901be
     }
   }
 });
