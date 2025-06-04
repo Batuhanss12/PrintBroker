@@ -57,16 +57,16 @@ interface LabelLayout {
 export default function AutomationPanel() {
   const [activeTab, setActiveTab] = useState('plotter');
   const [plotterSettings, setPlotterSettings] = useState<PlotterSettings>({
-    sheetWidth: 330,
-    sheetHeight: 480,
-    marginTop: 10,
-    marginBottom: 10,
-    marginLeft: 10,
-    marginRight: 10,
+    sheetWidth: 330, // 33 cm sabit
+    sheetHeight: 480, // 48 cm sabit
+    marginTop: 5,
+    marginBottom: 5,
+    marginLeft: 5,
+    marginRight: 5,
     labelWidth: 50,
     labelHeight: 30,
-    horizontalSpacing: 2,
-    verticalSpacing: 2,
+    horizontalSpacing: 3, // 0.3 cm kesim payı
+    verticalSpacing: 3, // 0.3 cm kesim payı
   });
   const [previewMode, setPreviewMode] = useState(false);
   const [layoutName, setLayoutName] = useState("");

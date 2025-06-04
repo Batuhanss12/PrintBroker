@@ -1295,55 +1295,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Design IDs are required" });
       }
 
-      // Calculate optimal arrangement
-      const usableWidth = plotterSettings.sheetWidth - plotterSettings.marginLeft - plotterSettings.marginRight;
-      const usableHeight = plotterSettings.sheetHeight - plotterSettings.marginTop - plotterSettings.marginBottom;
-      
-      const arrangements = [];
-      let currentRow = 0;
-      let currentCol = 0;
-      let maxRowHeight = plotterSettings.labelHeight;
-      let totalArranged = 0;
+      // Get real design dimensions from database
+      const designFiles = await Promise.all(
+        designIds.map(async (id: string) => {
+          const files = await storage.getFilesByUser(userId);
+          return files.find(f => f.id === id);
+        })
+      );
 
-      for (let i = 0; i < designIds.length; i++) {
-        const designId = designIds[i];
-        const designWidth = plotterSettings.labelWidth;
-        const designHeight = plotterSettings.labelHeight;
+      // Filter valid files and extract real dimensions
+      const validDesigns = designFiles.filter(file => file).map(file => {
+        let width = 50; // default mm
+        let height = 30; // default mm
         
-        // Calculate position
-        const x = plotterSettings.marginLeft + currentCol * (designWidth + plotterSettings.horizontalSpacing);
-        const y = plotterSettings.marginTop + currentRow * (designHeight + plotterSettings.verticalSpacing);
-        
-        // Check if design fits in current position
-        if (x + designWidth <= plotterSettings.sheetWidth - plotterSettings.marginRight &&
-            y + designHeight <= plotterSettings.sheetHeight - plotterSettings.marginBottom) {
-          
-          arrangements.push({
-            designId,
-            x,
-            y,
-            width: designWidth,
-            height: designHeight,
-            row: currentRow,
-            col: currentCol
-          });
-          
-          totalArranged++;
-          currentCol++;
-          
-          // Check if we need to move to next row
-          if (x + designWidth + plotterSettings.horizontalSpacing + designWidth > 
-              plotterSettings.sheetWidth - plotterSettings.marginRight) {
-            currentRow++;
-            currentCol = 0;
+        // Parse real dimensions from metadata or dimensions field
+        if (file!.dimensions && file!.dimensions !== 'Unknown') {
+          const dimMatch = file!.dimensions.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
+          if (dimMatch) {
+            width = parseFloat(dimMatch[1]);
+            height = parseFloat(dimMatch[2]);
+            
+            // Convert pixels to mm if needed (assuming 72 DPI)
+            if (width > 1000 || height > 1000) {
+              width = width * 0.352778; // px to mm
+              height = height * 0.352778;
+            }
           }
-        } else {
-          // No more space
-          break;
+        }
+        
+        return {
+          id: file!.id,
+          width: width + 3, // Add 0.3cm cutting margin (3mm)
+          height: height + 3,
+          originalWidth: width,
+          originalHeight: height,
+          name: file!.originalName
+        };
+      });
+
+      // Advanced 2D Bin Packing Algorithm
+      const SHEET_WIDTH = 330; // 33cm fixed
+      const SHEET_HEIGHT = 480; // 48cm fixed
+      const MARGIN = 5; // 0.5cm margin
+      
+      const usableWidth = SHEET_WIDTH - (MARGIN * 2);
+      const usableHeight = SHEET_HEIGHT - (MARGIN * 2);
+      
+      // Bin packing using Best Fit Decreasing Height algorithm
+      const arrangements = [];
+      const levels = []; // Track horizontal levels
+      let totalArranged = 0;
+      
+      // Sort designs by height (descending) for better packing
+      validDesigns.sort((a, b) => b.height - a.height);
+
+      for (const design of validDesigns) {
+        let placed = false;
+        
+        // Try to place in existing levels
+        for (let levelIndex = 0; levelIndex < levels.length && !placed; levelIndex++) {
+          const level = levels[levelIndex];
+          
+          // Check if design fits in this level
+          if (level.remainingWidth >= design.width && 
+              level.height >= design.height) {
+            
+            // Place design in this level
+            const x = MARGIN + (usableWidth - level.remainingWidth);
+            const y = MARGIN + level.y;
+            
+            arrangements.push({
+              designId: design.id,
+              x: x,
+              y: y,
+              width: design.originalWidth,
+              height: design.originalHeight,
+              withMargins: {
+                width: design.width,
+                height: design.height
+              }
+            });
+            
+            level.remainingWidth -= design.width;
+            totalArranged++;
+            placed = true;
+          }
+        }
+        
+        // If not placed, try to create new level
+        if (!placed) {
+          const totalLevelsHeight = levels.reduce((sum, level) => sum + level.height, 0);
+          
+          if (totalLevelsHeight + design.height <= usableHeight) {
+            // Create new level
+            const newLevel = {
+              y: totalLevelsHeight,
+              height: design.height,
+              remainingWidth: usableWidth - design.width
+            };
+            
+            const x = MARGIN;
+            const y = MARGIN + totalLevelsHeight;
+            
+            arrangements.push({
+              designId: design.id,
+              x: x,
+              y: y,
+              width: design.originalWidth,
+              height: design.originalHeight,
+              withMargins: {
+                width: design.width,
+                height: design.height
+              }
+            });
+            
+            levels.push(newLevel);
+            totalArranged++;
+            placed = true;
+          }
+        }
+        
+        if (!placed) {
+          break; // No more space available
         }
       }
 
-      const efficiency = Math.round((totalArranged / designIds.length) * 100);
+      // Calculate space efficiency
+      const totalDesignArea = validDesigns.slice(0, totalArranged).reduce((sum, design) => 
+        sum + (design.originalWidth * design.originalHeight), 0);
+      const usableArea = usableWidth * usableHeight;
+      const efficiency = Math.round((totalDesignArea / usableArea) * 100);
 
       res.json({
         arrangements,
