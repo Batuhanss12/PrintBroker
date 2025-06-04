@@ -300,6 +300,68 @@ export class FileProcessingService {
     return 'other';
   }
 
+  private extractSVGDimensions(svgContent: string): { realWidth: number | null, realHeight: number | null } {
+    try {
+      // Extract width and height from SVG attributes
+      const widthMatch = svgContent.match(/width\s*=\s*["']([^"']+)["']/i);
+      const heightMatch = svgContent.match(/height\s*=\s*["']([^"']+)["']/i);
+      
+      let realWidth: number | null = null;
+      let realHeight: number | null = null;
+      
+      if (widthMatch) {
+        const widthStr = widthMatch[1];
+        if (widthStr.includes('mm')) {
+          realWidth = parseFloat(widthStr.replace('mm', ''));
+        } else if (widthStr.includes('cm')) {
+          realWidth = parseFloat(widthStr.replace('cm', '')) * 10;
+        } else if (widthStr.includes('in')) {
+          realWidth = parseFloat(widthStr.replace('in', '')) * 25.4;
+        } else if (widthStr.includes('pt')) {
+          realWidth = parseFloat(widthStr.replace('pt', '')) * 0.352778;
+        } else {
+          // Assume pixels, convert using 72 DPI
+          realWidth = parseFloat(widthStr) * 0.352778;
+        }
+      }
+      
+      if (heightMatch) {
+        const heightStr = heightMatch[1];
+        if (heightStr.includes('mm')) {
+          realHeight = parseFloat(heightStr.replace('mm', ''));
+        } else if (heightStr.includes('cm')) {
+          realHeight = parseFloat(heightStr.replace('cm', '')) * 10;
+        } else if (heightStr.includes('in')) {
+          realHeight = parseFloat(heightStr.replace('in', '')) * 25.4;
+        } else if (heightStr.includes('pt')) {
+          realHeight = parseFloat(heightStr.replace('pt', '')) * 0.352778;
+        } else {
+          // Assume pixels, convert using 72 DPI
+          realHeight = parseFloat(heightStr) * 0.352778;
+        }
+      }
+      
+      // Try viewBox if dimensions not found
+      if (!realWidth || !realHeight) {
+        const viewBoxMatch = svgContent.match(/viewBox\s*=\s*["']([^"']+)["']/i);
+        if (viewBoxMatch) {
+          const viewBoxValues = viewBoxMatch[1].split(/\s+/);
+          if (viewBoxValues.length >= 4) {
+            const vbWidth = parseFloat(viewBoxValues[2]);
+            const vbHeight = parseFloat(viewBoxValues[3]);
+            if (!realWidth) realWidth = vbWidth * 0.352778; // Convert assuming 72 DPI
+            if (!realHeight) realHeight = vbHeight * 0.352778;
+          }
+        }
+      }
+      
+      return { realWidth, realHeight };
+    } catch (error) {
+      console.warn('SVG dimension extraction error:', error);
+      return { realWidth: null, realHeight: null };
+    }
+  }
+
   async getFilePreviewInfo(filePath: string, mimeType: string) {
     const stats = fs.statSync(filePath);
     const metadata = await this.processFile(filePath, mimeType);
