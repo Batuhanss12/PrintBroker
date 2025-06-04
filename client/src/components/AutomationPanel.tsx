@@ -70,6 +70,9 @@ export default function AutomationPanel() {
   });
   const [previewMode, setPreviewMode] = useState(false);
   const [layoutName, setLayoutName] = useState("");
+  const [uploadedDesigns, setUploadedDesigns] = useState<any[]>([]);
+  const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
+  const [arrangements, setArrangements] = useState<any[]>([]);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -78,6 +81,12 @@ export default function AutomationPanel() {
   const { data: savedLayouts = [] } = useQuery({
     queryKey: ['/api/automation/plotter/layouts'],
     queryFn: () => apiRequest('GET', '/api/automation/plotter/layouts'),
+  });
+
+  // Fetch uploaded designs
+  const { data: designs = [] } = useQuery({
+    queryKey: ['/api/automation/plotter/designs'],
+    queryFn: () => apiRequest('GET', '/api/automation/plotter/designs'),
   });
 
   // Save layout mutation
@@ -102,14 +111,67 @@ export default function AutomationPanel() {
     },
   });
 
+  // File upload mutation
+  const uploadDesignsMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch('/api/automation/plotter/upload-designs', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Upload failed');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setUploadedDesigns(prev => [...prev, ...data.designs]);
+      queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
+      toast({
+        title: "Başarılı",
+        description: `${data.designs.length} tasarım dosyası yüklendi.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Hata",
+        description: "Dosya yüklenemedi.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Auto-arrange mutation
+  const autoArrangeMutation = useMutation({
+    mutationFn: async (data: { designIds: string[]; plotterSettings: PlotterSettings }) => {
+      return await apiRequest('POST', '/api/automation/plotter/auto-arrange', data);
+    },
+    onSuccess: (data) => {
+      setArrangements(data.arrangements);
+      toast({
+        title: "Başarılı",
+        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik).`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Hata",
+        description: "Otomatik dizim başarısız.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Generate PDF mutation
   const generatePdfMutation = useMutation({
-    mutationFn: async (settings: PlotterSettings) => {
-      return await apiRequest('POST', '/api/automation/plotter/generate-pdf', settings);
+    mutationFn: async (data: { plotterSettings: PlotterSettings; arrangements?: any[] }) => {
+      const response = await fetch('/api/automation/plotter/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('PDF generation failed');
+      return response.blob();
     },
-    onSuccess: (response) => {
-      // Handle PDF download
-      const url = window.URL.createObjectURL(new Blob([response], { type: 'application/pdf' }));
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `etiket-dizimi-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -162,6 +224,42 @@ export default function AutomationPanel() {
   const loadLayout = (savedLayout: LabelLayout) => {
     setPlotterSettings(savedLayout.settings);
     setLayoutName(savedLayout.name);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const formData = new FormData();
+    Array.from(files).forEach((file) => {
+      formData.append('designs', file);
+    });
+
+    uploadDesignsMutation.mutate(formData);
+  };
+
+  const toggleDesignSelection = (designId: string) => {
+    setSelectedDesigns(prev => 
+      prev.includes(designId) 
+        ? prev.filter(id => id !== designId)
+        : [...prev, designId]
+    );
+  };
+
+  const handleAutoArrange = () => {
+    if (selectedDesigns.length === 0) {
+      toast({
+        title: "Uyarı",
+        description: "Lütfen en az bir tasarım seçin.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    autoArrangeMutation.mutate({
+      designIds: selectedDesigns,
+      plotterSettings
+    });
   };
 
   const PlotterPreview = () => {
@@ -446,7 +544,10 @@ export default function AutomationPanel() {
                 </div>
                 
                 <Button
-                  onClick={() => generatePdfMutation.mutate(plotterSettings)}
+                  onClick={() => generatePdfMutation.mutate({ 
+                    plotterSettings, 
+                    arrangements: arrangements.length > 0 ? arrangements : undefined 
+                  })}
                   disabled={generatePdfMutation.isPending}
                   className="bg-green-600 hover:bg-green-700"
                 >
@@ -455,8 +556,130 @@ export default function AutomationPanel() {
                 </Button>
               </div>
 
+              {/* Design Upload & Gallery */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Image className="h-5 w-5" />
+                    Tasarım Dosyaları
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* File Upload */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <input
+                      type="file"
+                      id="design-upload"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.svg"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <label htmlFor="design-upload" className="cursor-pointer">
+                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-lg font-medium text-gray-900 mb-2">
+                        Tasarım Dosyalarını Yükleyin
+                      </p>
+                      <p className="text-gray-600 mb-4">
+                        PDF, JPG, PNG, SVG formatları desteklenir
+                      </p>
+                      <Button disabled={uploadDesignsMutation.isPending}>
+                        {uploadDesignsMutation.isPending ? "Yükleniyor..." : "Dosya Seç"}
+                      </Button>
+                    </label>
+                  </div>
+
+                  {/* Design Gallery */}
+                  {Array.isArray(designs) && designs.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-medium">Yüklenen Tasarımlar ({designs.length})</h4>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedDesigns(designs.map((d: any) => d.id))}
+                          >
+                            Tümünü Seç
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedDesigns([])}
+                          >
+                            Seçimi Temizle
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                        {designs.map((design: any) => (
+                          <div
+                            key={design.id}
+                            className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                              selectedDesigns.includes(design.id)
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            onClick={() => toggleDesignSelection(design.id)}
+                          >
+                            <div className="aspect-square bg-gray-100 rounded mb-2 flex items-center justify-center">
+                              {design.thumbnailPath ? (
+                                <img
+                                  src={design.thumbnailPath}
+                                  alt={design.name}
+                                  className="max-w-full max-h-full object-contain"
+                                />
+                              ) : (
+                                <FileText className="h-8 w-8 text-gray-400" />
+                              )}
+                            </div>
+                            <p className="text-sm font-medium truncate">{design.name}</p>
+                            <p className="text-xs text-gray-600">{design.dimensions}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Auto Arrange Controls */}
+                      {selectedDesigns.length > 0 && (
+                        <div className="flex gap-3 p-4 bg-blue-50 rounded-lg">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-blue-900">
+                              {selectedDesigns.length} tasarım seçildi
+                            </p>
+                            <p className="text-xs text-blue-700">
+                              Otomatik dizim ile tasarımları kağıt üzerine yerleştirin
+                            </p>
+                          </div>
+                          <Button
+                            onClick={handleAutoArrange}
+                            disabled={autoArrangeMutation.isPending}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <ArrowUpDown className="h-4 w-4 mr-2" />
+                            {autoArrangeMutation.isPending ? "Diziliyor..." : "Otomatik Dizim"}
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Arrangement Results */}
+                      {arrangements.length > 0 && (
+                        <div className="p-4 bg-green-50 rounded-lg">
+                          <p className="text-sm font-medium text-green-900 mb-2">
+                            Dizim Tamamlandı
+                          </p>
+                          <p className="text-xs text-green-700">
+                            {arrangements.length} tasarım başarıyla dizildi
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Saved Layouts */}
-              {savedLayouts.length > 0 && (
+              {Array.isArray(savedLayouts) && savedLayouts.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Kaydedilmiş Düzenler</CardTitle>

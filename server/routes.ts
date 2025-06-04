@@ -6,6 +6,7 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { fileProcessingService } from "./fileProcessingService";
 import { insertQuoteSchema, insertPrinterQuoteSchema, insertRatingSchema, insertChatRoomSchema, insertChatMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { ideogramService } from "./ideogramApi";

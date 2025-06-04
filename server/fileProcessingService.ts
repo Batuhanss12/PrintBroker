@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import sharp from 'sharp';
+// import sharp from 'sharp'; // Temporarily disabled
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
