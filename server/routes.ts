@@ -1452,14 +1452,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { plotterSettings, arrangements } = req.body;
-
-      // Mock PDF generation - in production, this would generate actual PDF with arranged designs
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="plotter-layout-with-designs.pdf"');
       
-      // Simple mock PDF content
-      const pdfContent = Buffer.from('Mock PDF content for plotter layout with arranged designs');
-      res.send(pdfContent);
+      if (!arrangements || !arrangements.arrangements || arrangements.arrangements.length === 0) {
+        return res.status(400).json({ message: "No arrangements provided" });
+      }
+
+      // Generate PDF using PDFKit
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument({
+        size: [330 * 2.834645669, 480 * 2.834645669], // 33x48 cm in points
+        margins: { top: 14.17, bottom: 14.17, left: 14.17, right: 14.17 } // 5mm margins
+      });
+
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="matbixx-layout-33x48cm.pdf"');
+      
+      // Pipe PDF to response
+      doc.pipe(res);
+
+      // Add title and header
+      doc.fontSize(16)
+         .fillColor('black')
+         .text('Matbixx - Otomatik Tasarım Dizimi', 50, 50);
+      
+      doc.fontSize(10)
+         .text('Baskı Alanı: 33cm x 48cm | Kesim Payı: 0.3cm', 50, 70)
+         .text(`Toplam Tasarım: ${arrangements.arrangements.length} | Algoritma: 2D Bin Packing`, 50, 85);
+
+      // Draw border (33x48 cm area)
+      const BORDER_MARGIN = 14.17; // 5mm in points
+      const SHEET_WIDTH = 330 * 2.834645669; // 33cm in points
+      const SHEET_HEIGHT = 480 * 2.834645669; // 48cm in points
+      
+      doc.strokeColor('black')
+         .lineWidth(1)
+         .rect(BORDER_MARGIN, BORDER_MARGIN + 100, 
+               SHEET_WIDTH - 2 * BORDER_MARGIN, 
+               SHEET_HEIGHT - 2 * BORDER_MARGIN - 100)
+         .stroke();
+
+      // Draw each arranged design
+      arrangements.arrangements.forEach((arrangement: any, index: number) => {
+        const x = (arrangement.x * 2.834645669) + BORDER_MARGIN; // Convert mm to points
+        const y = (arrangement.y * 2.834645669) + BORDER_MARGIN + 100; // Convert mm to points + header offset
+        const width = arrangement.width * 2.834645669; // Convert mm to points
+        const height = arrangement.height * 2.834645669; // Convert mm to points
+        
+        // Draw cutting margin (0.3cm = 3mm)
+        const margin = 3 * 2.834645669; // 3mm in points
+        doc.strokeColor('#CCCCCC')
+           .lineWidth(0.5)
+           .setLineDash([2, 2])
+           .rect(x - margin, y - margin, width + 2 * margin, height + 2 * margin)
+           .stroke();
+
+        // Draw design area
+        doc.strokeColor('#2563EB')
+           .lineWidth(1)
+           .setLineDash([])
+           .rect(x, y, width, height)
+           .stroke();
+
+        // Fill design area with light blue
+        doc.fillColor('#EBF4FF')
+           .rect(x + 2, y + 2, width - 4, height - 4)
+           .fill();
+
+        // Add design label
+        doc.fillColor('black')
+           .fontSize(8)
+           .text(`${index + 1}. Tasarım`, x + 5, y + 5);
+        
+        doc.fontSize(6)
+           .text(`${arrangement.width.toFixed(1)} x ${arrangement.height.toFixed(1)} mm`, 
+                 x + 5, y + 15);
+      });
+
+      // Add statistics footer
+      const footerY = SHEET_HEIGHT - 60;
+      doc.fontSize(8)
+         .fillColor('black')
+         .text(`Verimlilik: ${arrangements.efficiency || 'N/A'}`, 50, footerY)
+         .text(`Dizilen/Toplam: ${arrangements.totalArranged}/${arrangements.totalRequested}`, 50, footerY + 15)
+         .text('Sistem: Matbixx Otomatik Dizim Sistemi', 50, footerY + 30);
+
+      // Finalize PDF
+      doc.end();
+
     } catch (error) {
       console.error("Error generating PDF:", error);
       res.status(500).json({ message: "Failed to generate PDF" });
