@@ -1573,8 +1573,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         arrangedItems = [];
       }
 
-      // Generate PDF using PDFKit
-      const PDFDocument = require('pdfkit');
+      // Generate PDF using dynamic import for ES6 compatibility
+      const PDFDocument = (await import('pdfkit')).default;
       const doc = new PDFDocument({
         size: [330 * 2.834645669, 480 * 2.834645669], // 33x48 cm in points
         margins: { top: 14.17, bottom: 14.17, left: 14.17, right: 14.17 } // 5mm margins
