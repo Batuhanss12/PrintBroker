@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +58,16 @@ interface ArrangementResult {
   };
 }
 
+interface UploadResponse {
+  message: string;
+  designs: Design[];
+}
+
+interface ApiError {
+  message: string;
+  status?: number;
+}
+
 // Constants for file validation
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const ALLOWED_TYPES = ['application/pdf', 'image/svg+xml', 'application/postscript', 'application/illustrator', 'application/eps'];
@@ -96,10 +107,20 @@ export default function AutomationPanelNew() {
     return { isValid: true };
   };
 
-  // Error handler
+  // Enhanced error handler
   const handleError = (error: unknown, defaultMessage: string) => {
     console.error('Error:', error);
-    const errorMessage = error instanceof Error ? error.message : defaultMessage;
+    
+    let errorMessage = defaultMessage;
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object' && error !== null && 'message' in error) {
+      errorMessage = (error as ApiError).message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+    
     toast({
       title: "Hata",
       description: errorMessage,
@@ -107,45 +128,59 @@ export default function AutomationPanelNew() {
     });
   };
 
-  // Get designs with better error handling
-  const { data: designs = [], refetch: refetchDesigns, isLoading: designsLoading, error: designsError } = useQuery<Design[]>({
+  // Get designs with improved error handling
+  const { 
+    data: designs = [], 
+    refetch: refetchDesigns, 
+    isLoading: designsLoading, 
+    error: designsError 
+  } = useQuery<Design[]>({
     queryKey: ['/api/automation/plotter/designs'],
-    queryFn: () => apiRequest('GET', '/api/automation/plotter/designs'),
+    queryFn: async () => {
+      try {
+        const response = await apiRequest<Design[]>('GET', '/api/automation/plotter/designs');
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error('Failed to fetch designs:', error);
+        throw error;
+      }
+    },
     refetchOnWindowFocus: false,
     retry: 3,
-    retryDelay: 1000,
-    onError: (error) => handleError(error, "Tasarımlar yüklenemedi")
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Upload designs mutation with progress tracking
+  // Enhanced upload mutation with better progress tracking
   const uploadMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
+    mutationFn: async (formData: FormData): Promise<UploadResponse> => {
       setUploadProgress(0);
       setIsProcessing(true);
       
       try {
-        const xhr = new XMLHttpRequest();
-        
         return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          
           xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
-              const percentComplete = (e.loaded / e.total) * 100;
-              setUploadProgress(Math.round(percentComplete));
+              const percentComplete = Math.round((e.loaded / e.total) * 90); // Reserve 10% for processing
+              setUploadProgress(percentComplete);
             }
           });
 
           xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
               try {
-                const response = JSON.parse(xhr.responseText);
+                setUploadProgress(100);
+                const response = JSON.parse(xhr.responseText) as UploadResponse;
                 resolve(response);
               } catch (parseError) {
                 reject(new Error('Sunucu yanıtı işlenemedi'));
               }
             } else {
               try {
-                const errorResponse = JSON.parse(xhr.responseText);
-                reject(new Error(errorResponse.message || 'Yükleme başarısız'));
+                const errorResponse = JSON.parse(xhr.responseText) as ApiError;
+                reject(new Error(errorResponse.message || `HTTP ${xhr.status}: Yükleme başarısız`));
               } catch {
                 reject(new Error(`HTTP ${xhr.status}: Yükleme başarısız`));
               }
@@ -160,28 +195,36 @@ export default function AutomationPanelNew() {
             reject(new Error('Zaman aşımı: Dosya yükleme işlemi çok uzun sürdü'));
           });
 
+          xhr.addEventListener('abort', () => {
+            reject(new Error('Yükleme iptal edildi'));
+          });
+
           xhr.open('POST', '/api/automation/plotter/upload-designs');
           xhr.timeout = 300000; // 5 minutes timeout
           xhr.send(formData);
         });
       } finally {
         setIsProcessing(false);
-        setUploadProgress(0);
+        setTimeout(() => setUploadProgress(0), 1000);
       }
     },
-    onSuccess: (data) => {
+    onSuccess: (data: UploadResponse) => {
+      const uploadedCount = data.designs?.length || 0;
       toast({
         title: "Başarılı",
-        description: `${data.designs?.length || 0} dosya yüklendi ve işlendi.`,
+        description: `${uploadedCount} dosya yüklendi ve işlendi.`,
       });
+      
+      // Invalidate and refetch designs
+      queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
       refetchDesigns();
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       handleError(error, "Dosya yükleme başarısız");
     },
   });
 
-  // Auto-arrange mutation with better error handling
+  // Enhanced auto-arrange mutation
   const autoArrangeMutation = useMutation({
     mutationFn: async (): Promise<ArrangementResult> => {
       if (!Array.isArray(designs) || designs.length === 0) {
@@ -191,22 +234,32 @@ export default function AutomationPanelNew() {
       const designIds = designs.map((d: Design) => d.id);
       console.log('Starting auto-arrange with designs:', designIds);
       
-      const result = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
-        designIds,
-        plotterSettings
-      });
+      try {
+        const result = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
+          designIds,
+          plotterSettings
+        });
 
-      if (!result.arrangements || !Array.isArray(result.arrangements)) {
-        throw new Error('Geçersiz dizim sonucu alındı');
+        if (!result || typeof result !== 'object') {
+          throw new Error('Geçersiz dizim sonucu alındı');
+        }
+
+        if (!Array.isArray(result.arrangements)) {
+          console.warn('Arrangements is not an array:', result.arrangements);
+          result.arrangements = [];
+        }
+
+        return result;
+      } catch (error) {
+        console.error('Auto-arrange API error:', error);
+        throw error;
       }
-
-      return result;
     },
     onSuccess: (data: ArrangementResult) => {
       console.log('Arrangement response received:', data);
       setArrangements(data);
       
-      if (data.totalArranged === 0) {
+      if (!data.arrangements || data.arrangements.length === 0 || data.totalArranged === 0) {
         toast({
           title: "Uyarı",
           description: "Hiçbir tasarım baskı alanına sığmadı. Tasarım boyutlarını kontrol edin.",
@@ -217,11 +270,11 @@ export default function AutomationPanelNew() {
 
       toast({
         title: "Dizim Tamamlandı",
-        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik). PDF oluşturuluyor...`,
+        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik)`,
       });
       
-      // PDF generation with validation
-      if (data.arrangements && Array.isArray(data.arrangements) && data.arrangements.length > 0) {
+      // Automatically generate PDF after successful arrangement
+      if (data.arrangements.length > 0) {
         setTimeout(() => {
           const pdfData = {
             plotterSettings: plotterSettings,
@@ -230,59 +283,82 @@ export default function AutomationPanelNew() {
           console.log('Sending to PDF generation:', pdfData);
           generatePdfMutation.mutate(pdfData);
         }, 1000);
-      } else {
-        console.error('No valid arrangements for PDF generation');
-        toast({
-          title: "Hata",
-          description: "PDF oluşturmak için geçerli dizim bulunamadı",
-          variant: "destructive",
-        });
       }
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       handleError(error, "Otomatik dizim başarısız");
     },
   });
 
-  // Generate PDF mutation with improved error handling
+  // Enhanced PDF generation mutation
   const generatePdfMutation = useMutation({
-    mutationFn: async (data: { plotterSettings: PlotterSettings; arrangements: ArrangementItem[] }) => {
-      if (!data.arrangements || data.arrangements.length === 0) {
+    mutationFn: async (data: { plotterSettings: PlotterSettings; arrangements: ArrangementItem[] }): Promise<Blob> => {
+      if (!data.arrangements || !Array.isArray(data.arrangements) || data.arrangements.length === 0) {
         throw new Error('PDF oluşturmak için dizim verisi bulunamadı');
       }
 
       console.log('Generating PDF with data:', data);
       
-      const response = await fetch('/api/automation/plotter/generate-pdf', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/pdf'
-        },
-        body: JSON.stringify(data),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 1 minute timeout
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`PDF oluşturulamadı: ${response.status} - ${errorText}`);
-      }
-      
-      const blob = await response.blob();
-      if (blob.size === 0) {
-        throw new Error('Boş PDF dosyası oluşturuldu');
-      }
+      try {
+        const response = await fetch('/api/automation/plotter/generate-pdf', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/pdf'
+          },
+          body: JSON.stringify(data),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json() as ApiError;
+            throw new Error(errorData.message || `PDF oluşturulamadı: ${response.status}`);
+          } else {
+            const errorText = await response.text();
+            throw new Error(`PDF oluşturulamadı: ${response.status} - ${errorText}`);
+          }
+        }
+        
+        const blob = await response.blob();
+        if (blob.size === 0) {
+          throw new Error('Boş PDF dosyası oluşturuldu');
+        }
 
-      // Auto-download PDF
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `matbixx-dizim-${new Date().toISOString().slice(0, 10)}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      return blob;
+        // Auto-download PDF with error handling
+        try {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `matbixx-dizim-${new Date().toISOString().slice(0, 10)}.pdf`;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          
+          // Clean up
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }, 100);
+        } catch (downloadError) {
+          console.error('Download error:', downloadError);
+          // Still return the blob even if download fails
+        }
+        
+        return blob;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('PDF oluşturma işlemi zaman aşımına uğradı');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -290,11 +366,12 @@ export default function AutomationPanelNew() {
         description: "Dizim PDF'i başarıyla oluşturuldu ve indirildi.",
       });
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       handleError(error, "PDF oluşturulamadı");
     },
   });
 
+  // Enhanced file upload handler
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) {
@@ -308,7 +385,13 @@ export default function AutomationPanelNew() {
     const invalidFiles: string[] = [];
     const validFiles: File[] = [];
 
-    Array.from(files).forEach((file) => {
+    Array.from(files).forEach((file, index) => {
+      console.log(`File ${index + 1}:`, {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+      
       const validation = validateFile(file);
       if (!validation.isValid) {
         invalidFiles.push(`${file.name}: ${validation.error}`);
@@ -340,6 +423,7 @@ export default function AutomationPanelNew() {
       return;
     }
 
+    // Create FormData with valid files
     const formData = new FormData();
     validFiles.forEach((file) => {
       console.log(`Adding file to FormData:`, {
@@ -355,6 +439,32 @@ export default function AutomationPanelNew() {
     
     // Reset input
     event.target.value = '';
+  };
+
+  // Enhanced clear designs function
+  const clearAllDesigns = async () => {
+    try {
+      const response = await fetch('/api/automation/plotter/designs/clear', { 
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json() as ApiError;
+        throw new Error(errorData.message || 'Dosyalar temizlenemedi');
+      }
+      
+      await refetchDesigns();
+      setArrangements(null);
+      toast({
+        title: "Temizlendi",
+        description: "Tüm dosyalar temizlendi.",
+      });
+    } catch (error) {
+      handleError(error, "Dosyalar temizlenemedi");
+    }
   };
 
   // Loading state component
@@ -375,6 +485,9 @@ export default function AutomationPanelNew() {
       </Button>
     </div>
   );
+
+  // Check if system is busy
+  const isBusy = uploadMutation.isPending || autoArrangeMutation.isPending || generatePdfMutation.isPending || isProcessing;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -406,9 +519,9 @@ export default function AutomationPanelNew() {
                   accept=".pdf,.svg,.ai,.eps"
                   onChange={handleFileUpload}
                   className="hidden"
-                  disabled={uploadMutation.isPending}
+                  disabled={isBusy}
                 />
-                <label htmlFor="file-upload" className={`cursor-pointer ${uploadMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <Label htmlFor="file-upload" className={`cursor-pointer ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-lg font-medium text-gray-900">
                     Vektörel dosyaları seçin
@@ -416,24 +529,19 @@ export default function AutomationPanelNew() {
                   <p className="text-sm text-gray-500">
                     PDF, SVG, AI, EPS formatları desteklenir (Max: 100MB)
                   </p>
-                </label>
+                </Label>
               </div>
 
               {/* Upload Progress */}
-              {uploadMutation.isPending && (
+              {(uploadMutation.isPending || uploadProgress > 0) && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-blue-600">Dosyalar yükleniyor...</span>
+                    <span className="text-blue-600">
+                      {isProcessing ? 'Dosyalar işleniyor...' : 'Dosyalar yükleniyor...'}
+                    </span>
                     <span className="text-blue-600">{uploadProgress}%</span>
                   </div>
                   <Progress value={uploadProgress} className="w-full" />
-                </div>
-              )}
-
-              {/* Processing indicator */}
-              {isProcessing && (
-                <div className="text-center">
-                  <p className="text-blue-600">Dosyalar işleniyor...</p>
                 </div>
               )}
 
@@ -454,19 +562,8 @@ export default function AutomationPanelNew() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={async () => {
-                        try {
-                          await fetch('/api/automation/plotter/designs/clear', { method: 'DELETE' });
-                          refetchDesigns();
-                          setArrangements(null);
-                          toast({
-                            title: "Temizlendi",
-                            description: "Tüm dosyalar temizlendi.",
-                          });
-                        } catch (error) {
-                          handleError(error, "Dosyalar temizlenemedi");
-                        }
-                      }}
+                      onClick={clearAllDesigns}
+                      disabled={isBusy}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
@@ -486,6 +583,13 @@ export default function AutomationPanelNew() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {!designsLoading && !designsError && designs.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Henüz dosya yüklenmedi</p>
                 </div>
               )}
             </div>
@@ -564,8 +668,8 @@ export default function AutomationPanelNew() {
             <Button
               size="lg"
               onClick={() => autoArrangeMutation.mutate()}
-              disabled={designs.length === 0 || autoArrangeMutation.isPending || uploadMutation.isPending}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-4 text-lg font-bold"
+              disabled={designs.length === 0 || isBusy}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-4 text-lg font-bold disabled:opacity-50"
             >
               {autoArrangeMutation.isPending ? (
                 <>
