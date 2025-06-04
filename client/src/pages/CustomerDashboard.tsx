@@ -8,9 +8,12 @@ import Navigation from "@/components/Navigation";
 import QuoteCard from "@/components/QuoteCard";
 import StatsCard from "@/components/StatsCard";
 import Chat from "@/components/Chat";
+import DesignEngine from "@/components/DesignEngine";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Link } from "wouter";
 import { 
   Plus, 
@@ -23,13 +26,19 @@ import {
   MessageCircle,
   LayoutGrid,
   Disc,
-  Printer
+  Printer,
+  Eye,
+  Download,
+  Trash2,
+  Image as ImageIcon
 } from "lucide-react";
 
 export default function CustomerDashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isDesignDialogOpen, setIsDesignDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -60,6 +69,11 @@ export default function CustomerDashboard() {
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ["/api/orders"],
+    enabled: isAuthenticated && user?.role === 'customer',
+  });
+
+  const { data: designHistory, isLoading: designsLoading } = useQuery({
+    queryKey: ["/api/designs/history"],
     enabled: isAuthenticated && user?.role === 'customer',
   });
 
@@ -117,10 +131,19 @@ export default function CustomerDashboard() {
           </div>
         </div>
 
-        {/* Teklif Türleri */}
-        <div className="mb-8">
-          <h4 className="text-lg font-semibold mb-4 text-gray-900">Teklif Talep Et</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Tabs for Dashboard Sections */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
+            <TabsTrigger value="designs">Tasarımlarım</TabsTrigger>
+            <TabsTrigger value="quotes">Tekliflerim</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-8">
+            {/* Teklif Türleri */}
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-gray-900">Teklif Talep Et</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href="/quote/sheet_label">
               <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
                 <LayoutGrid className="text-blue-500 text-2xl mr-3" />
@@ -167,13 +190,25 @@ export default function CustomerDashboard() {
               </Button>
             </Link>
             
-            <Button variant="outline" className="flex items-center p-4 h-auto bg-purple-50 hover:bg-purple-100 border-purple-200 w-full justify-start">
-              <Palette className="text-purple-500 text-2xl mr-3" />
-              <div className="text-left">
-                <h5 className="font-semibold text-gray-900">Tasarım Yap</h5>
-                <p className="text-sm text-gray-600">Otomatik tasarım</p>
-              </div>
-            </Button>
+            <Dialog open={isDesignDialogOpen} onOpenChange={setIsDesignDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center p-4 h-auto bg-purple-50 hover:bg-purple-100 border-purple-200 w-full justify-start">
+                  <Palette className="text-purple-500 text-2xl mr-3" />
+                  <div className="text-left">
+                    <h5 className="font-semibold text-gray-900">Tasarım Yap</h5>
+                    <p className="text-sm text-gray-600">Otomatik tasarım</p>
+                  </div>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl h-[90vh] overflow-hidden">
+                <DialogHeader>
+                  <DialogTitle>AI Tasarım Motoru</DialogTitle>
+                </DialogHeader>
+                <div className="h-full overflow-y-auto">
+                  <DesignEngine />
+                </div>
+              </DialogContent>
+            </Dialog>
             
             <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
               <Upload className="text-blue-500 text-2xl mr-3" />
@@ -247,6 +282,122 @@ export default function CustomerDashboard() {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="designs" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Tasarım Geçmişim
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {designsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <RollingPaperLoader size={100} color="#8B5CF6" />
+                  </div>
+                ) : designHistory && designHistory.designs && designHistory.designs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {designHistory.designs.map((design: any, index: number) => (
+                      <Card key={index} className="overflow-hidden">
+                        <div className="aspect-square relative">
+                          {design.result && design.result.data && design.result.data[0] ? (
+                            <img 
+                              src={design.result.data[0].url} 
+                              alt={design.prompt}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                              <ImageIcon className="h-12 w-12 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <CardContent className="p-4">
+                          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                            {design.prompt}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500">
+                              {new Date(design.createdAt).toLocaleDateString('tr-TR')}
+                            </span>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="outline">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <ImageIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Henüz tasarımınız yok</h3>
+                    <p className="text-gray-600 mb-6">AI ile ilk tasarımınızı oluşturun</p>
+                    <Dialog open={isDesignDialogOpen} onOpenChange={setIsDesignDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Palette className="h-4 w-4 mr-2" />
+                          Tasarım Yap
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-6xl h-[90vh] overflow-hidden">
+                        <DialogHeader>
+                          <DialogTitle>AI Tasarım Motoru</DialogTitle>
+                        </DialogHeader>
+                        <div className="h-full overflow-y-auto">
+                          <DesignEngine />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="quotes" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Tüm Tekliflerim
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {quotesLoading ? (
+                  <div className="flex justify-center py-8">
+                    <PrinterLoader size={100} color="#3B82F6" />
+                  </div>
+                ) : quotes && quotes.length > 0 ? (
+                  <div className="space-y-4">
+                    {quotes.map((quote: any) => (
+                      <QuoteCard key={quote.id} quote={quote} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Henüz teklif talebiniz yok</h3>
+                    <p className="text-gray-600 mb-6">İlk teklif talebinizi oluşturun</p>
+                    <Link href="/quote/sheet_label">
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Teklif Talep Et
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Floating Chat Button */}
