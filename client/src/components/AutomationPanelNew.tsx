@@ -1,13 +1,15 @@
-
 import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import ValidationPanel from "./ValidationPanel";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -324,6 +326,15 @@ export default function AutomationPanelNew() {
   const [showCropMarks, setShowCropMarks] = useState<boolean>(true);
   const [colorProfileCheck, setColorProfileCheck] = useState<boolean>(true);
   const [dpiWarningLevel, setDpiWarningLevel] = useState<number>(150);
+  const [optimizationLevel, setOptimizationLevel] = useState<'basic' | 'advanced' | 'expert'>('advanced');
+  const [layoutAlgorithm, setLayoutAlgorithm] = useState<'binpack' | 'genetic' | 'grid'>('binpack');
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+
+  // Validasyon state'leri
+  const [pageValidation, setPageValidation] = useState<any>(null);
+  const [fileValidations, setFileValidations] = useState<any[]>([]);
+  const [layoutValidation, setLayoutValidation] = useState<any>(null);
+  const [validationLoading, setValidationLoading] = useState(false);
 
   // Computed current page dimensions
   const currentPageDimensions = useMemo<PageDimensions>(() => {
@@ -394,7 +405,7 @@ export default function AutomationPanelNew() {
    */
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId);
-    
+
     if (templateId !== 'custom') {
       const template = PAPER_TEMPLATES.find(t => t.id === templateId);
       if (template) {
@@ -418,7 +429,7 @@ export default function AutomationPanelNew() {
     setCustomDimensions(prev => {
       const newWidth = orientation === 'landscape' ? prev.heightMM : prev.widthMM;
       const newHeight = orientation === 'landscape' ? prev.widthMM : prev.heightMM;
-      
+
       return {
         ...prev,
         orientation,
@@ -432,7 +443,7 @@ export default function AutomationPanelNew() {
 
   const handleCustomDimensionChange = (dimension: 'width' | 'height', value: number, unit: Unit) => {
     const valueMM = convertToMM(value, unit);
-    
+
     setCustomDimensions(prev => ({
       ...prev,
       [dimension]: { value, unit },
@@ -448,7 +459,7 @@ export default function AutomationPanelNew() {
   /**
    * Advanced Layout Optimization Algorithms
    */
-  
+
   // Bin Packing Algorithm with Rotation Support
   const advancedBinPacking = (
     items: Design[],
@@ -458,7 +469,7 @@ export default function AutomationPanelNew() {
   ): LayoutAlgorithmResult => {
     const startTime = performance.now();
     let iterations = 0;
-    
+
     const processedItems = items.map((item, index) => {
       const dims = extractDimensions(item);
       return {
@@ -510,7 +521,7 @@ export default function AutomationPanelNew() {
 
         // Try different scale factors
         const scaleFactors = generateScaleFactors(options);
-        
+
         for (const scaleFactor of scaleFactors) {
           const scaledWidth = itemWidth * scaleFactor + options.minimumSpacing;
           const scaledHeight = itemHeight * scaleFactor + options.minimumSpacing;
@@ -520,7 +531,7 @@ export default function AutomationPanelNew() {
           // Find best position using Bottom-Left-Fill heuristic
           for (let rectIndex = 0; rectIndex < freeRectangles.length; rectIndex++) {
             const rect = freeRectangles[rectIndex];
-            
+
             if (scaledWidth <= rect.width && scaledHeight <= rect.height) {
               const score = calculatePlacementScore(
                 rect.x, rect.y, scaledWidth, scaledHeight, 
@@ -563,7 +574,7 @@ export default function AutomationPanelNew() {
         };
 
         placedItems.push(optimizedItem);
-        
+
         // Update free rectangles using maximal rectangles algorithm
         updateFreeRectangles(
           freeRectangles, 
@@ -606,14 +617,14 @@ export default function AutomationPanelNew() {
     const populationSize = Math.min(50, items.length * 2);
     const generations = Math.min(100, items.length * 5);
     const mutationRate = 0.1;
-    
+
     let population = initializePopulation(items, pageWidth, pageHeight, populationSize, options);
     let bestSolution = population[0];
     let iterations = 0;
 
     for (let generation = 0; generation < generations; generation++) {
       iterations++;
-      
+
       // Evaluate fitness
       population.forEach(individual => {
         individual.fitness = calculateFitness(individual, pageWidth, pageHeight, options);
@@ -621,14 +632,14 @@ export default function AutomationPanelNew() {
 
       // Sort by fitness
       population.sort((a, b) => b.fitness - a.fitness);
-      
+
       if (population[0].fitness > bestSolution.fitness) {
         bestSolution = { ...population[0] };
       }
 
       // Create next generation
       const newPopulation = [];
-      
+
       // Keep best 20%
       const eliteCount = Math.floor(populationSize * 0.2);
       for (let i = 0; i < eliteCount; i++) {
@@ -640,11 +651,11 @@ export default function AutomationPanelNew() {
         const parent1 = tournamentSelection(population);
         const parent2 = tournamentSelection(population);
         const child = crossover(parent1, parent2, options);
-        
+
         if (Math.random() < mutationRate) {
           mutate(child, pageWidth, pageHeight, options);
         }
-        
+
         newPopulation.push(child);
       }
 
@@ -681,7 +692,7 @@ export default function AutomationPanelNew() {
       testFormats.map(async (format) => {
         const layout = await optimizeLayout(items, format, options);
         const costAnalysis = calculateCostAnalysis(layout, format, items.length);
-        
+
         return {
           pageSize: format,
           layout,
@@ -727,21 +738,21 @@ export default function AutomationPanelNew() {
     const totalArea = pageSize.widthMM * pageSize.heightMM;
     const materialCost = totalArea * materialCostPerSqMM;
     const wasteCost = (totalArea - layout.usedArea) * materialCostPerSqMM;
-    
+
     // Calculate cutting cost with complexity
     const totalCuttingLength = layout.items.reduce((sum, item) => {
       const perimeter = 2 * (item.width + item.height);
       let complexity = 1;
-      
+
       // Add complexity for special cases
       if (item.isRotated) complexity += rotationPenalty;
       if (item.isScaled) complexity += scalingPenalty;
-      
+
       return sum + (perimeter * complexity);
     }, 0);
-    
+
     const cuttingCost = totalCuttingLength * cuttingCostPerMM + setupCost;
-    
+
     // Add complexity cost
     const complexityCost = layout.items.reduce((sum, item) => {
       let itemComplexity = complexityCostPerItem;
@@ -817,28 +828,28 @@ export default function AutomationPanelNew() {
     currentLayout: LayoutAlgorithmResult
   ): string[] => {
     const recommendations = [];
-    
+
     // Analyze item sizes
     const itemSizes = items.map(item => {
       const dims = extractDimensions(item);
       return dims.width * dims.height;
     });
-    
+
     const avgItemSize = itemSizes.reduce((a, b) => a + b, 0) / itemSizes.length;
     const maxItemSize = Math.max(...itemSizes);
-    
+
     if (avgItemSize < 2000) { // Small items (< 20cm²)
       recommendations.push('📏 Küçük parçalar için A4 veya A5 boyutu ideal olabilir');
     }
-    
+
     if (maxItemSize > 10000) { // Large items (> 100cm²)
       recommendations.push('📐 Büyük parçalar var - A3 veya daha büyük boyut gerekebilir');
     }
-    
+
     if (currentLayout.efficiency < 60) {
       recommendations.push('⚡ Düşük verimlilik - Farklı sayfa oranları deneyin');
     }
-    
+
     return recommendations;
   };
 
@@ -856,31 +867,31 @@ export default function AutomationPanelNew() {
   const calculateItemPriority = (item: Design, options: OptimizationOptions): number => {
     const dims = extractDimensions(item);
     const area = dims.width * dims.height;
-    
+
     // Priority based on area, complexity, and user preferences
     let priority = area * 0.5; // Base priority from area
-    
+
     if (item.type === 'PDF') priority += 10; // PDF files get higher priority
     if (dims.width > dims.height) priority += 5; // Landscape orientation bonus
-    
+
     return priority;
   };
 
   const generateScaleFactors = (options: OptimizationOptions): number[] => {
     const factors = [1]; // Always include original size
-    
+
     if (options.allowDownscaling) {
       for (let scale = options.minDownscaleRatio; scale < 1; scale += 0.1) {
         factors.push(Number(scale.toFixed(1)));
       }
     }
-    
+
     if (options.allowUpscaling) {
       for (let scale = 1.1; scale <= options.maxUpscaleRatio; scale += 0.1) {
         factors.push(Number(scale.toFixed(1)));
       }
     }
-    
+
     return factors;
   };
 
@@ -891,19 +902,19 @@ export default function AutomationPanelNew() {
     pageWidth: number, pageHeight: number
   ): number => {
     let score = 0;
-    
+
     // Bottom-left preference
     score += (pageHeight - y) * 0.3;
     score += (pageWidth - x) * 0.2;
-    
+
     // Area efficiency
     const area = width * height;
     score += area * 0.4;
-    
+
     // Spacing efficiency
     const wastedSpace = calculateWastedSpace(x, y, width, height, placedItems);
     score -= wastedSpace * 0.1;
-    
+
     return score;
   };
 
@@ -922,15 +933,15 @@ export default function AutomationPanelNew() {
   ) => {
     // Remove overlapping rectangles and create new ones
     const newRects = [];
-    
+
     for (let i = freeRects.length - 1; i >= 0; i--) {
       const rect = freeRects[i];
-      
+
       if (!(x >= rect.x + rect.width || x + width <= rect.x || 
             y >= rect.y + rect.height || y + height <= rect.y)) {
         // Rectangle overlaps, split it
         freeRects.splice(i, 1);
-        
+
         // Create up to 4 new rectangles
         if (rect.x < x) {
           newRects.push({
@@ -958,9 +969,9 @@ export default function AutomationPanelNew() {
         }
       }
     }
-    
+
     freeRects.push(...newRects);
-    
+
     // Remove redundant rectangles
     for (let i = 0; i < freeRects.length; i++) {
       for (let j = i + 1; j < freeRects.length; j++) {
@@ -991,17 +1002,17 @@ export default function AutomationPanelNew() {
   ): number => {
     const area = placement.width * placement.height;
     let baseCost = area * 0.001; // Base material cost
-    
+
     // Add cost for scaling
     if (placement.isScaled) {
       baseCost *= 1.1; // 10% penalty for scaling
     }
-    
+
     // Add cost for rotation
     if (placement.isRotated) {
       baseCost *= 1.05; // 5% penalty for rotation
     }
-    
+
     return baseCost;
   };
 
@@ -1020,12 +1031,12 @@ export default function AutomationPanelNew() {
 
     while (currentPageItems.length > 0 && pageCount < 10) { // Max 10 pages
       pageCount++;
-      
+
       // Optimize current page
       const pageResult = advancedBinPacking(currentPageItems, pageWidth, pageHeight, options);
-      
+
       if (pageResult.items.length === 0) break; // No more items fit
-      
+
       // Add page offset to positions
       const pageOffset = pageCount > 1 ? pageHeight * (pageCount - 1) + 20 : 0; // 20mm gap between pages
       const pageItems = pageResult.items.map(item => ({
@@ -1033,10 +1044,10 @@ export default function AutomationPanelNew() {
         y: item.y + pageOffset,
         pageNumber: pageCount
       }));
-      
+
       totalItems.push(...pageItems);
       totalEfficiency += pageResult.efficiency;
-      
+
       // Remove placed items from remaining items
       const placedIds = pageResult.items.map(item => item.designId);
       currentPageItems = currentPageItems.filter(item => !placedIds.includes(item.id));
@@ -1070,13 +1081,13 @@ export default function AutomationPanelNew() {
     options: OptimizationOptions
   ): LayoutAlgorithmResult => {
     const startTime = performance.now();
-    
+
     // Group items by aspect ratio for better nesting
     const groupedItems = items.reduce((groups, item) => {
       const dims = extractDimensions(item);
       const aspectRatio = dims.width / dims.height;
       const group = aspectRatio > 1.5 ? 'wide' : aspectRatio < 0.67 ? 'tall' : 'square';
-      
+
       if (!groups[group]) groups[group] = [];
       groups[group].push(item);
       return groups;
@@ -1096,7 +1107,7 @@ export default function AutomationPanelNew() {
     for (const strategy of strategies) {
       let arrangedItems: OptimizedArrangementItem[] = [];
       let currentY = 0;
-      
+
       const sortedGroups = Object.entries(groupedItems).sort(([, a], [, b]) => {
         switch (strategy) {
           case 'size_descending':
@@ -1177,7 +1188,7 @@ export default function AutomationPanelNew() {
     options: OptimizationOptions
   ): LayoutAlgorithmResult => {
     const startTime = performance.now();
-    
+
     // Create a grid-based approach for precise space utilization
     const gridSize = Math.min(5, options.minimumSpacing); // 5mm or minimum spacing
     const gridWidth = Math.floor(pageWidth / gridSize);
@@ -1199,7 +1210,7 @@ export default function AutomationPanelNew() {
 
       // Try different orientations
       const orientations = options.allowRotation ? [0, 90, 180, 270] : [0];
-      
+
       for (const rotation of orientations) {
         const [width, height] = rotation % 180 === 0 ? 
           [item.dimensions.width, item.dimensions.height] : 
@@ -1211,7 +1222,7 @@ export default function AutomationPanelNew() {
         // Find best position in grid
         for (let gridY = 0; gridY <= gridHeight - gridItemHeight; gridY++) {
           for (let gridX = 0; gridX <= gridWidth - gridItemWidth; gridX++) {
-            
+
             // Check if space is available
             let canPlace = true;
             for (let y = gridY; y < gridY + gridItemHeight && canPlace; y++) {
@@ -1337,7 +1348,7 @@ export default function AutomationPanelNew() {
         scale: 0.8 + Math.random() * 0.4 // 0.8 to 1.2
       };
     });
-    
+
     return { genes, fitness: 0 };
   };
 
@@ -1346,12 +1357,12 @@ export default function AutomationPanelNew() {
     let fitness = 0;
     let totalArea = 0;
     let overlaps = 0;
-    
+
     // Check for overlaps and calculate total area
     for (let i = 0; i < individual.genes.length; i++) {
       const gene1 = individual.genes[i];
       totalArea += gene1.scale * gene1.scale * 100; // Simplified area calculation
-      
+
       for (let j = i + 1; j < individual.genes.length; j++) {
         const gene2 = individual.genes[j];
         if (isOverlapping(gene1, gene2)) {
@@ -1359,7 +1370,7 @@ export default function AutomationPanelNew() {
         }
       }
     }
-    
+
     fitness = totalArea - (overlaps * 1000); // Penalty for overlaps
     return fitness;
   };
@@ -1376,21 +1387,21 @@ export default function AutomationPanelNew() {
   const tournamentSelection = (population: any[]) => {
     const tournamentSize = 3;
     let best = population[Math.floor(Math.random() * population.length)];
-    
+
     for (let i = 1; i < tournamentSize; i++) {
       const competitor = population[Math.floor(Math.random() * population.length)];
       if (competitor.fitness > best.fitness) {
         best = competitor;
       }
     }
-    
+
     return best;
   };
 
   const crossover = (parent1: any, parent2: any, options: OptimizationOptions) => {
     const crossoverPoint = Math.floor(Math.random() * parent1.genes.length);
     const childGenes = [];
-    
+
     for (let i = 0; i < parent1.genes.length; i++) {
       if (i < crossoverPoint) {
         childGenes.push({ ...parent1.genes[i] });
@@ -1398,13 +1409,13 @@ export default function AutomationPanelNew() {
         childGenes.push({ ...parent2.genes[i] });
       }
     }
-    
+
     return { genes: childGenes, fitness: 0 };
   };
 
   const mutate = (individual: any, pageWidth: number, pageHeight: number, options: OptimizationOptions) => {
     const mutationStrength = 0.1;
-    
+
     individual.genes.forEach((gene: any) => {
       if (Math.random() < mutationStrength) {
         gene.x += (Math.random() - 0.5) * 20;
@@ -1475,9 +1486,9 @@ export default function AutomationPanelNew() {
           const geneticResult = geneticLayoutOptimization(items, pageWidth, pageHeight, options);
           const nestingResult = smartNestingAlgorithm(items, pageWidth, pageHeight, options);
           const spaceResult = dynamicSpaceOptimization(items, pageWidth, pageHeight, options);
-          
+
           algorithms.push(geneticResult, nestingResult, spaceResult);
-          
+
           // Pick best result based on efficiency and item count
           result = algorithms.reduce((best, current) => {
             const bestScore = (best.efficiency * 0.7) + (best.items.length / items.length * 100 * 0.3);
@@ -1488,25 +1499,25 @@ export default function AutomationPanelNew() {
           // For small datasets, use smart nesting with bin packing fallback
           const nestingResult = smartNestingAlgorithm(items, pageWidth, pageHeight, options);
           const binPackingResult = advancedBinPacking(items, pageWidth, pageHeight, options);
-          
+
           result = nestingResult.efficiency > binPackingResult.efficiency ? nestingResult : binPackingResult;
           algorithms.push(nestingResult, binPackingResult);
         }
         break;
-      
+
       case 'fast_layout':
         result = advancedBinPacking(items, pageWidth, pageHeight, options);
         break;
-      
+
       case 'balanced':
         // Use dynamic space optimization for balanced approach
         const spaceResult = dynamicSpaceOptimization(items, pageWidth, pageHeight, options);
         const binPackingResult = advancedBinPacking(items, pageWidth, pageHeight, options);
-        
+
         result = spaceResult.items.length >= binPackingResult.items.length ? spaceResult : binPackingResult;
         algorithms.push(spaceResult, binPackingResult);
         break;
-      
+
       case 'custom':
         // Run all algorithms for comparison
         const allResults = [
@@ -1514,21 +1525,21 @@ export default function AutomationPanelNew() {
           smartNestingAlgorithm(items, pageWidth, pageHeight, options),
           dynamicSpaceOptimization(items, pageWidth, pageHeight, options)
         ];
-        
+
         if (items.length > 15) {
           allResults.push(geneticLayoutOptimization(items, pageWidth, pageHeight, options));
         }
-        
+
         // Score based on user preferences
         result = allResults.reduce((best, current) => {
           const bestScore = calculateCustomScore(best, options);
           const currentScore = calculateCustomScore(current, options);
           return currentScore > bestScore ? current : best;
         });
-        
+
         algorithms.push(...allResults);
         break;
-      
+
       default:
         result = advancedBinPacking(items, pageWidth, pageHeight, options);
     }
@@ -1536,14 +1547,14 @@ export default function AutomationPanelNew() {
     // Generate alternative layouts
     if (options.mode === 'maximum_efficiency' || options.mode === 'custom') {
       const alternatives = algorithms.filter(alg => alg !== result).slice(0, 3);
-      
+
       // Try with rotation toggle if not already done
       if (alternatives.length < 3) {
         const altOptions = { ...options, allowRotation: !options.allowRotation };
         const altResult = advancedBinPacking(items, pageWidth, pageHeight, altOptions);
         alternatives.push(altResult);
       }
-      
+
       result.alternativeLayouts = alternatives;
     }
 
@@ -1553,30 +1564,30 @@ export default function AutomationPanelNew() {
   // Custom scoring function for user preferences
   const calculateCustomScore = (result: LayoutAlgorithmResult, options: OptimizationOptions): number => {
     let score = 0;
-    
+
     // Efficiency weight
     score += result.efficiency * 0.4;
-    
+
     // Item placement rate
     const placementRate = (result.items.length / (result.items.length + (result.totalArea - result.usedArea) / 1000)) * 100;
     score += placementRate * 0.3;
-    
+
     // Speed consideration
     if (options.mode === 'fast_layout') {
       score += (10000 - result.performance.executionTime) * 0.001; // Bonus for speed
     }
-    
+
     // Rotation preference
     if (options.allowRotation) {
       const rotatedItems = result.items.filter(item => item.isRotated).length;
       score += (rotatedItems / result.items.length) * 10; // Bonus for using rotation
     }
-    
+
     // Spacing optimization
     if (options.prioritizeSpacing) {
       score += (100 - result.wastePercentage) * 0.2;
     }
-    
+
     return score;
   };
 
@@ -1590,7 +1601,7 @@ export default function AutomationPanelNew() {
   ): { scaledDimensions: VectorDimensions; scalingInfo: ScalingInfo } => {
     const originalWidthMM = originalDimensions.width;
     const originalHeightMM = originalDimensions.height;
-    
+
     const pageWidthMM = targetPageDimensions.widthMM - bleedSettings.left - bleedSettings.right;
     const pageHeightMM = targetPageDimensions.heightMM - bleedSettings.top - bleedSettings.bottom;
 
@@ -1606,7 +1617,7 @@ export default function AutomationPanelNew() {
         const scaleX = pageWidthMM / originalWidthMM;
         const scaleY = pageHeightMM / originalHeightMM;
         scaleFactor = Math.min(scaleX, scaleY);
-        
+
         if (scaleFactor > 1 && !scalingOptions.allowUpscaling) {
           scaleFactor = 1;
           recommendation = 'Dosya sayfaya sığıyor, ölçeklendirme yapılmadı';
@@ -2014,7 +2025,7 @@ export default function AutomationPanelNew() {
       try {
         // Run local optimization first
         const optimizedLayout = await optimizeLayout(designs, currentPageDimensions, optimizationOptions);
-        
+
         // Calculate cost analysis
         const costAnalysis = calculateCostAnalysis(optimizedLayout, currentPageDimensions, designs.length);
         setCostAnalysis(costAnalysis);
@@ -2296,6 +2307,116 @@ export default function AutomationPanelNew() {
 
   // Check if system is busy
   const isBusy = uploadMutation.isPending || autoArrangeMutation.isPending || generatePdfMutation.isPending || isProcessing;
+  const selectedDesigns = designs;
+
+  const runValidation = async () => {
+    setValidationLoading(true);
+    setPageValidation(null);
+    setFileValidations([]);
+    setLayoutValidation(null);
+
+    try {
+      // 1. Sayfa Boyutu Validasyonu
+      const pageWidth = currentPageDimensions.widthMM;
+      const pageHeight = currentPageDimensions.heightMM;
+      const minPageSize = 100; // Örnek minimum boyut
+      const maxPageSize = 2000; // Örnek maksimum boyut
+
+      const pageErrors: string[] = [];
+      if (pageWidth < minPageSize || pageHeight < minPageSize) {
+        pageErrors.push(`Sayfa boyutları minimum ${minPageSize}mm olmalıdır.`);
+      }
+      if (pageWidth > maxPageSize || pageHeight > maxPageSize) {
+        pageErrors.push(`Sayfa boyutları maksimum ${maxPageSize}mm olmalıdır.`);
+      }
+
+      // Orantı kontrolü
+      const aspectRatio = pageWidth / pageHeight;
+      const minAspectRatio = 0.5;
+      const maxAspectRatio = 2;
+      if (aspectRatio < minAspectRatio || aspectRatio > maxAspectRatio) {
+        pageErrors.push("Sayfa en-boy oranı geçersiz.");
+      }
+
+      setPageValidation({
+        isValid: pageErrors.length === 0,
+        errors: pageErrors,
+        recommendations: pageErrors.length > 0 ? ["Önerilen sayfa boyutlarını kullanın."] : [],
+      });
+
+      // 2. Dosya Validasyonu
+      const fileValidationResults = await Promise.all(
+        selectedDesigns.map(async (design) => {
+          const fileErrors: string[] = [];
+
+          // Format uygunluğu (zaten yükleme sırasında kontrol edildi)
+
+          // Çözünürlük kontrolü (varsa)
+          if (design.type === "image/svg+xml") {
+            // SVG çözünürlük kontrolü yapılamaz
+          } else {
+            // PDF veya diğer formatlar için DPI kontrolü
+            const dpi = 300; // Gerçek DPI değerini almanız gerekir
+            if (dpi < 150) {
+              fileErrors.push(`Düşük çözünürlük (${dpi} DPI)`);
+            }
+          }
+
+          // Boyut optimizasyonu (örnek)
+          if (design.fileSize && design.fileSize > '10MB') {
+            fileErrors.push("Dosya boyutu çok büyük. Optimize edin.");
+          }
+
+          // Renk profili kontrolü
+          const colorProfileInfo = analyzeColorProfile(design.filename, design.type);
+          if (!colorProfileInfo.isValid) {
+            fileErrors.push(`Renk profili uygun değil (${colorProfileInfo.profile})`);
+          }
+
+          return {
+            designId: design.id,
+            isValid: fileErrors.length === 0,
+            errors: fileErrors,
+            recommendations: fileErrors.length > 0 ? ["Dosyayı optimize edin veya renk profilini düzeltin."] : [],
+          };
+        })
+      );
+
+      setFileValidations(fileValidationResults);
+
+      // 3. Layout Validasyonu
+      const layoutErrors: string[] = [];
+      if (selectedDesigns.length > 100) {
+        layoutErrors.push("Çok fazla tasarım var. Performans sorunları olabilir.");
+      }
+
+      setLayoutValidation({
+        isValid: layoutErrors.length === 0,
+        errors: layoutErrors,
+        recommendations: layoutErrors.length > 0 ? ["Tasarım sayısını azaltın veya daha büyük bir sayfa boyutu kullanın."] : [],
+      });
+
+    } catch (error:any) {
+      console.error("Validasyon hatası:", error);
+      toast({
+        title: "Validasyon Hatası",
+        description: error.message || "Validasyon sırasında bir hata oluştu.",
+        variant: "destructive",
+      });
+    } finally {
+      setValidationLoading(false);
+    }
+  };
+
+  const applyAlternativeDimensions = (newWidth: number, newHeight: number) => {
+    setCustomDimensions((prev) => ({
+      ...prev,
+      width: { value: newWidth, unit: prev.width.unit },
+      height: { value: newHeight, unit: prev.height.unit },
+      widthMM: newWidth,
+      heightMM: newHeight,
+    }));
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -2646,7 +2767,7 @@ export default function AutomationPanelNew() {
                   <SelectItem value="custom">🔧 Özel Ayarlar</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <div className="text-xs text-gray-600 mt-1">
                 {optimizationOptions.mode === 'maximum_efficiency' && 'Genetik algoritma ile en yüksek alan verimliliği'}
                 {optimizationOptions.mode === 'fast_layout' && 'Hızlı bin packing algoritması'}
@@ -2665,7 +2786,7 @@ export default function AutomationPanelNew() {
                     setOptimizationOptions(prev => ({ ...prev, allowRotation: checked }))}
                 />
               </div>
-              
+
               {optimizationOptions.allowRotation && (
                 <div>
                   <Label htmlFor="rotation-steps" className="text-xs">Rotasyon Adımları: {optimizationOptions.rotationSteps}°</Label>
@@ -2688,7 +2809,7 @@ export default function AutomationPanelNew() {
             {/* Spacing Optimization */}
             <div className="space-y-3 pt-3 border-t">
               <Label className="text-sm font-medium">Boşluk Optimizasyonu</Label>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label htmlFor="min-spacing" className="text-xs">Min. Boşluk (mm)</Label>
@@ -2717,7 +2838,7 @@ export default function AutomationPanelNew() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="packing-tightness" className="text-xs">Yerleştirme Sıkılığı: {(optimizationOptions.packingTightness * 100).toFixed(0)}%</Label>
                 <input
@@ -2736,7 +2857,7 @@ export default function AutomationPanelNew() {
             {/* Scale Settings */}
             <div className="space-y-3 pt-3 border-t">
               <Label className="text-sm font-medium">Ölçeklendirme Seçenekleri</Label>
-              
+
               <div className="flex items-center space-x-2 mb-2">
                 <Switch
                   id="allow-downscaling"
@@ -2748,7 +2869,7 @@ export default function AutomationPanelNew() {
                   Küçültme İzni ({(optimizationOptions.minDownscaleRatio * 100).toFixed(0)}% min)
                 </Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="allow-upscaling-opt"
@@ -2768,7 +2889,7 @@ export default function AutomationPanelNew() {
                 <Label className="text-sm font-medium flex items-center gap-1">
                   💰 Maliyet Analizi
                 </Label>
-                
+
                 <div className="bg-green-50 p-3 rounded-lg border border-green-200">
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
@@ -2788,7 +2909,7 @@ export default function AutomationPanelNew() {
                       <p className="text-green-900">{costAnalysis.wasteCost.toFixed(2)} ₺</p>
                     </div>
                   </div>
-                  
+
                   {costAnalysis.suggestions.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-green-300">
                       <span className="text-xs font-medium text-green-800">💡 Öneriler:</span>
@@ -2825,7 +2946,7 @@ export default function AutomationPanelNew() {
                   {isOptimizing ? '⏳' : '🔍'} Analiz Et
                 </Button>
               </div>
-              
+
               {multiFormatResults && (
                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                   <div className="text-xs">
@@ -2834,7 +2955,7 @@ export default function AutomationPanelNew() {
                         t.widthMM === multiFormatResults.formats[multiFormatResults.recommended]?.pageSize.widthMM
                       )?.name || 'Özel Boyut'}
                     </p>
-                    
+
                     <div className="space-y-1">
                       {multiFormatResults.formats.slice(0, 3).map((format, index) => (
                         <div key={index} className={`flex justify-between ${
@@ -2852,7 +2973,7 @@ export default function AutomationPanelNew() {
             {/* Scaling Options */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Ölçeklendirme Seçenekleri</Label>
-              
+
               <div>
                 <Label htmlFor="scaling-mode" className="text-xs">Ölçekleme Modu</Label>
                 <Select value={scalingOptions.mode} 
@@ -2983,7 +3104,7 @@ export default function AutomationPanelNew() {
             {/* Quality Settings */}
             <div className="space-y-3 pt-3 border-t">
               <Label className="text-sm font-medium">Kalite Kontrolleri</Label>
-              
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="crop-marks"
@@ -3149,20 +3270,52 @@ export default function AutomationPanelNew() {
 
             {/* Status indicators */}
             <div className="flex items-center gap-4 text-xs text-gray-500">
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${designs.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                <span>Dosyalar Yüklendi</span>
+              {/* Layout Options */}
+            <Tabs defaultValue="layout" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="layout">📐 Layout Seçenekleri</TabsTrigger>
+              <TabsTrigger value="processing">⚙️ İşlem Seçenekleri</TabsTrigger>
+              <TabsTrigger value="optimization">🎯 Optimizasyon</TabsTrigger>
+              <TabsTrigger value="validation">✅ Validasyon</TabsTrigger>
+            </TabsList>
+
+            
+
+            <TabsContent value="validation" className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Validasyon ve Kalite Kontrolü</h3>
+                  <Button 
+                    onClick={runValidation} 
+                    disabled={!selectedDesigns.length || validationLoading}
+                    variant="outline"
+                  >
+                    {validationLoading ? "Kontrol Ediliyor..." : "Validasyonu Çalıştır"}
+                  </Button>
+                </div>
+
+                {(pageValidation || fileValidations.length > 0 || layoutValidation) && (
+                  <ValidationPanel
+                    pageValidation={pageValidation}
+                    fileValidations={fileValidations}
+                    layoutValidation={layoutValidation}
+                    onApplyAlternative={applyAlternativeDimensions}
+                    className="mt-4"
+                  />
+                )}
+
+                {!pageValidation && !fileValidations.length && !layoutValidation && (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <div className="text-gray-500">
+                        Validasyon kontrolü için tasarım dosyaları seçin ve "Validasyonu Çalıştır" butonuna tıklayın.
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${arrangements ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                <span>Dizim Tamamlandı</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${generatePdfMutation.isSuccess ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                <span>PDF İndirildi</span>
-              </div>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>

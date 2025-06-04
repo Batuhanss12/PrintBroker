@@ -6,7 +6,8 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { fileProcessingService } from "./fileProcessingService";
+import { fileProcessingService } from './fileProcessingService';
+import { ValidationService } from './validationService';
 import { insertQuoteSchema, insertPrinterQuoteSchema, insertRatingSchema, insertChatRoomSchema, insertChatMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { ideogramService } from "./ideogramApi";
@@ -883,8 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat API routes
-  app.get('/api/chat/rooms', isAuthenticated, async (req: any, res) => {
-    try {
+  app.get('/api/chat/rooms', isAuthenticated, async (req: any, res) => {    try {
       const userId = req.user.claims.sub;
       const rooms = await storage.getChatRoomsByUser(userId);
       res.json(rooms);
@@ -1388,7 +1388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Try multiple parsing strategies
         let dimensionStr = file!.realDimensionsMM || file!.dimensions || '';
-        
+
         // Strategy 1: Extract from realDimensionsMM (e.g., "85x54mm")
         let match = dimensionStr.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)(?:mm)?/i);
         if (match) {
@@ -1403,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (match) {
             let w = parseFloat(match[1]);
             let h = parseFloat(match[2]);
-            
+
             // If numbers are too large, assume they're pixels and convert
             if (w > 500 || h > 500) {
               width = Math.round((w / 300) * 25.4); // Convert to mm at 300 DPI
@@ -1709,9 +1709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               message: 'Chat not available - contract not approved'
             }));
             return;
-          }
-
-          if (!clients.has(roomId)) {
+          }          if (!clients.has(roomId)) {
             clients.set(roomId, new Set());
           }
           clients.get(roomId)!.add(ws);
