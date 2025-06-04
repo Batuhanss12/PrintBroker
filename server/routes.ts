@@ -1619,14 +1619,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const margin = 3 * 2.834645669; // 3mm in points
         doc.strokeColor('#CCCCCC')
            .lineWidth(0.5)
-           .setLineDash([2, 2])
+           .dash(2, { space: 2 })
            .rect(x - margin, y - margin, width + 2 * margin, height + 2 * margin)
            .stroke();
 
         // Draw design area
         doc.strokeColor('#2563EB')
            .lineWidth(1)
-           .setLineDash([])
+           .undash()
            .rect(x, y, width, height)
            .stroke();
 
