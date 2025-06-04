@@ -104,11 +104,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: userId,
         email: newUser.email || '',
         role: newUser.role || 'customer',
-        claims: {
-          sub: userId,
-          email: newUser.email || '',
-          role: newUser.role || 'customer'
-        }
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        profileImageUrl: newUser.profileImageUrl
       };
 
       req.session.save((err) => {
