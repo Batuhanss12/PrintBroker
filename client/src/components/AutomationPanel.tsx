@@ -748,34 +748,7 @@ export default function AutomationPanel() {
                                 backgroundColor: '#fafafa'
                               }}
                             >
-                              {/* Crop Marks */}
-                              {showCropMarks && (
-                                <>
-                                  {/* Top-left crop mark */}
-                                  <div className="absolute -top-2 -left-2 w-4 h-4">
-                                    <div className="absolute top-2 left-0 w-2 h-0.5 bg-black"></div>
-                                    <div className="absolute top-0 left-2 w-0.5 h-2 bg-black"></div>
-                                  </div>
-                                  
-                                  {/* Top-right crop mark */}
-                                  <div className="absolute -top-2 -right-2 w-4 h-4">
-                                    <div className="absolute top-2 right-0 w-2 h-0.5 bg-black"></div>
-                                    <div className="absolute top-0 right-2 w-0.5 h-2 bg-black"></div>
-                                  </div>
-                                  
-                                  {/* Bottom-left crop mark */}
-                                  <div className="absolute -bottom-2 -left-2 w-4 h-4">
-                                    <div className="absolute bottom-2 left-0 w-2 h-0.5 bg-black"></div>
-                                    <div className="absolute bottom-0 left-2 w-0.5 h-2 bg-black"></div>
-                                  </div>
-                                  
-                                  {/* Bottom-right crop mark */}
-                                  <div className="absolute -bottom-2 -right-2 w-4 h-4">
-                                    <div className="absolute bottom-2 right-0 w-2 h-0.5 bg-black"></div>
-                                    <div className="absolute bottom-0 right-2 w-0.5 h-2 bg-black"></div>
-                                  </div>
-                                </>
-                              )}
+
 
                               {/* Margins */}
                               <div 

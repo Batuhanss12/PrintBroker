@@ -1204,14 +1204,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const fileRecord = await storage.createFile({
           originalName: file.originalname,
           filename: file.filename,
-          filePath: file.path,
-          thumbnailPath,
-          fileSize: file.size,
-          fileType: fileProcessingService.getFileTypeFromMime(file.mimetype),
+          size: file.size || 0,
+          uploadedBy: userId,
+          fileType: 'design',
           mimeType: file.mimetype,
           dimensions: metadata.dimensions || 'Unknown',
-          userId,
-          metadata: metadata
+          thumbnailPath,
+          status: 'ready'
         });
 
         const designFile = {
