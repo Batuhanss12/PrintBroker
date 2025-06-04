@@ -1244,6 +1244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileType: 'design',
           mimeType: file.mimetype,
           dimensions: metadata.dimensions || 'Unknown',
+          realDimensionsMM: metadata.realDimensionsMM || 'Bilinmiyor',
           thumbnailPath,
           status: 'ready'
         });
