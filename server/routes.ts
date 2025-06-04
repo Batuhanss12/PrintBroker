@@ -1524,17 +1524,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('PDF generation request:', { 
         hasArrangements: !!arrangements,
         arrangementsType: typeof arrangements,
-        structure: arrangements ? Object.keys(arrangements) : []
+        structure: arrangements ? Object.keys(arrangements) : [],
+        fullBody: req.body
       });
 
-      // Handle both direct arrangements array and nested structure
+      // Handle arrangement data structure
       let arrangedItems = [];
-      if (Array.isArray(arrangements)) {
-        arrangedItems = arrangements;
-      } else if (arrangements && Array.isArray(arrangements.arrangements)) {
+      if (arrangements && arrangements.arrangements && Array.isArray(arrangements.arrangements)) {
         arrangedItems = arrangements.arrangements;
+      } else if (Array.isArray(arrangements)) {
+        arrangedItems = arrangements;
       } else {
-        return res.status(400).json({ message: "No valid arrangements structure found" });
+        console.log('Invalid arrangement structure:', arrangements);
+        return res.status(400).json({ 
+          message: "Invalid arrangement data structure",
+          received: typeof arrangements,
+          expected: "object with arrangements array"
+        });
       }
 
       if (arrangedItems.length === 0) {

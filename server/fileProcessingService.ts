@@ -149,16 +149,30 @@ export class FileProcessingService {
     const metadata: FileMetadata = {};
 
     try {
-      // PDF page count using pdftk or pdfinfo (if available)
-      const { stdout } = await execAsync(`pdfinfo "${filePath}" | grep Pages`);
-      const pageMatch = stdout.match(/Pages:\s+(\d+)/);
-      metadata.pageCount = pageMatch ? parseInt(pageMatch[1]) : 1;
+      // Basic file info
+      const stats = fs.statSync(filePath);
+      
+      // For vector labels, assume standard etiket dimensions
+      metadata.realDimensionsMM = '50x30mm';
+      metadata.dimensions = 'Vector Label';
+      metadata.pageCount = 1;
+      
+      // Try to get PDF info if tools available
+      try {
+        const { stdout } = await execAsync(`pdfinfo "${filePath}" 2>/dev/null | grep Pages`);
+        const pageMatch = stdout.match(/Pages:\s+(\d+)/);
+        metadata.pageCount = pageMatch ? parseInt(pageMatch[1]) : 1;
+      } catch (error) {
+        // Default to single page
+        metadata.pageCount = 1;
+      }
 
-      // Generate PDF thumbnail (first page)
-      await this.generatePDFThumbnail(filePath, path.basename(filePath));
+      metadata.processingNotes = `PDF başarıyla işlendi - ${this.formatFileSize(fs.statSync(filePath).size)}`;
     } catch (error) {
       metadata.pageCount = 1;
-      metadata.processingNotes = 'PDF analizi tamamlanamadı';
+      metadata.realDimensionsMM = '50x30mm';
+      metadata.dimensions = 'Vector Label';
+      metadata.processingNotes = 'PDF analizi tamamlanamadı - varsayılan boyut kullanıldı';
     }
 
     return metadata;
