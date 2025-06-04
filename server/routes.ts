@@ -615,7 +615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Test modunda krediyi direkt ekle (PayTR Pro API olmadan)
       const currentUser = await storage.getUser(userId);
       if (currentUser) {
-        const currentBalance = parseFloat(currentUser.creditBalance) || 0;
+        const currentBalance = parseFloat(currentUser.creditBalance || "0") || 0;
         const newBalance = currentBalance + creditAmount;
         
         await storage.updateUserCreditBalance(userId, newBalance.toString());

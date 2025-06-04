@@ -151,7 +151,7 @@ export default function CustomerRegister() {
             Müşteri Kayıt
           </h1>
           <p className="text-lg text-gray-600">
-            PrintConnect'e katılın ve profesyonel baskı hizmetlerinden yararlanın
+            Matbixx'e katılın ve profesyonel baskı hizmetlerinden yararlanın
           </p>
         </div>
 

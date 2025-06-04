@@ -165,11 +165,11 @@ export default function Payment() {
         lastName: user.lastName || "",
         email: user.email || "",
         phone: user.phone || "",
-        address: user.address || "",
-        city: user.city || "",
-        postalCode: user.postalCode || "",
+        address: "",
+        city: "",
+        postalCode: "",
         companyName: user.companyName || "",
-        taxNumber: user.taxNumber || ""
+        taxNumber: ""
       }));
     }
   }, [isAuthenticated, user]);
@@ -324,7 +324,7 @@ export default function Payment() {
                     ))}
                   </div>
                   
-                  {selectedCreditAmount?.bonus > 0 && (
+                  {selectedCreditAmount && selectedCreditAmount.bonus > 0 && (
                     <Alert className="mt-4 border-green-200 bg-green-50">
                       <Gift className="h-4 w-4 text-green-600" />
                       <AlertDescription className="text-green-800">
@@ -572,7 +572,7 @@ export default function Payment() {
                         <span>Kredi Tutarı:</span>
                         <span className="font-semibold">{selectedAmount}₺</span>
                       </div>
-                      {selectedCreditAmount?.bonus > 0 && (
+                      {selectedCreditAmount && selectedCreditAmount.bonus > 0 && (
                         <div className="flex justify-between text-green-600">
                           <span>Bonus Kredi:</span>
                           <span className="font-semibold">+{selectedCreditAmount.bonus}₺</span>
