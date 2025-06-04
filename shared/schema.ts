@@ -127,6 +127,28 @@ export const files = pgTable("files", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Contracts table
+export const contracts = pgTable("contracts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id),
+  customerId: varchar("customer_id").notNull().references(() => users.id),
+  printerId: varchar("printer_id").notNull().references(() => users.id),
+  contractNumber: varchar("contract_number").notNull().unique(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  terms: text("terms").notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { enum: ["draft", "sent", "customer_approved", "printer_approved", "fully_approved", "rejected", "cancelled"] }).notNull().default("draft"),
+  customerSignedAt: timestamp("customer_signed_at"),
+  printerSignedAt: timestamp("printer_signed_at"),
+  customerSignature: text("customer_signature"),
+  printerSignature: text("printer_signature"),
+  contractPdfPath: varchar("contract_pdf_path"),
+  validUntil: timestamp("valid_until"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Chat system tables
 export const chatRooms = pgTable("chat_rooms", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -251,6 +273,23 @@ export const chatRoomsRelations = relations(chatRooms, ({ one, many }) => ({
   messages: many(chatMessages),
 }));
 
+export const contractsRelations = relations(contracts, ({ one }) => ({
+  order: one(orders, {
+    fields: [contracts.orderId],
+    references: [orders.id],
+  }),
+  customer: one(users, {
+    fields: [contracts.customerId],
+    references: [users.id],
+    relationName: "customerContracts",
+  }),
+  printer: one(users, {
+    fields: [contracts.printerId],
+    references: [users.id],
+    relationName: "printerContracts",
+  }),
+}));
+
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   room: one(chatRooms, {
     fields: [chatMessages.roomId],
@@ -271,6 +310,7 @@ export const insertRatingSchema = createInsertSchema(ratings).omit({ id: true, c
 export const insertFileSchema = createInsertSchema(files).omit({ id: true, createdAt: true });
 export const insertChatRoomSchema = createInsertSchema(chatRooms).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, createdAt: true });
+export const insertContractSchema = createInsertSchema(contracts).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
@@ -289,3 +329,5 @@ export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
 export type ChatRoom = typeof chatRooms.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertContract = z.infer<typeof insertContractSchema>;
+export type Contract = typeof contracts.$inferSelect;

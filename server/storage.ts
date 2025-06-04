@@ -97,6 +97,14 @@ export interface IStorage {
   getMessages(roomId: string, limit?: number): Promise<ChatMessage[]>;
   markMessagesAsRead(roomId: string, userId: string): Promise<void>;
   getUnreadMessageCount(userId: string): Promise<number>;
+
+  // Contract operations
+  createContract(contract: InsertContract): Promise<Contract>;
+  getContract(id: string): Promise<Contract | undefined>;
+  getContractsByCustomer(customerId: string): Promise<Contract[]>;
+  getContractsByPrinter(printerId: string): Promise<Contract[]>;
+  updateContractStatus(id: string, status: string): Promise<void>;
+  signContract(id: string, userId: string, signature: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -572,6 +580,76 @@ export class DatabaseStorage implements IStorage {
       );
 
     return result?.count || 0;
+  }
+
+  // Contract operations
+  async createContract(contract: InsertContract): Promise<Contract> {
+    const [newContract] = await db.insert(contracts).values(contract).returning();
+    return newContract;
+  }
+
+  async getContract(id: string): Promise<Contract | undefined> {
+    const [contract] = await db
+      .select()
+      .from(contracts)
+      .where(eq(contracts.id, id));
+    return contract;
+  }
+
+  async getContractsByCustomer(customerId: string): Promise<Contract[]> {
+    return await db
+      .select()
+      .from(contracts)
+      .where(eq(contracts.customerId, customerId))
+      .orderBy(desc(contracts.createdAt));
+  }
+
+  async getContractsByPrinter(printerId: string): Promise<Contract[]> {
+    return await db
+      .select()
+      .from(contracts)
+      .where(eq(contracts.printerId, printerId))
+      .orderBy(desc(contracts.createdAt));
+  }
+
+  async updateContractStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(contracts)
+      .set({ 
+        status: status as any,
+        updatedAt: new Date()
+      })
+      .where(eq(contracts.id, id));
+  }
+
+  async signContract(id: string, userId: string, signature: string): Promise<void> {
+    const contract = await this.getContract(id);
+    if (!contract) return;
+
+    const updateData: any = { updatedAt: new Date() };
+    
+    if (contract.customerId === userId) {
+      updateData.customerSignature = signature;
+      updateData.customerSignedAt = new Date();
+      if (contract.printerSignedAt) {
+        updateData.status = 'fully_approved';
+      } else {
+        updateData.status = 'customer_approved';
+      }
+    } else if (contract.printerId === userId) {
+      updateData.printerSignature = signature;
+      updateData.printerSignedAt = new Date();
+      if (contract.customerSignedAt) {
+        updateData.status = 'fully_approved';
+      } else {
+        updateData.status = 'printer_approved';
+      }
+    }
+
+    await db
+      .update(contracts)
+      .set(updateData)
+      .where(eq(contracts.id, id));
   }
 }
 
