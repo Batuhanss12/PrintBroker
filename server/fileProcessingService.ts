@@ -12,6 +12,7 @@ interface FileMetadata {
   resolution?: number;
   hasTransparency?: boolean;
   pageCount?: number;
+  realDimensionsMM?: string;
   processingNotes?: string;
 }
 
@@ -62,6 +63,21 @@ export class FileProcessingService {
       let resolution = 72;
       let hasTransparency = false;
       let colorProfile = 'RGB';
+      let realDimensionsMM = 'Unknown';
+
+      // Process vector files (SVG, AI, EPS) for real dimensions
+      if (filePath.toLowerCase().endsWith('.svg')) {
+        try {
+          const svgContent = fs.readFileSync(filePath, 'utf8');
+          const { realWidth, realHeight } = this.extractSVGDimensions(svgContent);
+          if (realWidth && realHeight) {
+            realDimensionsMM = `${realWidth}x${realHeight}mm`;
+            dimensions = `${Math.round(realWidth * 2.83)}x${Math.round(realHeight * 2.83)}px`; // Convert mm to px at 72dpi
+          }
+        } catch (error) {
+          console.warn('SVG dimension extraction failed:', error);
+        }
+      }
 
       // Try to extract image dimensions using imagemagick if available
       try {
@@ -72,7 +88,7 @@ export class FileProcessingService {
           colorProfile = parts[1] || 'RGB';
           
           // Check for transparency
-          if (filePath.toLowerCase().endsWith('.png')) {
+          if (filePath.toLowerCase().endsWith('.png') || filePath.toLowerCase().endsWith('.svg')) {
             hasTransparency = true;
           }
         }
@@ -116,6 +132,7 @@ export class FileProcessingService {
         hasTransparency,
         colorProfile,
         pageCount: 1,
+        realDimensionsMM,
         processingNotes: `Image file: ${this.formatFileSize(stats.size)}, Format: ${path.extname(filePath).toUpperCase()}`
       };
 

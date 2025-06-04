@@ -795,7 +795,7 @@ export default function AutomationPanel() {
                       type="file"
                       id="design-upload"
                       multiple
-                      accept=".pdf,.jpg,.jpeg,.png,.svg"
+                      accept=".pdf,.svg,.ai,.eps"
                       onChange={handleFileUpload}
                       className="hidden"
                     />
@@ -805,7 +805,7 @@ export default function AutomationPanel() {
                         Tasarım Dosyalarını Yükleyin
                       </p>
                       <p className="text-gray-600 mb-4">
-                        PDF, JPG, PNG, SVG formatları desteklenir
+                        Vektörel dosyalar: PDF, SVG, AI, EPS formatları desteklenir
                       </p>
                       <Button 
                         type="button"
