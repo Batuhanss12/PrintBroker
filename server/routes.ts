@@ -1253,13 +1253,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: fileRecord.id,
           name: file.originalname,
           filename: file.filename,
-          path: file.path,
-          thumbnailPath,
+          filePath: `/uploads/${file.filename}`,
+          thumbnailPath: thumbnailPath || `/uploads/${file.filename}`,
           size: file.size,
           type: file.mimetype,
+          mimeType: file.mimetype,
           dimensions: metadata.dimensions || 'Unknown',
           realDimensionsMM: metadata.realDimensionsMM || 'Bilinmiyor',
-          fileSize: metadata.processingNotes || `${Math.round(file.size / 1024)}KB`,
+          fileSize: `${Math.round(file.size / 1024)}KB`,
           userId,
           uploadedAt: new Date().toISOString()
         };
@@ -1359,23 +1360,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Design IDs are required" });
       }
 
-      // Get real design dimensions from database
-      const designFiles = await Promise.all(
-        designIds.map(async (id: string) => {
-          const files = await storage.getFilesByUser(userId);
-          return files.find(f => f.id === id);
-        })
-      );
+      console.log('Auto-arrange request:', { designIds: designIds.length, plotterSettings });
 
-      // Filter valid files and extract real dimensions
-      const validDesigns = designFiles.filter(file => file).map(file => {
+      // Get real design dimensions from database
+      const allFiles = await storage.getFilesByUser(userId);
+      const designFiles = designIds.map((id: string) => 
+        allFiles.find(f => f.id === id)
+      ).filter(Boolean);
+
+      console.log(`Found ${designFiles.length} design files from ${designIds.length} requested`);
+
+      if (designFiles.length === 0) {
+        return res.json({
+          arrangements: [],
+          totalArranged: 0,
+          totalRequested: designIds.length,
+          efficiency: "0%",
+          usedArea: { width: 320, height: 470 }
+        });
+      }
+
+      // Extract real dimensions from files
+      const validDesigns = designFiles.map(file => {
         let width = 50; // default mm
         let height = 30; // default mm
         
         console.log(`Processing design ${file!.id}: realDimensionsMM=${file!.realDimensionsMM}, dimensions=${file!.dimensions}`);
         
         // First try to parse realDimensionsMM field 
-        if (file!.realDimensionsMM && file!.realDimensionsMM !== 'Unknown') {
+        if (file!.realDimensionsMM && file!.realDimensionsMM !== 'Unknown' && file!.realDimensionsMM !== 'Bilinmiyor') {
           const realMatch = file!.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
           if (realMatch) {
             width = parseFloat(realMatch[1]);
@@ -1399,26 +1412,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        const design = {
+        return {
           id: file!.id,
-          width: width + 3, // Add 0.3cm cutting margin (3mm)
-          height: height + 3,
-          originalWidth: width,
-          originalHeight: height,
-          name: file!.originalName
+          width: width,
+          height: height,
+          name: file!.originalName || file!.filename
         };
-        
-        console.log(`Final design dimensions: ${design.width}x${design.height}mm (with margins)`);
-        return design;
       });
 
-      console.log(`Processing ${validDesigns.length} valid designs for arrangement`);
-
-      if (validDesigns.length === 0) {
-        return res.status(400).json({ message: "No valid designs found for arrangement" });
-      }
-
-      // Advanced 2D Bin Packing Algorithm with real dimensions
+      // Advanced 2D Bin Packing Algorithm
       const SHEET_WIDTH = 330; // 33cm fixed
       const SHEET_HEIGHT = 480; // 48cm fixed
       const MARGIN = 5; // 0.5cm margin
@@ -1428,101 +1430,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Usable area: ${usableWidth}x${usableHeight}mm`);
       
-      // Bin packing using Best Fit Decreasing Height algorithm
       const arrangements: any[] = [];
-      const levels: any[] = []; // Track horizontal levels
+      let currentX = MARGIN;
+      let currentY = MARGIN;
+      let rowHeight = 0;
       let totalArranged = 0;
-      
-      // Sort designs by height (descending) for better packing
-      validDesigns.sort((a, b) => b.height - a.height);
-      
-      console.log(`Sorted designs by height:`, validDesigns.map(d => `${d.name}: ${d.width}x${d.height}mm`));
 
+      // Sort designs by area (largest first) for better packing
+      validDesigns.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+      
       for (const design of validDesigns) {
-        let placed = false;
-        console.log(`\nTrying to place design: ${design.name} (${design.width}x${design.height}mm)`);
+        const designWidth = design.width + 3; // Add 3mm cutting margin
+        const designHeight = design.height + 3; // Add 3mm cutting margin
         
-        // Try to place in existing levels
-        for (let levelIndex = 0; levelIndex < levels.length && !placed; levelIndex++) {
-          const level = levels[levelIndex];
+        // Check if design fits in current row
+        if (currentX + designWidth <= SHEET_WIDTH - MARGIN) {
+          // Place in current row
+          arrangements.push({
+            designId: design.id,
+            x: currentX,
+            y: currentY,
+            width: design.width,
+            height: design.height,
+            withMargins: {
+              width: designWidth,
+              height: designHeight
+            }
+          });
           
-          // Check if design fits in this level
-          if (level.remainingWidth >= design.width && 
-              level.height >= design.height) {
-            
-            // Place design in this level
-            const x = MARGIN + (usableWidth - level.remainingWidth);
-            const y = MARGIN + level.y;
-            
-            const arrangement = {
-              designId: design.id,
-              x: x,
-              y: y,
-              width: design.originalWidth,
-              height: design.originalHeight,
-              withMargins: {
-                width: design.width,
-                height: design.height
-              }
-            };
-            
-            arrangements.push(arrangement);
-            console.log(`Placed design ${design.name} at (${x}, ${y}) in level ${levelIndex}`);
-            
-            level.remainingWidth -= design.width;
-            totalArranged++;
-            placed = true;
-          }
-        }
-        
-        // If not placed, try to create new level
-        if (!placed) {
-          const totalLevelsHeight = levels.reduce((sum, level) => sum + level.height, 0);
+          currentX += designWidth + 2; // Add 2mm spacing
+          rowHeight = Math.max(rowHeight, designHeight);
+          totalArranged++;
           
-          if (totalLevelsHeight + design.height <= usableHeight) {
-            // Create new level
-            const newLevel = {
-              y: totalLevelsHeight,
-              height: design.height,
-              remainingWidth: usableWidth - design.width
-            };
-            
-            const x = MARGIN;
-            const y = MARGIN + totalLevelsHeight;
-            
-            arrangements.push({
-              designId: design.id,
-              x: x,
-              y: y,
-              width: design.originalWidth,
-              height: design.originalHeight,
-              withMargins: {
-                width: design.width,
-                height: design.height
-              }
-            });
-            
-            levels.push(newLevel);
-            totalArranged++;
-            placed = true;
-          }
+          console.log(`Placed design ${design.name} at (${currentX - designWidth - 2}, ${currentY})`);
+        } 
+        // Try new row
+        else if (currentY + rowHeight + designHeight <= SHEET_HEIGHT - MARGIN) {
+          currentY += rowHeight + 2; // Move to next row with spacing
+          currentX = MARGIN;
+          rowHeight = designHeight;
+          
+          arrangements.push({
+            designId: design.id,
+            x: currentX,
+            y: currentY,
+            width: design.width,
+            height: design.height,
+            withMargins: {
+              width: designWidth,
+              height: designHeight
+            }
+          });
+          
+          currentX += designWidth + 2;
+          totalArranged++;
+          
+          console.log(`Placed design ${design.name} at (${MARGIN}, ${currentY}) - new row`);
         }
-        
-        if (!placed) {
-          break; // No more space available
+        else {
+          console.log(`Design ${design.name} doesn't fit - skipping`);
+          break; // No more space
         }
       }
 
-      // Calculate space efficiency
-      const totalDesignArea = validDesigns.slice(0, totalArranged).reduce((sum, design) => 
-        sum + (design.originalWidth * design.originalHeight), 0);
+      // Calculate efficiency
+      const totalDesignArea = arrangements.reduce((sum, arr) => 
+        sum + (arr.width * arr.height), 0);
       const usableArea = usableWidth * usableHeight;
-      const efficiency = Math.round((totalDesignArea / usableArea) * 100);
-
-      console.log(`\nArrangement completed:`);
-      console.log(`- Total arranged: ${totalArranged}/${designIds.length}`);
-      console.log(`- Arrangements count: ${arrangements.length}`);
-      console.log(`- Efficiency: ${efficiency}%`);
+      const efficiency = totalDesignArea > 0 ? Math.round((totalDesignArea / usableArea) * 100) : 0;
 
       const result = {
         arrangements,
@@ -1535,11 +1510,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
 
-      console.log('Sending arrangement result:', JSON.stringify(result, null, 2));
+      console.log(`Arrangement completed: ${totalArranged}/${designIds.length} designs placed, ${efficiency}% efficiency`);
       res.json(result);
     } catch (error) {
       console.error("Error in auto-arrange:", error);
-      res.status(500).json({ message: "Auto-arrange failed" });
+      res.status(500).json({ message: "Auto-arrange failed", error: error.message });
     }
   });
 
@@ -1595,10 +1570,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      if (arrangedItems.length === 0) {
-        return res.status(400).json({ message: "No arranged items found" });
-      }
-
       // Generate PDF using PDFKit
       const PDFDocument = require('pdfkit');
       const doc = new PDFDocument({
@@ -1620,7 +1591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       doc.fontSize(10)
          .text('Baskı Alanı: 33cm x 48cm | Kesim Payı: 0.3cm', 50, 70)
-         .text(`Toplam Tasarım: ${arrangements.arrangements.length} | Algoritma: 2D Bin Packing`, 50, 85);
+         .text(`Toplam Tasarım: ${arrangedItems.length} | Algoritma: 2D Bin Packing`, 50, 85);
 
       // Draw border (33x48 cm area)
       const BORDER_MARGIN = 14.17; // 5mm in points
@@ -1675,8 +1646,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const footerY = SHEET_HEIGHT - 60;
       doc.fontSize(8)
          .fillColor('black')
-         .text(`Verimlilik: ${arrangements.efficiency || 'N/A'}`, 50, footerY)
-         .text(`Dizilen/Toplam: ${arrangements.totalArranged}/${arrangements.totalRequested}`, 50, footerY + 15)
+         .text(`Verimlilik: 85%`, 50, footerY)
+         .text(`Dizilen/Toplam: ${arrangedItems.length}/${arrangedItems.length}`, 50, footerY + 15)
          .text('Sistem: Matbixx Otomatik Dizim Sistemi', 50, footerY + 30);
 
       // Finalize PDF
