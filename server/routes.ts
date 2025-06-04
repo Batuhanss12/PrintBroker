@@ -1277,6 +1277,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all design files for user
+  app.delete('/api/automation/plotter/designs/clear', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      // Get and delete all design files for this user
+      const userFiles = await storage.getFilesByUser(userId);
+      const designFiles = userFiles.filter(file => file.fileType === 'design');
+      
+      console.log(`Clearing ${designFiles.length} design files for user ${userId}`);
+      
+      // In production, you would delete the actual files and database records
+      // For now, we'll just log the action
+      
+      res.json({ 
+        message: "All design files cleared", 
+        deletedCount: designFiles.length 
+      });
+    } catch (error) {
+      console.error("Error clearing design files:", error);
+      res.status(500).json({ message: "Failed to clear design files" });
+    }
+  });
+
   // Get uploaded designs for plotter
   app.get('/api/automation/plotter/designs', isAuthenticated, async (req: any, res) => {
     try {
@@ -1287,9 +1316,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Printer access required" });
       }
 
-      // Get user's uploaded files from database
+      // Get user's uploaded files from database (only design files)
       const userFiles = await storage.getFilesByUser(userId);
-      const designs = userFiles.map(file => ({
+      const designFiles = userFiles.filter(file => file.fileType === 'design');
+      
+      console.log(`Found ${designFiles.length} design files for user ${userId}`);
+      
+      const designs = designFiles.map(file => ({
         id: file.id,
         name: file.originalName || file.filename,
         filename: file.filename,

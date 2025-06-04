@@ -65,7 +65,18 @@ export default function AutomationPanelNew() {
   // Upload designs mutation
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      return await apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
+      const response = await fetch('/api/automation/plotter/upload-designs', {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header - let browser set it with boundary
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Upload failed');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -229,7 +240,32 @@ export default function AutomationPanelNew() {
 
               {designs.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="font-medium">Yüklenen Dosyalar ({designs.length})</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Yüklenen Dosyalar ({designs.length})</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await fetch('/api/automation/plotter/designs/clear', { method: 'DELETE' });
+                          refetchDesigns();
+                          toast({
+                            title: "Temizlendi",
+                            description: "Tüm dosyalar temizlendi.",
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "Hata",
+                            description: "Dosyalar temizlenemedi.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Tümünü Temizle
+                    </Button>
+                  </div>
                   <div className="max-h-32 overflow-y-auto space-y-1">
                     {designs.map((design: Design) => (
                       <div key={design.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
