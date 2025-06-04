@@ -152,7 +152,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <PrinterIcon className="text-primary text-2xl mr-3" />
-              <span className="text-2xl font-bold text-gray-900">PrintConnect</span>
+              <span className="text-2xl font-bold text-gray-900">Matbixx</span>
             </div>
           </Link>
 
@@ -270,7 +270,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <PrinterIcon className="text-primary text-xl mr-2" />
-              <span className="text-xl font-bold text-gray-900">PrintConnect</span>
+              <span className="text-xl font-bold text-gray-900">Matbixx</span>
             </div>
           </Link>
 

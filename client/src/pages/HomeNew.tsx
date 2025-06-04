@@ -108,7 +108,7 @@ export default function Home() {
             Hoş Geldiniz, {(user as any)?.firstName || 'Kullanıcı'}!
           </h2>
           <p className="text-xl text-gray-600 mb-6">
-            PrintConnect platformuna başarıyla giriş yaptınız
+            Matbixx platformuna başarıyla giriş yaptınız
           </p>
           <div className="inline-flex items-center bg-green-100 text-green-600 rounded-full px-6 py-3">
             <Zap className="h-5 w-5 mr-2" />

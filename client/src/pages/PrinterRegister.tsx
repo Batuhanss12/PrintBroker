@@ -157,7 +157,7 @@ export default function PrinterRegister() {
             Matbaa Partner Kayıt
           </h1>
           <p className="text-lg text-gray-600">
-            PrintConnect matbaa ağımıza katılın ve işinizi büyütün
+            Matbixx matbaa ağımıza katılın ve işinizi büyütün
           </p>
         </div>
 

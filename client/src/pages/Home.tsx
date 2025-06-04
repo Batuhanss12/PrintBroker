@@ -164,7 +164,7 @@ export default function Home() {
           <CardContent className="p-8">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                PrintConnect'e Hoş Geldiniz
+                Matbixx'e Hoş Geldiniz
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto">
                 Modern teknoloji ile matbaa sektöründe devrim yaratan platformumuzda, 

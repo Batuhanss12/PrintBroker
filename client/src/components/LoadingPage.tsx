@@ -20,7 +20,7 @@ export default function LoadingPage({
             transition={{ duration: 0.6 }}
             className="mb-8"
           >
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">PrintConnect</h1>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Matbixx</h1>
             <p className="text-gray-600">Baskı ve tasarım platformu</p>
           </motion.div>
         )}
