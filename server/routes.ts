@@ -1524,7 +1524,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("❌ Error in auto-arrange:", error);
-      res.status(500).json({ message: "Auto-arrange failed", error: error.message });
+      res.status(500).json({ 
+        message: "Auto-arrange failed", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   });
 
@@ -1834,7 +1837,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       console.error("Settings calculation error:", error);
-      res.status(500).json({ message: error.message || "Optimal ayarlar hesaplanamadı" });
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Optimal ayarlar hesaplanamadı" 
+      });
     }
   });
 

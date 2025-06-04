@@ -1269,7 +1269,10 @@ export default function AutomationPanelNew() {
           isRotated: bestPlacement.rotation !== 0,
           isScaled: false,
           priority: item.priority,
-          originalItem: item,
+          originalItem: {
+            ...item,
+            dimensions: `${item.dimensions.width}x${item.dimensions.height}mm`
+          } as Design,
           costContribution: calculateItemCost(bestPlacement, options)
         };
 
@@ -3302,7 +3305,11 @@ export default function AutomationPanelNew() {
                     pageValidation={pageValidation}
                     fileValidations={fileValidations}
                     layoutValidation={layoutValidation}
-                    onApplyAlternative={applyAlternativeDimensions}
+                    onApplyAlternative={(alternative: any) => {
+                      if (alternative && alternative.dimensions) {
+                        applyAlternativeDimensions(alternative.dimensions.width, alternative.dimensions.height);
+                      }
+                    }}
                     className="mt-4"
                   />
                 )}
