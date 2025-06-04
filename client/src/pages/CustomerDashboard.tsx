@@ -291,7 +291,7 @@ export default function CustomerDashboard() {
                   <div className="flex justify-center py-8">
                     <RollingPaperLoader size={100} color="#8B5CF6" />
                   </div>
-                ) : designHistory && designHistory.designs && designHistory.designs.length > 0 ? (
+                ) : designHistory && typeof designHistory === 'object' && 'designs' in designHistory && Array.isArray(designHistory.designs) && designHistory.designs.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {designHistory.designs.map((design: any, index: number) => (
                       <Card key={index} className="overflow-hidden">
@@ -369,7 +369,7 @@ export default function CustomerDashboard() {
                   <div className="flex justify-center py-8">
                     <PrinterLoader size={100} color="#3B82F6" />
                   </div>
-                ) : quotes && quotes.length > 0 ? (
+                ) : Array.isArray(quotes) && quotes.length > 0 ? (
                   <div className="space-y-4">
                     {quotes.map((quote: any) => (
                       <QuoteCard key={quote.id} quote={quote} />
