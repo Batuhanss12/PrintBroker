@@ -1379,37 +1379,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Extract real dimensions from files
+      // Extract real dimensions from files with better parsing
       const validDesigns = designFiles.map(file => {
         let width = 50; // default mm
         let height = 30; // default mm
 
         console.log(`Processing design ${file!.id}: realDimensionsMM=${file!.realDimensionsMM}, dimensions=${file!.dimensions}`);
 
-        // First try to parse realDimensionsMM field 
-        if (file!.realDimensionsMM && file!.realDimensionsMM !== 'Unknown' && file!.realDimensionsMM !== 'Bilinmiyor') {
-          const realMatch = file!.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
-          if (realMatch) {
-            width = parseFloat(realMatch[1]);
-            height = parseFloat(realMatch[2]);
-            console.log(`Extracted from realDimensionsMM: ${width}x${height}mm`);
-          }
+        // Try multiple parsing strategies
+        let dimensionStr = file!.realDimensionsMM || file!.dimensions || '';
+        
+        // Strategy 1: Extract from realDimensionsMM (e.g., "85x54mm")
+        let match = dimensionStr.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)(?:mm)?/i);
+        if (match) {
+          width = parseFloat(match[1]);
+          height = parseFloat(match[2]);
+          console.log(`Extracted dimensions: ${width}x${height}mm`);
         }
-        // Fallback to dimensions field if realDimensionsMM not available
-        else if (file!.dimensions && file!.dimensions !== 'Unknown') {
-          const dimMatch = file!.dimensions.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
-          if (dimMatch) {
-            width = parseFloat(dimMatch[1]);
-            height = parseFloat(dimMatch[2]);
-
-            // Convert pixels to mm if needed (assuming 300 DPI for print quality)
-            if (width > 500 || height > 500) {
-              width = (width / 300) * 25.4; // px to mm at 300 DPI
-              height = (height / 300) * 25.4;
+        // Strategy 2: Look for dimensions in various formats
+        else {
+          // Try "85x54", "85 x 54", "85×54" patterns
+          match = dimensionStr.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+          if (match) {
+            let w = parseFloat(match[1]);
+            let h = parseFloat(match[2]);
+            
+            // If numbers are too large, assume they're pixels and convert
+            if (w > 500 || h > 500) {
+              width = Math.round((w / 300) * 25.4); // Convert to mm at 300 DPI
+              height = Math.round((h / 300) * 25.4);
               console.log(`Converted from pixels: ${width}x${height}mm`);
+            } else {
+              width = w;
+              height = h;
+              console.log(`Direct dimensions: ${width}x${height}mm`);
             }
           }
         }
+
+        // Ensure reasonable dimensions
+        if (width < 5 || width > 300) width = 50;
+        if (height < 5 || height > 300) height = 30;
 
         return {
           id: file!.id,
@@ -1419,10 +1429,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      // Advanced 2D Bin Packing Algorithm
-      const SHEET_WIDTH = 330; // 33cm fixed
-      const SHEET_HEIGHT = 480; // 48cm fixed
-      const MARGIN = 5; // 0.5cm margin
+      // Enhanced 2D Bin Packing Algorithm
+      const SHEET_WIDTH = plotterSettings?.sheetWidth || 330; // Use from settings
+      const SHEET_HEIGHT = plotterSettings?.sheetHeight || 480;
+      const MARGIN = 5;
 
       const usableWidth = SHEET_WIDTH - (MARGIN * 2);
       const usableHeight = SHEET_HEIGHT - (MARGIN * 2);
@@ -1435,12 +1445,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let rowHeight = 0;
       let totalArranged = 0;
 
-      // Sort designs by area (largest first) for better packing
-      validDesigns.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+      // Sort designs by height first (tallest first for better row packing)
+      validDesigns.sort((a, b) => b.height - a.height);
 
       for (const design of validDesigns) {
         const designWidth = design.width + 3; // Add 3mm cutting margin
         const designHeight = design.height + 3; // Add 3mm cutting margin
+
+        console.log(`Trying to place design: ${design.name} (${designWidth}x${designHeight}mm with margins)`);
 
         // Check if design fits in current row
         if (currentX + designWidth <= SHEET_WIDTH - MARGIN) {
@@ -1461,7 +1473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rowHeight = Math.max(rowHeight, designHeight);
           totalArranged++;
 
-          console.log(`Placed design ${design.name} at (${currentX - designWidth - 2}, ${currentY})`);
+          console.log(`✓ Placed design ${design.name} at (${currentX - designWidth - 2}, ${currentY})`);
         } 
         // Try new row
         else if (currentY + rowHeight + designHeight <= SHEET_HEIGHT - MARGIN) {
@@ -1484,11 +1496,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentX += designWidth + 2;
           totalArranged++;
 
-          console.log(`Placed design ${design.name} at (${MARGIN}, ${currentY}) - new row`);
+          console.log(`✓ Placed design ${design.name} at (${MARGIN}, ${currentY}) - new row`);
         }
         else {
-          console.log(`Design ${design.name} doesn't fit - skipping`);
-          break; // No more space
+          console.log(`✗ Design ${design.name} doesn't fit - skipping (would need ${designWidth}x${designHeight}mm)`);
         }
       }
 
@@ -1509,10 +1520,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
 
-      console.log(`Arrangement completed: ${totalArranged}/${designIds.length} designs placed, ${efficiency}% efficiency`);
+      console.log(`✅ Arrangement completed: ${totalArranged}/${designIds.length} designs placed, ${efficiency}% efficiency`);
       res.json(result);
     } catch (error) {
-      console.error("Error in auto-arrange:", error);
+      console.error("❌ Error in auto-arrange:", error);
       res.status(500).json({ message: "Auto-arrange failed", error: error.message });
     }
   });
@@ -1528,7 +1539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { plotterSettings, arrangements } = req.body;
 
-      console.log('PDF generation request received');
+      console.log('📄 PDF generation request received');
       console.log('Arrangements data:', JSON.stringify(arrangements, null, 2));
 
       // Extract arrangement items from the data structure
@@ -1555,18 +1566,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log('Extracted arranged items:', arrangedItems.length);
+      console.log(`📋 Extracted arranged items: ${arrangedItems.length}`);
 
-      if (!arrangedItems || arrangedItems.length === 0) {
-        console.log('No valid arrangement items found');
-        return res.status(400).json({ 
-          message: "No arrangement items found for PDF generation",
-          debug: {
-            arrangementsType: typeof arrangements,
-            arrangementsKeys: arrangements ? Object.keys(arrangements) : [],
-            hasArrangements: !!arrangements
-          }
-        });
+      // Allow PDF generation even with 0 items (empty layout)
+      if (!arrangedItems) {
+        arrangedItems = [];
       }
 
       // Generate PDF using PDFKit

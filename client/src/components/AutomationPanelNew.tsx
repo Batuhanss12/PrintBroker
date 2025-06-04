@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,7 +130,7 @@ export default function AutomationPanelNew() {
   const [arrangements, setArrangements] = useState<ArrangementResult | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  
+
   // Bleed and crop marks settings
   const [bleedSettings, setBleedSettings] = useState<BleedSettings>({
     top: 3,    // mm
@@ -139,14 +138,14 @@ export default function AutomationPanelNew() {
     left: 3,   // mm
     right: 3   // mm
   });
-  
+
   const [safeAreaSettings, setSafeAreaSettings] = useState<SafeAreaSettings>({
     top: 5,    // mm
     bottom: 5, // mm
     left: 5,   // mm
     right: 5   // mm
   });
-  
+
   const [showCropMarks, setShowCropMarks] = useState<boolean>(true);
   const [colorProfileCheck, setColorProfileCheck] = useState<boolean>(true);
 
@@ -169,12 +168,12 @@ export default function AutomationPanelNew() {
     if (file.size > MAX_FILE_SIZE) {
       return { isValid: false, error: `Dosya boyutu ${MAX_FILE_SIZE / 1024 / 1024}MB'yi aşamaz` };
     }
-    
+
     const fileExt = file.name.toLowerCase().split('.').pop();
     if (!ALLOWED_TYPES.includes(file.type) && !ALLOWED_EXTENSIONS.includes(fileExt || '')) {
       return { isValid: false, error: 'Sadece PDF, SVG, AI ve EPS dosyaları desteklenir' };
     }
-    
+
     return { isValid: true };
   };
 
@@ -280,7 +279,7 @@ export default function AutomationPanelNew() {
     // Standart kesim işareti uzunluğu: 5mm
     // Standart ofset: kesim payının yarısı + 2mm
     const averageBleed = (bleedSettings.top + bleedSettings.bottom + bleedSettings.left + bleedSettings.right) / 4;
-    
+
     return {
       enabled: true,
       length: 5, // mm
@@ -349,7 +348,7 @@ export default function AutomationPanelNew() {
   ): ProcessedVectorFile => {
     // Dosyadan boyut bilgisini çıkar
     let originalDimensions: VectorDimensions;
-    
+
     try {
       if (design.realDimensionsMM && design.realDimensionsMM !== 'Unknown' && design.realDimensionsMM !== 'Bilinmiyor') {
         const match = design.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
@@ -426,9 +425,9 @@ export default function AutomationPanelNew() {
   // Enhanced error handler
   const handleError = (error: unknown, defaultMessage: string) => {
     console.error('Error:', error);
-    
+
     let errorMessage = defaultMessage;
-    
+
     if (error instanceof Error) {
       errorMessage = error.message;
     } else if (typeof error === 'object' && error !== null && 'message' in error) {
@@ -436,7 +435,7 @@ export default function AutomationPanelNew() {
     } else if (typeof error === 'string') {
       errorMessage = error;
     }
-    
+
     toast({
       title: "Hata",
       description: errorMessage,
@@ -472,11 +471,11 @@ export default function AutomationPanelNew() {
     mutationFn: async (formData: FormData): Promise<UploadResponse> => {
       setUploadProgress(0);
       setIsProcessing(true);
-      
+
       try {
         return new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          
+
           xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
               const percentComplete = Math.round((e.loaded / e.total) * 90); // Reserve 10% for processing
@@ -530,7 +529,7 @@ export default function AutomationPanelNew() {
         title: "Başarılı",
         description: `${uploadedCount} dosya yüklendi ve işlendi.`,
       });
-      
+
       // Invalidate and refetch designs
       queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
       refetchDesigns();
@@ -540,7 +539,7 @@ export default function AutomationPanelNew() {
     },
   });
 
-  // Enhanced auto-arrange mutation
+  // Auto-arrange mutation
   const autoArrangeMutation = useMutation({
     mutationFn: async (): Promise<ArrangementResult> => {
       if (!Array.isArray(designs) || designs.length === 0) {
@@ -549,7 +548,7 @@ export default function AutomationPanelNew() {
 
       const designIds = designs.map((d: Design) => d.id);
       console.log('Starting auto-arrange with designs:', designIds);
-      
+
       try {
         const result = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
           designIds,
@@ -574,7 +573,7 @@ export default function AutomationPanelNew() {
     onSuccess: (data: ArrangementResult) => {
       console.log('Arrangement response received:', data);
       setArrangements(data);
-      
+
       if (!data.arrangements || data.arrangements.length === 0 || data.totalArranged === 0) {
         toast({
           title: "Uyarı",
@@ -588,7 +587,7 @@ export default function AutomationPanelNew() {
         title: "Dizim Tamamlandı",
         description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik)`,
       });
-      
+
       // Automatically generate PDF after successful arrangement
       if (data.arrangements.length > 0) {
         setTimeout(() => {
@@ -614,10 +613,10 @@ export default function AutomationPanelNew() {
       }
 
       console.log('Generating PDF with data:', data);
-      
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 1 minute timeout
-      
+
       try {
         const response = await fetch('/api/automation/plotter/generate-pdf', {
           method: 'POST',
@@ -628,9 +627,9 @@ export default function AutomationPanelNew() {
           body: JSON.stringify(data),
           signal: controller.signal
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
@@ -641,7 +640,7 @@ export default function AutomationPanelNew() {
             throw new Error(`PDF oluşturulamadı: ${response.status} - ${errorText}`);
           }
         }
-        
+
         const blob = await response.blob();
         if (blob.size === 0) {
           throw new Error('Boş PDF dosyası oluşturuldu');
@@ -656,7 +655,7 @@ export default function AutomationPanelNew() {
           a.style.display = 'none';
           document.body.appendChild(a);
           a.click();
-          
+
           // Clean up
           setTimeout(() => {
             window.URL.revokeObjectURL(url);
@@ -666,7 +665,7 @@ export default function AutomationPanelNew() {
           console.error('Download error:', downloadError);
           // Still return the blob even if download fails
         }
-        
+
         return blob;
       } catch (error) {
         clearTimeout(timeoutId);
@@ -696,7 +695,7 @@ export default function AutomationPanelNew() {
     }
 
     console.log('Files selected:', files.length);
-    
+
     // Validate all files before upload
     const invalidFiles: string[] = [];
     const validFiles: File[] = [];
@@ -707,7 +706,7 @@ export default function AutomationPanelNew() {
         type: file.type,
         size: file.size
       });
-      
+
       const validation = validateFile(file);
       if (!validation.isValid) {
         invalidFiles.push(`${file.name}: ${validation.error}`);
@@ -722,7 +721,7 @@ export default function AutomationPanelNew() {
         description: invalidFiles.join(', '),
         variant: "destructive",
       });
-      
+
       if (validFiles.length === 0) {
         event.target.value = '';
         return;
@@ -752,7 +751,7 @@ export default function AutomationPanelNew() {
 
     console.log('Uploading files...');
     uploadMutation.mutate(formData);
-    
+
     // Reset input
     event.target.value = '';
   };
@@ -766,12 +765,12 @@ export default function AutomationPanelNew() {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json() as ApiError;
         throw new Error(errorData.message || 'Dosyalar temizlenemedi');
       }
-      
+
       await refetchDesigns();
       setArrangements(null);
       toast({
@@ -863,7 +862,7 @@ export default function AutomationPanelNew() {
 
               {/* Designs List */}
               {designsLoading && <LoadingState message="Tasarımlar yükleniyor..." />}
-              
+
               {designsError && (
                 <ErrorState 
                   message="Tasarımlar yüklenemedi" 
@@ -895,7 +894,7 @@ export default function AutomationPanelNew() {
                             <span className="text-sm font-medium truncate flex-1 mr-2">{design.filename}</span>
                             <CheckCircle className="h-4 w-4 text-green-500" />
                           </div>
-                          
+
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div>
                               <span className="font-medium text-gray-600">Boyut:</span>
@@ -925,7 +924,7 @@ export default function AutomationPanelNew() {
                               </p>
                             </div>
                           </div>
-                          
+
                           {!processedFile.colorProfile.isValid && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
                               <p className="text-yellow-800">⚠️ {processedFile.colorProfile.recommendation}</p>
@@ -970,7 +969,7 @@ export default function AutomationPanelNew() {
                   Varsayılan (3mm)
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="bleed-top" className="text-xs">Üst</Label>
@@ -1041,7 +1040,7 @@ export default function AutomationPanelNew() {
                   Kesim işaretleri (Crop Marks) ekle
                 </Label>
               </div>
-              
+
               {showCropMarks && (
                 <div className="ml-6 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
                   <p>• Uzunluk: 5mm</p>
