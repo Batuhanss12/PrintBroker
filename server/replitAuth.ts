@@ -266,33 +266,46 @@ function setupFallbackAuth(app: Express) {
         return res.redirect('/?error=invalid_email');
       }
       
-      const baseUserId = Date.now();
-      const userId = `${selectedRole}_dev-user-${baseUserId}`;
-      
       // Create a mock user in the database
       const { storage } = await import('./storage');
       
-      const mockUser = await storage.upsertUser({
-        id: userId,
-        email: email,
-        firstName: 'Development',
-        lastName: 'User',
-        role: selectedRole as 'customer' | 'printer' | 'admin',
-        creditBalance: '1000.00',
-        companyName: selectedRole === 'printer' ? 'Dev Matbaa' : undefined,
-        phone: '+90 555 123 4567',
-        companyAddress: 'Development Address',
-        isActive: true,
-        subscriptionStatus: selectedRole === 'printer' ? 'active' : undefined
-      });
+      // Check if user already exists with this email and role
+      const existingUsers = await storage.getAllUsers();
+      const existingUser = existingUsers.find(user => 
+        user.email === email && user.role === selectedRole
+      );
+      
+      let mockUser;
+      if (existingUser) {
+        // User already exists, use existing user
+        mockUser = existingUser;
+      } else {
+        // Create new user with unique ID
+        const baseUserId = Date.now();
+        const userId = `${selectedRole}_dev-user-${baseUserId}`;
+        
+        mockUser = await storage.upsertUser({
+          id: userId,
+          email: email,
+          firstName: 'Development',
+          lastName: 'User',
+          role: selectedRole as 'customer' | 'printer' | 'admin',
+          creditBalance: '1000.00',
+          companyName: selectedRole === 'printer' ? 'Dev Matbaa' : undefined,
+          phone: '+90 555 123 4567',
+          companyAddress: 'Development Address',
+          isActive: true,
+          subscriptionStatus: selectedRole === 'printer' ? 'active' : undefined
+        });
+      }
 
       // Direct session setup without passport
       req.session.user = {
-        id: userId,
+        id: mockUser.id,
         email: mockUser.email || '',
         role: mockUser.role || 'customer',
         claims: {
-          sub: userId,
+          sub: mockUser.id,
           email: mockUser.email || '',
           role: mockUser.role || 'customer'
         }
