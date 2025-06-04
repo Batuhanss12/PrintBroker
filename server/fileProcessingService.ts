@@ -299,6 +299,7 @@ export class FileProcessingService {
       metadata.dimensions = `Vector ${shape.charAt(0).toUpperCase() + shape.slice(1)}`;
       metadata.pageCount = pageCount;
       metadata.processingNotes = `PDF analyzed - ${realWidthMM}x${realHeightMM}mm ${shape} shape`;
+      metadata.contentPreserved = true;
 
       console.log('Final PDF metadata:', metadata);
 
@@ -308,6 +309,7 @@ export class FileProcessingService {
       metadata.realDimensionsMM = '50x30mm';
       metadata.dimensions = 'Vector Rectangle';
       metadata.processingNotes = 'PDF analysis failed - using defaults';
+      metadata.contentPreserved = false;
     }
 
     return metadata;

@@ -1258,7 +1258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             dimensions: metadata.dimensions || 'Unknown',
             realDimensionsMM: metadata.realDimensionsMM || 'Boyut tespit edilemedi',
             thumbnailPath,
-            status: metadata.contentPreserved ? 'ready' : 'warning',
+            status: (metadata.contentPreserved !== false) ? 'ready' : 'warning',
             colorProfile: metadata.colorProfile,
             resolution: metadata.resolution,
             hasTransparency: metadata.hasTransparency,
@@ -1280,8 +1280,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             realDimensionsMM: metadata.realDimensionsMM || 'Boyut bilinmiyor',
             fileSize: `${Math.round(file.size / 1024)}KB`,
             fileType: 'design',
-            contentPreserved: metadata.contentPreserved,
-            processingStatus: metadata.contentPreserved ? 'success' : 'warning',
+            contentPreserved: metadata.contentPreserved !== false,
+            processingStatus: (metadata.contentPreserved !== false) ? 'success' : 'warning',
             processingNotes: metadata.processingNotes,
             colorProfile: metadata.colorProfile,
             resolution: metadata.resolution,
@@ -1766,6 +1766,112 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
       });
       console.log('WebSocket client disconnected');
     });
+  });
+
+  // Auto-arrange endpoint for plotter automation
+  app.post('/api/automation/plotter/auto-arrange', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { designIds, plotterSettings } = req.body;
+
+      if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
+        return res.status(400).json({ message: "En az bir tasarım ID'si gerekli" });
+      }
+
+      // Get design files
+      const files = await storage.getFilesByUser(userId);
+      const designs = files.filter(f => designIds.includes(f.id) && f.fileType === 'design');
+
+      if (designs.length === 0) {
+        return res.status(404).json({ message: "Geçerli tasarım bulunamadı" });
+      }
+
+      // Simple auto-arrangement algorithm
+      const sheetWidth = plotterSettings?.sheetWidth || 330; // mm
+      const sheetHeight = plotterSettings?.sheetHeight || 480; // mm
+      const margin = plotterSettings?.margin || 5; // mm
+      const spacing = plotterSettings?.spacing || 2; // mm
+
+      const arrangements = [];
+      let currentX = margin;
+      let currentY = margin;
+      let rowHeight = 0;
+      let arranged = 0;
+
+      for (const design of designs) {
+        // Parse dimensions from realDimensionsMM (format: "50x30mm")
+        const dimensionMatch = design.realDimensionsMM?.match(/(\d+)x(\d+)mm/);
+        const width = dimensionMatch ? parseInt(dimensionMatch[1]) : 50;
+        const height = dimensionMatch ? parseInt(dimensionMatch[2]) : 30;
+
+        // Check if design fits in current row
+        if (currentX + width + margin <= sheetWidth) {
+          arrangements.push({
+            designId: design.id,
+            x: currentX,
+            y: currentY,
+            width: width,
+            height: height,
+            rotation: 0
+          });
+
+          currentX += width + spacing;
+          rowHeight = Math.max(rowHeight, height);
+          arranged++;
+        } else {
+          // Move to next row
+          currentX = margin;
+          currentY += rowHeight + spacing;
+          rowHeight = 0;
+
+          // Check if design fits in new row
+          if (currentY + height + margin <= sheetHeight && currentX + width + margin <= sheetWidth) {
+            arrangements.push({
+              designId: design.id,
+              x: currentX,
+              y: currentY,
+              width: width,
+              height: height,
+              rotation: 0
+            });
+
+            currentX += width + spacing;
+            rowHeight = height;
+            arranged++;
+          } else {
+            // Design doesn't fit
+            break;
+          }
+        }
+      }
+
+      // Calculate efficiency
+      const totalDesignArea = arrangements.reduce((sum, arr) => sum + (arr.width * arr.height), 0);
+      const sheetArea = sheetWidth * sheetHeight;
+      const efficiency = Math.round((totalDesignArea / sheetArea) * 100);
+
+      const result = {
+        arrangements,
+        totalArranged: arranged,
+        totalRequested: designs.length,
+        efficiency: `${efficiency}%`,
+        sheetDimensions: { width: sheetWidth, height: sheetHeight },
+        wasteArea: sheetArea - totalDesignArea
+      };
+
+      console.log('Auto-arrangement completed:', result);
+      res.json(result);
+
+    } catch (error) {
+      console.error("Auto-arrange error:", error);
+      res.status(500).json({ message: "Otomatik dizilim başarısız" });
+    }
   });
 
   // Extended Plotter Data Service API Endpoints
