@@ -1792,7 +1792,14 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
         return res.status(404).json({ message: "Geçerli tasarım bulunamadı" });
       }
 
-      // Simple auto-arrangement algorithm
+      console.log('🔧 Starting enhanced auto-arrange for designs:', designs.map(d => ({
+        id: d.id,
+        name: d.originalName,
+        realDimensionsMM: d.realDimensionsMM,
+        dimensions: d.dimensions
+      })));
+
+      // Enhanced auto-arrangement algorithm
       const sheetWidth = plotterSettings?.sheetWidth || 330; // mm
       const sheetHeight = plotterSettings?.sheetHeight || 480; // mm
       const margin = plotterSettings?.margin || 5; // mm
@@ -1805,25 +1812,72 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
       let arranged = 0;
 
       for (const design of designs) {
-        // Parse dimensions from realDimensionsMM (format: "50x30mm")
-        const dimensionMatch = design.realDimensionsMM?.match(/(\d+)x(\d+)mm/);
-        const width = dimensionMatch ? parseInt(dimensionMatch[1]) : 50;
-        const height = dimensionMatch ? parseInt(dimensionMatch[2]) : 30;
+        console.log(`📐 Processing design: ${design.originalName}`);
+        console.log(`Raw realDimensionsMM: "${design.realDimensionsMM}"`);
+
+        // Enhanced dimension parsing with fallbacks
+        let width = 50; // Default fallback
+        let height = 30; // Default fallback
+
+        // Try multiple parsing methods
+        if (design.realDimensionsMM) {
+          // Method 1: Standard format "50x30mm"
+          const standardMatch = design.realDimensionsMM.match(/(\d+)x(\d+)mm/);
+          if (standardMatch) {
+            width = parseInt(standardMatch[1]);
+            height = parseInt(standardMatch[2]);
+            console.log(`✅ Standard parse: ${width}x${height}mm`);
+          } else {
+            // Method 2: Look for any numbers
+            const numbers = design.realDimensionsMM.match(/(\d+)/g);
+            if (numbers && numbers.length >= 2) {
+              width = parseInt(numbers[0]);
+              height = parseInt(numbers[1]);
+              console.log(`✅ Number extraction: ${width}x${height}mm`);
+            }
+          }
+        }
+
+        // Validation and size limits
+        if (width > sheetWidth || height > sheetHeight) {
+          // If design is larger than sheet, try to scale it down
+          const scaleX = (sheetWidth - 2 * margin) / width;
+          const scaleY = (sheetHeight - 2 * margin) / height;
+          const scale = Math.min(scaleX, scaleY, 1); // Don't scale up
+
+          if (scale > 0.1) { // Only if scaling is reasonable
+            width = Math.floor(width * scale);
+            height = Math.floor(height * scale);
+            console.log(`🔧 Scaled design to fit: ${width}x${height}mm (scale: ${scale.toFixed(2)})`);
+          } else {
+            console.log(`❌ Design too large, skipping: ${width}x${height}mm`);
+            continue;
+          }
+        }
+
+        // Ensure minimum size
+        width = Math.max(width, 10);
+        height = Math.max(height, 10);
+
+        console.log(`📏 Final dimensions for arrangement: ${width}x${height}mm`);
 
         // Check if design fits in current row
-        if (currentX + width + margin <= sheetWidth) {
+        if (currentX + width + margin <= sheetWidth && currentY + height + margin <= sheetHeight) {
           arrangements.push({
             designId: design.id,
             x: currentX,
             y: currentY,
             width: width,
             height: height,
-            rotation: 0
+            rotation: 0,
+            designName: design.originalName
           });
 
           currentX += width + spacing;
           rowHeight = Math.max(rowHeight, height);
           arranged++;
+          
+          console.log(`✅ Arranged design at (${currentX - width - spacing}, ${currentY})`);
         } else {
           // Move to next row
           currentX = margin;
@@ -1838,15 +1892,19 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
               y: currentY,
               width: width,
               height: height,
-              rotation: 0
+              rotation: 0,
+              designName: design.originalName
             });
 
             currentX += width + spacing;
             rowHeight = height;
             arranged++;
+            
+            console.log(`✅ Arranged design in new row at (${currentX - width - spacing}, ${currentY})`);
           } else {
-            // Design doesn't fit
-            break;
+            console.log(`❌ Design doesn't fit anywhere: ${width}x${height}mm`);
+            // Design doesn't fit - continue to try others
+            continue;
           }
         }
       }
@@ -1854,7 +1912,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
       // Calculate efficiency
       const totalDesignArea = arrangements.reduce((sum, arr) => sum + (arr.width * arr.height), 0);
       const sheetArea = sheetWidth * sheetHeight;
-      const efficiency = Math.round((totalDesignArea / sheetArea) * 100);
+      const efficiency = sheetArea > 0 ? Math.round((totalDesignArea / sheetArea) * 100) : 0;
 
       const result = {
         arrangements,
@@ -1862,15 +1920,21 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
         totalRequested: designs.length,
         efficiency: `${efficiency}%`,
         sheetDimensions: { width: sheetWidth, height: sheetHeight },
-        wasteArea: sheetArea - totalDesignArea
+        wasteArea: sheetArea - totalDesignArea,
+        debug: {
+          designsProcessed: designs.length,
+          arrangementsCreated: arrangements.length,
+          totalDesignArea,
+          sheetArea
+        }
       };
 
-      console.log('Auto-arrangement completed:', result);
+      console.log('🎯 Enhanced auto-arrangement completed:', result);
       res.json(result);
 
     } catch (error) {
-      console.error("Auto-arrange error:", error);
-      res.status(500).json({ message: "Otomatik dizilim başarısız" });
+      console.error("❌ Auto-arrange error:", error);
+      res.status(500).json({ message: "Otomatik dizilim başarısız: " + (error as Error).message });
     }
   });
 
