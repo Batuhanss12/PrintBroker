@@ -887,10 +887,6 @@ export default function AutomationPanelNew() {
                       Tümünü Temizle
                     </Button>
                   </div>
-                  <DesignList                      <Trash2 className="h-4 w-4 mr-1" />
-                      Tümünü Temizle
-                    </Button>
-                  </div>
                   <DesignList designs={designs} />
                 </div>
               )}
