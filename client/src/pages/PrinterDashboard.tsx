@@ -225,8 +225,19 @@ export default function PrinterDashboard() {
           />
         </div>
 
-        {/* New Quote Requests */}
-        <Card className="mb-8">
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
+            <TabsTrigger value="contracts">Sözleşmeler</TabsTrigger>
+            <TabsTrigger value="reports">Raporlar</TabsTrigger>
+            <TabsTrigger value="automation">Otomasyonlar</TabsTrigger>
+            <TabsTrigger value="orders">Siparişler</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* New Quote Requests */}
+            <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Yeni Teklif Talepleri</CardTitle>
@@ -393,6 +404,35 @@ export default function PrinterDashboard() {
             </Card>
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="contracts">
+            <ContractManager userRole="printer" />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <ReportsAndAnalytics />
+          </TabsContent>
+
+          <TabsContent value="automation">
+            <AutomationPanel />
+          </TabsContent>
+
+          <TabsContent value="orders" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sipariş Yönetimi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Sipariş Takip Sistemi</h3>
+                  <p className="text-gray-600">Sipariş durumu, teslimat takibi ve müşteri bildirimleri.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

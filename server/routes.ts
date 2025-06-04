@@ -1000,6 +1000,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contract management routes
+  app.get('/api/contracts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let contracts;
+      if (user.role === 'customer') {
+        contracts = await storage.getContractsByCustomer(userId);
+      } else if (user.role === 'printer') {
+        contracts = await storage.getContractsByPrinter(userId);
+      } else {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      res.json(contracts);
+    } catch (error) {
+      console.error("Error fetching contracts:", error);
+      res.status(500).json({ message: "Failed to fetch contracts" });
+    }
+  });
+
+  app.post('/api/contracts/:id/sign', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { signature } = req.body;
+      const userId = req.user.claims.sub;
+      
+      if (!signature || !signature.trim()) {
+        return res.status(400).json({ message: "Signature is required" });
+      }
+
+      await storage.signContract(id, userId, signature.trim());
+      res.json({ message: "Contract signed successfully" });
+    } catch (error) {
+      console.error("Error signing contract:", error);
+      res.status(500).json({ message: "Failed to sign contract" });
+    }
+  });
+
+  // Reports and analytics routes
+  app.post('/api/reports/business-metrics', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      // Mock data for demonstration - in production, this would calculate real metrics
+      const metrics = {
+        totalRevenue: 125000,
+        monthlyRevenue: 28000,
+        totalQuotes: 156,
+        convertedQuotes: 89,
+        totalCustomers: 45,
+        newCustomers: 12,
+        averageOrderValue: 1404,
+        conversionRate: 57.1,
+        topCustomers: [
+          { id: "1", name: "ABC Matbaa Ltd.", totalOrders: 8, totalSpent: 15000 },
+          { id: "2", name: "XYZ Reklam A.Ş.", totalOrders: 6, totalSpent: 12000 },
+          { id: "3", name: "Özkan Tasarım", totalOrders: 5, totalSpent: 9500 }
+        ],
+        revenueByMonth: [
+          { month: "Ocak", revenue: 22000, orders: 15 },
+          { month: "Şubat", revenue: 25000, orders: 18 },
+          { month: "Mart", revenue: 28000, orders: 20 }
+        ],
+        quotesByStatus: [
+          { status: "Beklemede", count: 25, percentage: 40 },
+          { status: "Onaylandı", count: 20, percentage: 32 },
+          { status: "Tamamlandı", count: 18, percentage: 28 }
+        ],
+        productCategories: [
+          { category: "Etiket Baskı", orders: 45, revenue: 35000 },
+          { category: "Kartvizit", orders: 38, revenue: 18000 },
+          { category: "Broşür", orders: 25, revenue: 22000 }
+        ]
+      };
+
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching business metrics:", error);
+      res.status(500).json({ message: "Failed to fetch business metrics" });
+    }
+  });
+
+  // Automation routes - Plotter system
+  app.get('/api/automation/plotter/layouts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      // Mock saved layouts - in production, this would be stored in database
+      const layouts = [
+        {
+          id: "1",
+          name: "33x48 Standart",
+          settings: {
+            sheetWidth: 330,
+            sheetHeight: 480,
+            marginTop: 10,
+            marginBottom: 10,
+            marginLeft: 10,
+            marginRight: 10,
+            labelWidth: 50,
+            labelHeight: 30,
+            horizontalSpacing: 2,
+            verticalSpacing: 2
+          },
+          labelsPerRow: 6,
+          labelsPerColumn: 15,
+          totalLabels: 90,
+          wastePercentage: 8.5,
+          createdAt: new Date().toISOString()
+        }
+      ];
+
+      res.json(layouts);
+    } catch (error) {
+      console.error("Error fetching plotter layouts:", error);
+      res.status(500).json({ message: "Failed to fetch plotter layouts" });
+    }
+  });
+
+  app.post('/api/automation/plotter/save-layout', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { name, settings } = req.body;
+      
+      if (!name || !settings) {
+        return res.status(400).json({ message: "Name and settings are required" });
+      }
+
+      // In production, this would save to database
+      const layout = {
+        id: Date.now().toString(),
+        name,
+        settings,
+        userId,
+        createdAt: new Date().toISOString()
+      };
+
+      res.json({ message: "Layout saved successfully", layout });
+    } catch (error) {
+      console.error("Error saving plotter layout:", error);
+      res.status(500).json({ message: "Failed to save plotter layout" });
+    }
+  });
+
+  app.post('/api/automation/plotter/generate-pdf', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      // Mock PDF generation - in production, this would generate actual PDF
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="plotter-layout.pdf"');
+      
+      // Simple mock PDF content
+      const pdfContent = Buffer.from('Mock PDF content for plotter layout');
+      res.send(pdfContent);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time chat
