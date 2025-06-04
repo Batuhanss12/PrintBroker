@@ -416,20 +416,61 @@ export default function AutomationPanel() {
                       height: arrangement.height * scale,
                     }}
                   >
-                    {designData && designData.thumbnailPath ? (
+                    {designData ? (
                       <div className="w-full h-full relative">
-                        <img
-                          src={designData.thumbnailPath}
-                          alt={designData.name}
-                          className="w-full h-full object-contain"
-                          style={{
-                            imageRendering: 'crisp-edges',
-                          }}
-                        />
+                        {/* Vector file preview */}
+                        {designData.name.toLowerCase().endsWith('.svg') ? (
+                          <object
+                            data={designData.filePath}
+                            type="image/svg+xml"
+                            className="w-full h-full object-contain"
+                          >
+                            <div className="w-full h-full flex items-center justify-center bg-blue-50">
+                              <span className="text-xs text-blue-600">SVG</span>
+                            </div>
+                          </object>
+                        ) : designData.name.toLowerCase().endsWith('.pdf') ? (
+                          <div className="w-full h-full flex items-center justify-center bg-red-50 relative">
+                            <div className="text-center">
+                              <div className="text-lg">📄</div>
+                              <span className="text-xs text-red-600 font-medium">PDF</span>
+                            </div>
+                            {designData.realDimensionsMM && (
+                              <div className="absolute bottom-0 left-0 right-0 text-xs bg-black bg-opacity-75 text-white p-1 text-center">
+                                {designData.realDimensionsMM}
+                              </div>
+                            )}
+                          </div>
+                        ) : designData.thumbnailPath ? (
+                          <img
+                            src={designData.thumbnailPath}
+                            alt={designData.name}
+                            className="w-full h-full object-contain"
+                            style={{
+                              imageRendering: 'crisp-edges',
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-purple-50">
+                            <div className="text-center">
+                              <div className="text-lg">🎨</div>
+                              <span className="text-xs text-purple-600">{designData.name.split('.').pop()?.toUpperCase()}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Design overlay info */}
                         <div className="absolute inset-0 bg-green-500 bg-opacity-10"></div>
                         <div className="absolute top-0.5 left-0.5 text-xs font-bold text-green-700 bg-white px-1 rounded">
                           {index + 1}
                         </div>
+                        
+                        {/* Real dimensions display */}
+                        {designData.realDimensionsMM && designData.realDimensionsMM !== 'Unknown' && (
+                          <div className="absolute bottom-0.5 left-0.5 text-xs bg-green-600 text-white px-1 rounded">
+                            {designData.realDimensionsMM}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-green-100">
@@ -795,17 +836,20 @@ export default function AutomationPanel() {
                       type="file"
                       id="design-upload"
                       multiple
-                      accept=".pdf,.jpg,.jpeg,.png,.svg"
+                      accept=".pdf,.svg,.ai,.eps,.ps"
                       onChange={handleFileUpload}
                       className="hidden"
                     />
                     <div className="text-center">
                       <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-lg font-medium text-gray-900 mb-2">
-                        Tasarım Dosyalarını Yükleyin
+                        Vektörel Tasarım Dosyalarını Yükleyin
                       </p>
                       <p className="text-gray-600 mb-4">
-                        PDF, JPG, PNG, SVG formatları desteklenir
+                        Sadece vektörel formatlar: PDF, SVG, AI, EPS
+                      </p>
+                      <p className="text-sm text-blue-600 mb-4">
+                        Vektörel dosyalar gerçek ölçülerini korur ve kesim için idealdir
                       </p>
                       <Button 
                         type="button"
@@ -889,12 +933,20 @@ export default function AutomationPanel() {
                               <p className="text-sm font-medium truncate" title={design.name}>
                                 {design.name}
                               </p>
-                              <p className="text-xs text-gray-600">
-                                {design.dimensions || 'Boyut bilinmiyor'}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(design.uploadedAt).toLocaleDateString('tr-TR')}
-                              </p>
+                              <div className="text-xs space-y-1">
+                                {design.realDimensionsMM && design.realDimensionsMM !== 'Unknown' ? (
+                                  <p className="text-green-600 font-medium">
+                                    📏 {design.realDimensionsMM}
+                                  </p>
+                                ) : (
+                                  <p className="text-gray-600">
+                                    {design.dimensions || 'Boyut bilinmiyor'}
+                                  </p>
+                                )}
+                                <p className="text-gray-500">
+                                  {new Date(design.uploadedAt).toLocaleDateString('tr-TR')}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         ))}
