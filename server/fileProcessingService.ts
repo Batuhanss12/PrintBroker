@@ -37,17 +37,153 @@ export class FileProcessingService {
     const metadata: FileMetadata = {};
 
     try {
+      console.log(`🔍 Processing file: ${filePath} (${mimeType})`);
+      
+      // Enhanced content preservation check
+      const contentPreserved = await this.verifyContentIntegrity(filePath, mimeType);
+      metadata.contentPreserved = contentPreserved;
+
       if (mimeType.startsWith('image/')) {
         return await this.processImage(filePath);
       } else if (mimeType === 'application/pdf') {
         return await this.processPDF(filePath);
+      } else if (mimeType === 'image/svg+xml') {
+        return await this.processSVG(filePath);
+      } else if (mimeType.includes('postscript') || mimeType.includes('eps')) {
+        return await this.processEPS(filePath);
       } else {
         return await this.processDocument(filePath);
       }
     } catch (error) {
       console.error('File processing error:', error);
       return {
-        processingNotes: `Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        processingNotes: `Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        contentPreserved: false
+      };
+    }
+  }
+
+  private async verifyContentIntegrity(filePath: string, mimeType: string): Promise<boolean> {
+    try {
+      const stats = fs.statSync(filePath);
+      
+      // Check if file exists and has content
+      if (!stats.isFile() || stats.size === 0) {
+        return false;
+      }
+
+      // Verify file header for known formats
+      const buffer = fs.readFileSync(filePath, { start: 0, end: 10 });
+      
+      if (mimeType === 'application/pdf') {
+        return buffer.toString('ascii', 0, 5) === '%PDF-';
+      } else if (mimeType === 'image/svg+xml') {
+        const content = fs.readFileSync(filePath, 'utf8', { start: 0, end: 100 });
+        return content.includes('<svg') || content.includes('<?xml');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Content integrity check failed:', error);
+      return false;
+    }
+  }
+
+  private async processSVG(filePath: string): Promise<FileMetadata> {
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      
+      // Extract dimensions from SVG
+      let realWidthMM = 50;
+      let realHeightMM = 30;
+      
+      const widthMatch = content.match(/width="([^"]+)"/);
+      const heightMatch = content.match(/height="([^"]+)"/);
+      const viewBoxMatch = content.match(/viewBox="[^"]*?\s+[^"]*?\s+([^"]*?)\s+([^"]*?)"/);
+      
+      if (widthMatch && heightMatch) {
+        const width = parseFloat(widthMatch[1]);
+        const height = parseFloat(heightMatch[1]);
+        
+        if (!isNaN(width) && !isNaN(height)) {
+          // Convert units to mm
+          if (widthMatch[1].includes('mm')) {
+            realWidthMM = width;
+            realHeightMM = height;
+          } else if (widthMatch[1].includes('px')) {
+            realWidthMM = Math.round((width / 96) * 25.4); // 96 DPI default
+            realHeightMM = Math.round((height / 96) * 25.4);
+          } else {
+            realWidthMM = width;
+            realHeightMM = height;
+          }
+        }
+      } else if (viewBoxMatch) {
+        const width = parseFloat(viewBoxMatch[1]);
+        const height = parseFloat(viewBoxMatch[2]);
+        
+        if (!isNaN(width) && !isNaN(height)) {
+          realWidthMM = Math.round((width / 96) * 25.4);
+          realHeightMM = Math.round((height / 96) * 25.4);
+        }
+      }
+      
+      return {
+        dimensions: 'SVG Vector',
+        realDimensionsMM: `${realWidthMM}x${realHeightMM}mm`,
+        colorProfile: 'RGB',
+        processingNotes: `SVG processed - ${realWidthMM}x${realHeightMM}mm`,
+        contentPreserved: true
+      };
+    } catch (error) {
+      console.error('SVG processing error:', error);
+      return {
+        dimensions: 'SVG Vector',
+        realDimensionsMM: '50x30mm',
+        processingNotes: 'SVG processing failed - using defaults',
+        contentPreserved: false
+      };
+    }
+  }
+
+  private async processEPS(filePath: string): Promise<FileMetadata> {
+    try {
+      const buffer = fs.readFileSync(filePath);
+      const content = buffer.toString('latin1');
+      
+      let realWidthMM = 50;
+      let realHeightMM = 30;
+      
+      // Look for BoundingBox in EPS
+      const boundingBoxMatch = content.match(/%%BoundingBox:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/);
+      
+      if (boundingBoxMatch) {
+        const x1 = parseInt(boundingBoxMatch[1]);
+        const y1 = parseInt(boundingBoxMatch[2]);
+        const x2 = parseInt(boundingBoxMatch[3]);
+        const y2 = parseInt(boundingBoxMatch[4]);
+        
+        const widthPoints = x2 - x1;
+        const heightPoints = y2 - y1;
+        
+        realWidthMM = Math.round(widthPoints * 0.352778);
+        realHeightMM = Math.round(heightPoints * 0.352778);
+      }
+      
+      return {
+        dimensions: 'EPS Vector',
+        realDimensionsMM: `${realWidthMM}x${realHeightMM}mm`,
+        colorProfile: 'CMYK',
+        processingNotes: `EPS processed - ${realWidthMM}x${realHeightMM}mm`,
+        contentPreserved: true
+      };
+    } catch (error) {
+      console.error('EPS processing error:', error);
+      return {
+        dimensions: 'EPS Vector',
+        realDimensionsMM: '50x30mm',
+        processingNotes: 'EPS processing failed - using defaults',
+        contentPreserved: false
       };
     }
   }

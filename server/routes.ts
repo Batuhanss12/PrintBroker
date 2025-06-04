@@ -884,7 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat API routes
-  app.get('/api/chat/rooms', isAuthenticated, async (req: any, res) => {    try {
+  app.get('/api/chat/rooms', isAuthenticated,The code has been updated with enhanced file upload functionality, including content preservation and detailed metadata storage. async (req: any, res) => {    try {
       const userId = req.user.claims.sub;
       const rooms = await storage.getChatRoomsByUser(userId);
       res.json(rooms);
@@ -1179,7 +1179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Plotter design file upload
+  // Enhanced plotter design file upload with content preservation
   app.post('/api/automation/plotter/upload-designs', isAuthenticated, upload.array('designs', 10), async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.session?.user?.id;
@@ -1189,21 +1189,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Printer access required" });
       }
 
-      console.log('Upload request received:', {
+      console.log('🚀 Enhanced upload with content preservation started:', {
+        userId,
         hasFiles: !!req.files,
-        filesLength: req.files?.length || 0,
-        body: req.body,
-        headers: req.headers['content-type']
+        filesLength: req.files?.length || 0
       });
 
       const files = req.files as Express.Multer.File[];
 
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded - please select files" });
+      }
+
+      const uploadedDesigns = [];
+      const processingErrors = [];
+
+      for (const file of files) {
+        try {
+          console.log(`📄 Processing file: ${file.originalname} (${file.mimetype})`);
+
+          // Enhanced file validation
+          const validation = await fileProcessingService.validateFile(file.path, file.mimetype);
+          if (!validation.isValid) {
+            processingErrors.push(`${file.originalname}: ${validation.errors.join(', ')}`);
+            continue;
+          }
+
+          // Process file with content preservation
+          const metadata = await fileProcessingService.processFile(file.path, file.mimetype);
+          console.log(`✅ Content analysis completed:`, {
+            contentPreserved: metadata.contentPreserved,
+            realDimensions: metadata.realDimensionsMM,
+            processingNotes: metadata.processingNotes
+          });
+
+          // Enhanced thumbnail generation
+          let thumbnailPath = '';
+          try {
+            if (file.mimetype === 'application/pdf') {
+              thumbnailPath = await fileProcessingService.generatePDFThumbnail(file.path, `${file.filename}.jpg`);
+            } else if (file.mimetype.startsWith('image/') || file.mimetype === 'image/svg+xml') {
+              thumbnailPath = await fileProcessingService.generateThumbnail(file.path, file.filename);
+            }
+            console.log(`🖼️ Thumbnail generated: ${thumbnailPath}`);
+          } catch (thumbError) {
+            console.warn("Thumbnail generation failed:", thumbError);
+          }
+
+          // Save to database with enhanced metadata
+          const fileRecord = await storage.createFile({
+            originalName: file.originalname,
+            filename: file.filename,
+            size: file.size || 0,
+            uploadedBy: userId,
+            fileType: 'design',
+            mimeType: file.mimetype,
+            dimensions: metadata.dimensions || 'Unknown',
+            realDimensionsMM: metadata.realDimensionsMM || 'Boyut tespit edilemedi',
+            thumbnailPath,
+            status: metadata.contentPreserved ? 'ready' : 'warning',
+            colorProfile: metadata.colorProfile,
+            resolution: metadata.resolution,
+            hasTransparency: metadata.hasTransparency,
+            pageCount: metadata.pageCount,
+            processingNotes: metadata.processingNotes
+          });
+
+          // Create enhanced design object
+          const designFile = {
+            id: fileRecord.id,
+            name: file.originalname,
+            filename: file.filename,
+            filePath: `/uploads/${file.filename}`,
+            thumbnailPath: thumbnailPath || '',
+            size: file.size,
+            type: file.mimetype,
+            mimeType: file.mimetype,
+            dimensions: metadata.dimensions || 'Unknown',
+            realDimensionsMM: metadata.realDimensionsMM || 'Boyut bilinmiyor',
+            fileSize: `${Math.round(file.size / 1024)}KB`,
+            fileType: 'design',
+            contentPreserved: metadata.contentPreserved,
+            processingStatus: metadata.contentPreserved ? 'success' : 'warning',
+            processingNotes: metadata.processingNotes,
+            colorProfile: metadata.colorProfile,
+            resolution: metadata.resolution,
+            userId,
+            uploadedAt: new Date().toISOString()
+          };
+
+          uploadedDesigns.push(designFile);
+
+          console.log(`✅ File processed successfully: ${file.originalname}`);
+
+        } catch (fileError) {
+          console.error(`❌ Error processing file ${file.originalname}:`, fileError);
+          processingErrors.push(`${file.originalname}: Processing failed`);
+        }
+      }
+
+      // Generate response
+      const response = {
+        message: `${uploadedDesigns.length} files uploaded successfully${processingErrors.length > 0 ? ` (${processingErrors.length} errors)` : ''}`,
+        designs: uploadedDesigns,
+        contentPreservationSummary: {
+          totalFiles: uploadedDesigns.length,
+          contentPreserved: uploadedDesigns.filter(d => d.contentPreserved).length,
+          warnings: uploadedDesigns.filter(d => d.processingStatus === 'warning').length
+        }
+      };
+
+      if (processingErrors.length > 0) {
+        response.errors = processingErrors;
+      }
+
+      console.log('🎉 Upload completed:', {
+        successful: uploadedDesigns.length,
+        errors: processingErrors.length,
+        contentPreserved: uploadedDesigns.filter(d => d.contentPreserved).length
+      });
+
+      res.json(response);
+
+    } catch (error) {
+      console.error("❌ Upload system error:", error);
+      res.status(500).json({ 
+        message: "Upload system failed", 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 
 // Enhanced PDF Generation Endpoint with Quality Controls
 app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
   try {
     console.log('📄 Enhanced PDF generation request received');
-    
+
     const { plotterSettings, arrangements, qualitySettings, cuttingMarks, bleedSettings, outputValidation } = req.body;
 
     if (!arrangements || !Array.isArray(arrangements) || arrangements.length === 0) {
@@ -1220,13 +1341,13 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
 
     // Validate input data
     const validationErrors: string[] = [];
-    
+
     arrangements.forEach((item, index) => {
       if (typeof item.x !== 'number' || typeof item.y !== 'number' ||
           typeof item.width !== 'number' || typeof item.height !== 'number') {
         validationErrors.push(`Invalid arrangement data at index ${index}`);
       }
-      
+
       if (item.width <= 0 || item.height <= 0) {
         validationErrors.push(`Invalid dimensions at index ${index}: ${item.width}x${item.height}`);
       }
@@ -1250,11 +1371,11 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
 
     // Enhanced PDF generation using PDFKit with quality settings
     const PDFDocument = (await import('pdfkit')).default;
-    
+
     // Calculate page dimensions based on plotter settings
     const pageWidthMM = plotterSettings?.sheetWidth || 330; // Default 33cm
     const pageHeightMM = plotterSettings?.sheetHeight || 480; // Default 48cm
-    
+
     // Convert mm to points (1mm = 2.834645669 points)
     const mmToPoints = 2.834645669;
     const pageWidthPt = pageWidthMM * mmToPoints;
@@ -1311,7 +1432,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
     // Add technical information
     const currentDate = new Date().toLocaleDateString('tr-TR');
     const currentTime = new Date().toLocaleTimeString('tr-TR');
-    
+
     doc.fontSize(8)
        .font('Helvetica')
        .fillColor('#333333')
@@ -1327,7 +1448,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
     const borderColor = '#000000';
     const bleedColor = bleedSettings?.bleedColor || '#ff0000';
     const safeAreaColor = bleedSettings?.safeAreaColor || '#00ff00';
-    
+
     // Main page border
     doc.strokeColor(borderColor)
        .lineWidth(1)
@@ -1341,34 +1462,34 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
       const markLength = (cuttingMarks.length || 5) * mmToPoints;
       const markOffset = (cuttingMarks.offset || 3) * mmToPoints;
       const markWidth = cuttingMarks.lineWidth || 0.25;
-      
+
       doc.strokeColor(borderColor)
          .lineWidth(markWidth);
-      
+
       // Corner marks - Top Left
       doc.moveTo(markOffset, markOffset + markLength)
          .lineTo(markOffset, markOffset)
          .lineTo(markOffset + markLength, markOffset)
          .stroke();
-      
+
       // Corner marks - Top Right  
       doc.moveTo(pageWidthPt - markOffset - markLength, markOffset)
          .lineTo(pageWidthPt - markOffset, markOffset)
          .lineTo(pageWidthPt - markOffset, markOffset + markLength)
          .stroke();
-      
+
       // Corner marks - Bottom Left
       doc.moveTo(markOffset, pageHeightPt - markOffset - markLength)
          .lineTo(markOffset, pageHeightPt - markOffset)
          .lineTo(markOffset + markLength, pageHeightPt - markOffset)
          .stroke();
-      
+
       // Corner marks - Bottom Right
       doc.moveTo(pageWidthPt - markOffset - markLength, pageHeightPt - markOffset)
          .lineTo(pageWidthPt - markOffset, pageHeightPt - markOffset)
          .lineTo(pageWidthPt - markOffset, pageHeightPt - markOffset - markLength)
          .stroke();
-      
+
       console.log('✂️ Cutting marks added');
     }
 
@@ -1381,27 +1502,27 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
 
     for (let i = 0; i < arrangements.length; i++) {
       const arrangement = arrangements[i];
-      
+
       try {
         // Convert mm to points for PDF coordinates
         const xPt = arrangement.x * mmToPoints;
         const yPt = (pageHeightMM - arrangement.y - arrangement.height) * mmToPoints; // Flip Y coordinate
         const widthPt = arrangement.width * mmToPoints;
         const heightPt = arrangement.height * mmToPoints;
-        
+
         // Validate arrangement bounds
         if (xPt < 0 || yPt < 0 || xPt + widthPt > pageWidthPt || yPt + heightPt > pageHeightPt) {
           arrangementErrors.push(`Arrangement ${i + 1} is out of bounds`);
           continue;
         }
-        
+
         validArrangements++;
         totalArrangementArea += arrangement.width * arrangement.height;
-        
+
         // Find corresponding design file
         const designFile = designFiles.find(d => d.id === arrangement.designId);
         const designName = designFile?.filename || `Design_${i + 1}`;
-        
+
         // Draw bleed area if specified
         if (arrangement.withMargins) {
           const bleedMargin = 3 * mmToPoints; // 3mm bleed
@@ -1413,23 +1534,23 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
              .stroke()
              .setLineDash([]);
         }
-        
+
         // Draw main design area
         const hue = (i * 137.5) % 360;
         const designColor = `hsl(${hue}, 70%, 85%)`;
-        
+
         doc.fillColor(designColor)
            .fillOpacity(0.3)
            .rect(xPt, yPt, widthPt, heightPt)
            .fill();
-        
+
         // Draw design border
         doc.strokeColor('#333333')
            .lineWidth(1)
            .fillOpacity(1)
            .rect(xPt, yPt, widthPt, heightPt)
            .stroke();
-        
+
         // Add design label
         const fontSize = Math.max(6, Math.min(widthPt / 20, heightPt / 8, 10));
         doc.fillColor('#000000')
@@ -1440,7 +1561,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
              height: heightPt - 6,
              align: 'left'
            });
-        
+
         // Add dimensions
         if (widthPt > 60 && heightPt > 30) {
           doc.fontSize(Math.max(4, fontSize * 0.7))
@@ -1451,21 +1572,21 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
                       align: 'left'
                     });
         }
-        
+
         // Add filename if space allows
         if (widthPt > 100 && heightPt > 50) {
           const maxLength = Math.floor(widthPt / 4);
           const shortName = designName.length > maxLength ? 
                            designName.substring(0, maxLength - 3) + '...' : 
                            designName;
-          
+
           doc.fontSize(Math.max(4, fontSize * 0.6))
              .text(shortName, xPt + 3, yPt + fontSize + 5, {
                width: widthPt - 6,
                align: 'left'
              });
         }
-        
+
       } catch (error) {
         console.error(`Error processing arrangement ${i + 1}:`, error);
         arrangementErrors.push(`Processing error for arrangement ${i + 1}: ${error}`);
@@ -1478,12 +1599,12 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
     const pageArea = pageWidthMM * pageHeightMM;
     const efficiency = pageArea > 0 ? (totalArrangementArea / pageArea) * 100 : 0;
     const wastePercentage = 100 - efficiency;
-    
+
     doc.fontSize(7)
        .fillColor('#000000')
        .font('Helvetica')
        .text('LAYOUT STATISTICS', 50, pageHeightPt - 120);
-    
+
     doc.fontSize(6)
        .text(`✓ Valid Arrangements: ${validArrangements}/${arrangements.length}`, 50, pageHeightPt - 105)
        .text(`✓ Layout Efficiency: ${efficiency.toFixed(1)}%`, 50, pageHeightPt - 95)
@@ -1496,7 +1617,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
     // Add quality control information
     doc.fontSize(7)
        .text('QUALITY CONTROL', 250, pageHeightPt - 120);
-    
+
     doc.fontSize(6)
        .text(`✓ Resolution: ${qualitySettings?.dpi || 300} DPI`, 250, pageHeightPt - 105)
        .text(`✓ Color Profile: ${qualitySettings?.colorProfile || 'CMYK'}`, 250, pageHeightPt - 95)
@@ -1509,7 +1630,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
       doc.fontSize(7)
          .fillColor('#cc0000')
          .text('WARNINGS', 450, pageHeightPt - 120);
-      
+
       doc.fontSize(5)
          .text(arrangementErrors.slice(0, 8).join('\n'), 450, pageHeightPt - 105, {
            width: 150,
@@ -1521,7 +1642,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
 
     // Finalize PDF
     doc.end();
-    
+
     updateProgress('PDF Generation Complete');
 
     console.log('✅ Enhanced PDF generated successfully', {
@@ -1533,7 +1654,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Enhanced PDF generation error:', error);
-    
+
     if (!res.headersSent) {
       res.status(500).json({ 
         message: 'Enhanced PDF generation failed', 
@@ -1543,474 +1664,6 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
     }
   }
 });
-
-      if (!files || files.length === 0) {
-        console.log('No files found in request');
-        return res.status(400).json({ message: "No files uploaded - please select files" });
-      }
-
-      const uploadedDesigns = [];
-
-      for (const file of files) {
-        console.log('Processing file:', {
-          originalname: file.originalname,
-          filename: file.filename,
-          mimetype: file.mimetype,
-          size: file.size,
-          path: file.path
-        });
-
-        // Process each design file
-        const metadata = await fileProcessingService.processFile(file.path, file.mimetype);
-
-        console.log('File metadata:', metadata);
-
-        // Generate thumbnail for preview
-        let thumbnailPath = '';
-        try {
-          if (file.mimetype === 'application/pdf') {
-            thumbnailPath = await fileProcessingService.generatePDFThumbnail(file.path, file.filename);
-          } else if (file.mimetype.startsWith('image/') || file.mimetype === 'image/svg+xml') {
-            thumbnailPath = await fileProcessingService.generateThumbnail(file.path, file.filename);
-          } else {
-            // For vector files without image preview, use placeholder
-            thumbnailPath = '';
-          }
-        } catch (thumbError) {
-          console.warn("Could not generate thumbnail:", thumbError);
-          thumbnailPath = '';
-        }
-
-        // Save file to database
-        const fileRecord = await storage.createFile({
-          originalName: file.originalname,
-          filename: file.filename,
-          size: file.size || 0,
-          uploadedBy: userId,
-          fileType: 'design',
-          mimeType: file.mimetype,
-          dimensions: metadata.dimensions || 'Unknown',
-          realDimensionsMM: metadata.realDimensionsMM || 'Bilinmiyor',
-          thumbnailPath,
-          status: 'ready'
-        });
-
-        const designFile = {
-          id: fileRecord.id,
-          name: file.originalname,
-          filename: file.filename,
-          filePath: `/uploads/${file.filename}`,
-          thumbnailPath: thumbnailPath || `/uploads/${file.filename}`,
-          size: file.size,
-          type: file.mimetype,
-          mimeType: file.mimetype,
-          dimensions: metadata.dimensions || 'Unknown',
-          realDimensionsMM: metadata.realDimensionsMM || 'Bilinmiyor',
-          fileSize: `${Math.round(file.size / 1024)}KB`,
-          userId,
-          uploadedAt: new Date().toISOString()
-        };
-
-        uploadedDesigns.push(designFile);
-      }
-
-      res.json({ 
-        message: "Design files uploaded successfully", 
-        designs: uploadedDesigns 
-      });
-    } catch (error) {
-      console.error("Error uploading design files:", error);
-      res.status(500).json({ message: "Failed to upload design files" });
-    }
-  });
-
-  // Clear all design files for user
-  app.delete('/api/automation/plotter/designs/clear', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      // Actually delete design files from database
-      const deletedCount = await storage.deleteFilesByUserAndType(userId, 'design');
-
-      console.log(`Cleared ${deletedCount} design files for user ${userId}`);
-
-      res.json({ 
-        message: "All design files cleared", 
-        deletedCount 
-      });
-    } catch (error) {
-      console.error("Error clearing design files:", error);
-      res.status(500).json({ message: "Failed to clear design files" });
-    }
-  });
-
-  // Get uploaded designs for plotter
-  app.get('/api/automation/plotter/designs', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      // Get user's uploaded files from database (only design files)
-      const userFiles = await storage.getFilesByUser(userId);
-      const designFiles = userFiles.filter(file => file.fileType === 'design');
-
-      console.log(`Found ${designFiles.length} design files for user ${userId}`);
-
-      const designs = designFiles.map(file => ({
-        id: file.id,
-        name: file.originalName || file.filename,
-        filename: file.filename,
-        dimensions: file.dimensions || "Boyut bilinmiyor",
-        realDimensionsMM: file.realDimensionsMM || file.dimensions || "Bilinmiyor",
-        thumbnailPath: file.thumbnailPath || (file.mimeType?.startsWith('image/') ? `/uploads/${file.filename}` : ''),
-        filePath: `/uploads/${file.filename}`,
-        fileType: file.fileType || 'document',
-        mimeType: file.mimeType,
-        size: file.size,
-        fileSize: `${Math.round((file.size || 0) / 1024)}KB`,
-        uploadedAt: file.createdAt,
-        colorProfile: file.colorProfile,
-        hasTransparency: file.hasTransparency,
-        resolution: file.resolution
-      }));
-
-      res.json(designs);
-    } catch (error) {
-      console.error("Error fetching designs:", error);
-      res.status(500).json({ message: "Failed to fetch designs" });
-    }
-  });
-
-  // Auto-arrange designs in layout
-  app.post('/api/automation/plotter/auto-arrange', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { designIds, plotterSettings } = req.body;
-
-      if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
-        return res.status(400).json({ message: "Design IDs are required" });
-      }
-
-      console.log('Auto-arrange request:', { designIds: designIds.length, plotterSettings });
-
-      // Get real design dimensions from database
-      const allFiles = await storage.getFilesByUser(userId);
-      const designFiles = designIds.map((id: string) => 
-        allFiles.find(f => f.id === id)
-      ).filter(Boolean);
-
-      console.log(`Found ${designFiles.length} design files from ${designIds.length} requested`);
-
-      if (designFiles.length === 0) {
-        return res.json({
-          arrangements: [],
-          totalArranged: 0,
-          totalRequested: designIds.length,
-          efficiency: "0%",
-          usedArea: { width: 320, height: 470 }
-        });
-      }
-
-      // Extract real dimensions from files with better parsing
-      const validDesigns = designFiles.map(file => {
-        let width = 50; // default mm
-        let height = 30; // default mm
-
-        console.log(`Processing design ${file!.id}: realDimensionsMM=${file!.realDimensionsMM}, dimensions=${file!.dimensions}`);
-
-        // Parse real dimensions with priority on realDimensionsMM
-        if (file!.realDimensionsMM && file!.realDimensionsMM !== 'Unknown') {
-          const realMatch = file!.realDimensionsMM.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
-          if (realMatch) {
-            width = parseFloat(realMatch[1]);
-            height = parseFloat(realMatch[2]);
-            console.log(`Using realDimensionsMM: ${width}x${height}mm`);
-          }
-        }
-        // Strategy 2: Look for dimensions in various formats
-        else {
-          let dimensionStr = file!.dimensions || '';
-          // Try "85x54", "85 x 54", "85×54" patterns
-          const match = dimensionStr.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
-          if (match) {
-            let w = parseFloat(match[1]);
-            let h = parseFloat(match[2]);
-
-            // If numbers are too large, assume they're pixels and convert
-            if (w > 500 || h > 500) {
-              width = Math.round((w / 300) * 25.4); // Convert to mm at 300 DPI
-              height = Math.round((h / 300) * 25.4);
-              console.log(`Converted from pixels: ${width}x${height}mm`);
-            } else {
-              width = w;
-              height = h;
-              console.log(`Direct dimensions: ${width}x${height}mm`);
-            }
-          }
-        }
-
-        // Ensure reasonable dimensions
-        if (width < 5 || width > 300) width = 50;
-        if (height < 5 || height > 300) height = 30;
-
-        return {
-          id: file!.id,
-          width: width,
-          height: height,
-          name: file!.originalName || file!.filename
-        };
-      });
-
-      // Enhanced 2D Bin Packing Algorithm
-      const SHEET_WIDTH = plotterSettings?.sheetWidth || 330; // Use from settings
-      const SHEET_HEIGHT = plotterSettings?.sheetHeight || 480;
-      const MARGIN = 5;
-
-      const usableWidth = SHEET_WIDTH - (MARGIN * 2);
-      const usableHeight = SHEET_HEIGHT - (MARGIN * 2);
-
-      console.log(`Usable area: ${usableWidth}x${usableHeight}mm`);
-
-      const arrangements: any[] = [];
-      let currentX = MARGIN;
-      let currentY = MARGIN;
-      let rowHeight = 0;
-      let totalArranged = 0;
-
-      // Sort designs by height first (tallest first for better row packing)
-      validDesigns.sort((a, b) => b.height - a.height);
-
-      for (const design of validDesigns) {
-        const designWidth = design.width + 3; // Add 3mm cutting margin
-        const designHeight = design.height + 3; // Add 3mm cutting margin
-
-        console.log(`Trying to place design: ${design.name} (${designWidth}x${designHeight}mm with margins)`);
-
-        // Check if design fits in current row
-        if (currentX + designWidth <= SHEET_WIDTH - MARGIN) {
-          // Place in current row
-          arrangements.push({
-            designId: design.id,
-            x: currentX,
-            y: currentY,
-            width: design.width,
-            height: design.height,
-            withMargins: {
-              width: designWidth,
-              height: designHeight
-            }
-          });
-
-          currentX += designWidth + 2; // Add 2mm spacing
-          rowHeight = Math.max(rowHeight, designHeight);
-          totalArranged++;
-
-          console.log(`✓ Placed design ${design.name} at (${currentX - designWidth - 2}, ${currentY})`);
-        } 
-        // Try new row
-        else if (currentY + rowHeight + designHeight <= SHEET_HEIGHT - MARGIN) {
-          currentY += rowHeight + 2; // Move to next row with spacing
-          currentX = MARGIN;
-          rowHeight = designHeight;
-
-          arrangements.push({
-            designId: design.id,
-            x: currentX,
-            y: currentY,
-            width: design.width,
-            height: design.height,
-            withMargins: {
-              width: designWidth,
-              height: designHeight
-            }
-          });
-
-          currentX += designWidth + 2;
-          totalArranged++;
-
-          console.log(`✓ Placed design ${design.name} at (${MARGIN}, ${currentY}) - new row`);
-        }
-        else {
-          console.log(`✗ Design ${design.name} doesn't fit - skipping (would need ${designWidth}x${designHeight}mm)`);
-        }
-      }
-
-      // Calculate efficiency
-      const totalDesignArea = arrangements.reduce((sum, arr) => 
-        sum + (arr.width * arr.height), 0);
-      const usableArea = usableWidth * usableHeight;
-      const efficiency = totalDesignArea > 0 ? Math.round((totalDesignArea / usableArea) * 100) : 0;
-
-      const result = {
-        arrangements,
-        totalArranged,
-        totalRequested: designIds.length,
-        efficiency: `${efficiency}%`,
-        usedArea: {
-          width: usableWidth,
-          height: usableHeight
-        }
-      };
-
-      console.log(`✅ Arrangement completed: ${totalArranged}/${designIds.length} designs placed, ${efficiency}% efficiency`);
-      res.json(result);
-    } catch (error) {
-      console.error("❌ Error in auto-arrange:", error);
-      res.status(500).json({ 
-        message: "Auto-arrange failed", 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      });
-    }
-  });
-
-  app.post('/api/automation/plotter/generate-pdf', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { plotterSettings, arrangements } = req.body;
-
-      console.log('📄 PDF generation request received');
-      console.log('Arrangements data:', JSON.stringify(arrangements, null, 2));
-
-      // Extract arrangement items from the data structure
-      let arrangedItems = [];
-
-      if (Array.isArray(arrangements)) {
-        // Direct array of arrangements
-        arrangedItems = arrangements;
-      } else if (arrangements && typeof arrangements === 'object') {
-        // Could be nested in arrangements property or direct object
-        if (Array.isArray(arrangements.arrangements)) {
-          arrangedItems = arrangements.arrangements;
-        } else {
-          // Try to find arrangement data in the object
-          const keys = Object.keys(arrangements);
-          if (keys.length > 0) {
-            for (const key of keys) {
-              if (Array.isArray(arrangements[key])) {
-                arrangedItems = arrangements[key];
-                break;
-              }
-            }
-          }
-        }
-      }
-
-      console.log(`📋 Extracted arranged items: ${arrangedItems.length}`);
-
-      // Allow PDF generation even with 0 items (empty layout)
-      if (!arrangedItems) {
-        arrangedItems = [];
-      }
-
-      // Generate PDF using dynamic import for ES6 compatibility
-      const PDFDocument = (await import('pdfkit')).default;
-      const doc = new PDFDocument({
-        size: [330 * 2.834645669, 480 * 2.834645669], // 33x48 cm in points
-        margins: { top: 14.17, bottom: 14.17, left: 14.17, right: 14.17 } // 5mm margins
-      });
-
-      // Set response headers
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="matbixx-layout-33x48cm.pdf"');
-
-      // Pipe PDF to response
-      doc.pipe(res);
-
-      // Add title and header
-      doc.fontSize(16)
-         .fillColor('black')
-         .text('Matbixx - Otomatik Tasarım Dizimi', 50, 50);
-
-      doc.fontSize(10)
-         .text('Baskı Alanı: 33cm x 48cm | Kesim Payı: 0.3cm', 50, 70)
-         .text(`Toplam Tasarım: ${arrangedItems.length} | Algoritma: 2D Bin Packing`, 50, 85);
-
-      // Draw border (33x48 cm area)
-      const BORDER_MARGIN = 14.17; // 5mm in points
-      const SHEET_WIDTH = 330 * 2.834645669; // 33cm in points
-      const SHEET_HEIGHT = 480 * 2.834645669; // 48cm in points
-
-      doc.strokeColor('black')
-         .lineWidth(1)
-         .rect(BORDER_MARGIN, BORDER_MARGIN + 100, 
-               SHEET_WIDTH - 2 * BORDER_MARGIN, 
-               SHEET_HEIGHT - 2 * BORDER_MARGIN - 100)
-         .stroke();
-
-      // Draw each arranged design
-      arrangedItems.forEach((arrangement: any, index: number) => {
-        const x = (arrangement.x * 2.834645669) + BORDER_MARGIN; // Convert mm to points
-        const y = (arrangement.y * 2.834645669) + BORDER_MARGIN + 100; // Convert mm to points + header offset
-        const width = arrangement.width * 2.834645669; // Convert mm to points
-        const height = arrangement.height * 2.834645669; // Convert mm to points
-
-        // Draw cutting margin (0.3cm = 3mm)
-        const margin = 3 * 2.834645669; // 3mm in points
-        doc.strokeColor('#CCCCCC')
-           .lineWidth(0.5)
-           .dash(2, { space: 2 })
-           .rect(x - margin, y - margin, width + 2 * margin, height + 2 * margin)
-           .stroke();
-
-        // Draw design area
-        doc.strokeColor('#2563EB')
-           .lineWidth(1)
-           .undash()
-           .rect(x, y, width, height)
-           .stroke();
-
-        // Fill design area with light blue
-        doc.fillColor('#EBF4FF')
-           .rect(x + 2, y + 2, width - 4, height - 4)
-           .fill();
-
-        // Add design label
-        doc.fillColor('black')
-           .fontSize(8)
-           .text(`${index + 1}. Tasarım`, x + 5, y + 5);
-
-        doc.fontSize(6)
-           .text(`${arrangement.width.toFixed(1)} x ${arrangement.height.toFixed(1)} mm`, 
-                 x + 5, y + 15);
-      });
-
-      // Add statistics footer
-      const footerY = SHEET_HEIGHT - 60;
-      doc.fontSize(8)
-         .fillColor('black')
-         .text(`Verimlilik: 85%`, 50, footerY)
-         .text(`Dizilen/Toplam: ${arrangedItems.length}/${arrangedItems.length}`, 50, footerY + 15)
-         .text('Sistem: Matbixx Otomatik Dizim Sistemi', 50, footerY + 30);
-
-      // Finalize PDF
-      doc.end();
-
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      res.status(500).json({ message: "Failed to generate PDF" });
-    }
-  });
 
   const httpServer = createServer(app);
 
@@ -2062,7 +1715,8 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
           }          if (!clients.has(roomId)) {
             clients.set(roomId, new Set());
           }
-          clients.get(roomId)!.add(ws);
+          clients.get(roomId)!.add(```text
+ws);
 
           ws.send(JSON.stringify({
             type: 'room_joined',
