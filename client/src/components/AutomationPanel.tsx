@@ -272,14 +272,6 @@ export default function AutomationPanel() {
     
     // Reset file input
     event.target.value = '';
-  };iles.length === 0) return;
-
-    const formData = new FormData();
-    Array.from(files).forEach((file) => {
-      formData.append('designs', file);
-    });
-
-    uploadDesignsMutation.mutate(formData);
   };
 
   const toggleDesignSelection = (designId: string) => {
