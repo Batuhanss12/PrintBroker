@@ -238,14 +238,23 @@ export default function Payment() {
       const result = await response.json();
 
       if (result.success) {
-        toast({
-          title: "Ödeme İşlemi Başlatıldı",
-          description: "Güvenli ödeme sayfasına yönlendiriliyorsunuz...",
-        });
-        
-        setTimeout(() => {
-          window.location.href = result.paymentUrl;
-        }, 1500);
+        if (result.paymentForm) {
+          // PayTR Basic API - ödeme formunu sayfada göster
+          const paymentWindow = window.open('', 'PayTR_Payment', 'width=800,height=600,scrollbars=yes,resizable=yes');
+          if (paymentWindow) {
+            paymentWindow.document.write(result.paymentForm);
+            paymentWindow.document.close();
+          }
+        } else {
+          toast({
+            title: "Ödeme İşlemi Başlatıldı",
+            description: "Güvenli ödeme sayfasına yönlendiriliyorsunuz...",
+          });
+          
+          setTimeout(() => {
+            window.location.href = result.paymentUrl;
+          }, 1500);
+        }
       } else {
         toast({
           title: "Ödeme Hatası",

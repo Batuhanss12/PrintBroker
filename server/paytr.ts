@@ -84,7 +84,7 @@ class PayTRService {
       .digest('base64');
   }
 
-  async createPayment(request: PaymentRequest, userIp: string): Promise<{ success: boolean; paymentUrl?: string; data?: any; message?: string }> {
+  async createPayment(request: PaymentRequest, userIp: string): Promise<{ success: boolean; paymentUrl?: string; paymentForm?: string; data?: any; message?: string }> {
     try {
       const orderId = this.generateOrderId();
       // Convert to kuruş (multiply by 100) and add VAT for firm plans
@@ -130,9 +130,9 @@ class PayTRService {
       // Generate PayTR token
       paymentData.paytr_token = this.createPayTRToken(paymentData);
 
-      // Send request to PayTR
-      const response = await fetch("https://www.paytr.com/odeme/api/get-token", {
-        method: "POST",
+      // PayTR Basic API - Link çözümü kullan
+      const response = await fetch("https://www.paytr.com/odeme", {
+        method: "POST", 
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
@@ -140,17 +140,15 @@ class PayTRService {
       });
 
       const result = await response.text();
+      console.log("PayTR Response:", result);
       
-      if (result.startsWith("SUCCESS")) {
-        const token = result.split(":")[1];
-        const paymentUrl = `https://www.paytr.com/odeme/guvenli/${token}`;
-        
+      if (result.includes("SUCCESS") || result.includes("form")) {
+        // Basic API başarılı - ödeme formu HTML'i döndürür
         return {
           success: true,
-          paymentUrl,
+          paymentForm: result,
           data: {
             orderId,
-            token,
             amount: amount / 100
           }
         };
