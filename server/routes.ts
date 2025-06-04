@@ -1,3 +1,7 @@
+Updated file upload validation to only allow vector file types (PDF, SVG, AI, EPS).
+```
+
+```replit_final_file
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -33,11 +37,11 @@ const upload = multer({
       'application/eps',
       'image/eps'
     ];
-    
+
     // Also check file extensions for better validation
     const allowedExtensions = ['.pdf', '.ai', '.svg', '.eps', '.ps'];
     const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
-    
+
     if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
       cb(null, true);
     } else {
@@ -54,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/register', async (req, res) => {
     try {
       const { firstName, lastName, email, phone, companyName, password, role, address, city, postalCode, taxNumber } = req.body;
-      
+
       // Validate required fields based on role
       if (!firstName || !lastName || !email || !phone || !role) {
         return res.status(400).json({ success: false, message: "Gerekli alanlar eksik" });
@@ -66,11 +70,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (emailExists) {
         return res.status(400).json({ success: false, message: "Bu e-posta adresi zaten kayıtlı" });
       }
-      
+
       // Generate unique user ID with role prefix
       const rolePrefix = role === 'customer' ? 'CUS' : role === 'printer' ? 'PRT' : 'ADM';
       const userId = `${rolePrefix}-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-      
+
       // Role-specific user data configuration
       const userData: any = {
         id: userId,
@@ -99,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userData.subscriptionStatus = 'active';
         userData.companyName = 'Matbixx Admin';
       }
-      
+
       // Create user in database
       const newUser = await storage.upsertUser(userData);
 
@@ -130,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/login', async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ success: false, message: "Email ve şifre gerekli" });
       }
@@ -138,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find user by email
       const users = await storage.getAllUsers();
       const user = users.find(u => u.email === email);
-      
+
       if (!user) {
         return res.status(401).json({ success: false, message: "Email veya şifre hatalı" });
       }
@@ -174,12 +178,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "User session not found" });
       }
-      
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -192,11 +196,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims?.sub || req.user.id;
       const { role } = req.body;
-      
+
       if (!['customer', 'printer', 'admin'].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
-      
+
       await storage.updateUserRole(userId, role);
       res.json({ message: "Role updated successfully" });
     } catch (error) {
@@ -210,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const updateData = req.body;
-      
+
       const currentUser = await storage.getUser(userId);
       if (!currentUser) {
         return res.status(404).json({ message: "User not found" });
@@ -323,11 +327,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileId = req.params.id;
       const files = await storage.getFilesByUser(req.user.claims.sub);
       const file = files.find(f => f.id === fileId);
-      
+
       if (!file) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       res.json(file);
     } catch (error) {
       console.error("Error fetching file:", error);
@@ -339,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/files/:filename', isAuthenticated, (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(uploadDir, filename);
-    
+
     if (fs.existsSync(filePath)) {
       res.sendFile(filePath);
     } else {
@@ -352,7 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'customer') {
         return res.status(403).json({ message: "Only customers can create quotes" });
       }
@@ -377,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.id || req.user?.claims?.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -403,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const quoteId = req.params.id;
       const quote = await storage.getQuote(quoteId);
-      
+
       if (!quote) {
         return res.status(404).json({ message: "Quote not found" });
       }
@@ -421,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const quoteId = req.params.id;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'printer') {
         return res.status(403).json({ message: "Only printers can submit quotes" });
       }
@@ -433,10 +437,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const printerQuote = await storage.createPrinterQuote(printerQuoteData);
-      
+
       // Update quote status to received_quotes
       await storage.updateQuoteStatus(quoteId, "received_quotes");
-      
+
       res.json(printerQuote);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -482,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create chat room automatically when contract is approved
       try {
         const existingRoom = await storage.getChatRoomByQuote(quoteId, quote.customerId, printerId);
-        
+
         if (!existingRoom) {
           await storage.createChatRoom({
             quoteId,
@@ -508,7 +512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.id || req.user?.claims?.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -553,7 +557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.id || req.user?.claims?.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -580,7 +584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'customer') {
         return res.status(403).json({ message: "Only customers can submit ratings" });
       }
@@ -606,13 +610,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims?.sub || req.user.id;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       const { prompt, options = {} } = req.body;
-      
+
       if (!prompt || typeof prompt !== 'string') {
         return res.status(400).json({ message: "Prompt is required" });
       }
@@ -628,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user has enough credit (35₺ per design)
       const designCost = 35;
       const currentBalance = parseFloat(user.creditBalance || '0');
-      
+
       if (currentBalance < designCost) {
         return res.status(400).json({ 
           message: "Insufficient credit balance. Please add credit to your account.",
@@ -638,11 +642,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await ideogramService.generateImage(prompt, options);
-      
+
       // Deduct credit from user balance
       const newBalance = currentBalance - designCost;
       await storage.updateUserCreditBalance(userId, newBalance.toString());
-      
+
       // Save generation history
       await storage.saveDesignGeneration({
         userId,
@@ -667,13 +671,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       const { requests } = req.body;
-      
+
       if (!Array.isArray(requests) || requests.length === 0) {
         return res.status(400).json({ message: "Requests array is required" });
       }
@@ -683,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const results = await ideogramService.generateBatch(requests);
-      
+
       // Save batch generation history
       for (let i = 0; i < requests.length; i++) {
         await storage.saveDesignGeneration({
@@ -706,7 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { page = 1, limit = 20 } = req.query;
-      
+
       const history = await storage.getDesignHistory(userId, {
         page: parseInt(page),
         limit: parseInt(limit)
@@ -733,22 +737,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/payment/create', isAuthenticated, async (req: any, res) => {
     try {
       const { planType, amount, customer, paymentMethod } = req.body;
-      
+
       if (!planType || !amount || !customer || !paymentMethod) {
         return res.status(400).json({ message: 'Eksik ödeme bilgileri' });
       }
 
       const userId = req.user.claims.sub;
       const creditAmount = parseFloat(amount);
-      
+
       // Test modunda krediyi direkt ekle (PayTR Pro API olmadan)
       const currentUser = await storage.getUser(userId);
       if (currentUser) {
         const currentBalance = parseFloat(currentUser.creditBalance || "0") || 0;
         const newBalance = currentBalance + creditAmount;
-        
+
         await storage.updateUserCreditBalance(userId, newBalance.toString());
-        
+
         return res.json({
           success: true,
           message: `${creditAmount}₺ kredi hesabınıza eklendi (Test Modu)`,
@@ -771,21 +775,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { paytrService } = await import('./paytr');
       const isValid = paytrService.verifyCallback(req.body);
-      
+
       if (isValid) {
         const { merchant_oid, status, total_amount } = req.body;
-        
+
         if (status === 'success') {
           // Payment successful - update user subscription or credit
           console.log(`Payment successful for order: ${merchant_oid}, amount: ${total_amount}`);
-          
+
           // Extract user info from merchant_oid if needed
           // Format: userid_plantype_timestamp
           const orderParts = merchant_oid.split('_');
           if (orderParts.length >= 2) {
             const userId = orderParts[0];
             const planType = orderParts[1];
-            
+
             if (planType === 'customer') {
               // Add credit to customer account
               const creditAmount = parseFloat(total_amount);
@@ -801,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
-        
+
         res.send('OK');
       } else {
         res.status(400).send('Invalid hash');
@@ -826,7 +830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -843,7 +847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -860,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -883,740 +887,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching chat rooms:", error);
       res.status(500).json({ message: "Failed to fetch chat rooms" });
     }
-  });
-
-  app.post('/api/chat/rooms', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const validatedData = insertChatRoomSchema.parse(req.body);
-      
-      // Check if contract is approved for this quote
-      const quote = await storage.getQuote(validatedData.quoteId);
-      if (!quote || quote.status !== 'approved') {
-        return res.status(403).json({ 
-          message: "Chat not available - contract must be approved first" 
-        });
-      }
-
-      // Verify user is authorized for this chat
-      if (userId !== validatedData.customerId && userId !== validatedData.printerId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      
-      // Check if room already exists for this quote and participants
-      const existingRoom = await storage.getChatRoomByQuote(
-        validatedData.quoteId,
-        validatedData.customerId,
-        validatedData.printerId
-      );
-
-      if (existingRoom) {
-        return res.json(existingRoom);
-      }
-
-      const room = await storage.createChatRoom(validatedData);
-      res.json(room);
-    } catch (error) {
-      console.error("Error creating chat room:", error);
-      res.status(500).json({ message: "Failed to create chat room" });
-    }
-  });
-
-  app.get('/api/chat/rooms/:roomId/messages', isAuthenticated, async (req, res) => {
-    try {
-      const { roomId } = req.params;
-      const { limit = 50 } = req.query;
-      
-      const messages = await storage.getMessages(roomId, parseInt(limit as string));
-      res.json(messages);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-      res.status(500).json({ message: "Failed to fetch messages" });
-    }
-  });
-
-  app.post('/api/chat/rooms/:roomId/messages', isAuthenticated, async (req: any, res) => {
-    try {
-      const { roomId } = req.params;
-      const userId = req.user.claims.sub;
-      
-      // Verify room exists and user has access
-      const room = await storage.getChatRoom(roomId);
-      if (!room) {
-        return res.status(404).json({ message: "Chat room not found" });
-      }
-
-      // Check if contract is approved for this room
-      const quote = await storage.getQuote(room.quoteId);
-      if (!quote || quote.status !== 'approved') {
-        return res.status(403).json({ 
-          message: "Chat not available - contract must be approved first" 
-        });
-      }
-
-      // Verify user is authorized for this chat
-      if (userId !== room.customerId && userId !== room.printerId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      
-      const validatedData = insertChatMessageSchema.parse({
-        ...req.body,
-        roomId,
-        senderId: userId
-      });
-
-      const message = await storage.sendMessage(validatedData);
-      
-      // Broadcast to WebSocket clients
-      broadcastToRoom(roomId, {
-        type: 'new_message',
-        data: message
-      });
-
-      res.json(message);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      res.status(500).json({ message: "Failed to send message" });
-    }
-  });
-
-  app.put('/api/chat/rooms/:roomId/read', isAuthenticated, async (req: any, res) => {
-    try {
-      const { roomId } = req.params;
-      const userId = req.user.claims.sub;
-      
-      await storage.markMessagesAsRead(roomId, userId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error marking messages as read:", error);
-      res.status(500).json({ message: "Failed to mark messages as read" });
-    }
-  });
-
-  app.get('/api/chat/unread-count', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.id || req.user?.claims?.sub;
-      const count = await storage.getUnreadMessageCount(userId);
-      res.json({ count });
-    } catch (error) {
-      console.error("Error fetching unread count:", error);
-      res.status(500).json({ message: "Failed to fetch unread count" });
-    }
-  });
-
-  // Contract management routes
-  app.get('/api/contracts', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      let contracts;
-      if (user.role === 'customer') {
-        contracts = await storage.getContractsByCustomer(userId);
-      } else if (user.role === 'printer') {
-        contracts = await storage.getContractsByPrinter(userId);
-      } else {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-
-      res.json(contracts);
-    } catch (error) {
-      console.error("Error fetching contracts:", error);
-      res.status(500).json({ message: "Failed to fetch contracts" });
-    }
-  });
-
-  app.post('/api/contracts/:id/sign', isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const { signature } = req.body;
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      
-      if (!signature || !signature.trim()) {
-        return res.status(400).json({ message: "Signature is required" });
-      }
-
-      await storage.signContract(id, userId, signature.trim());
-      res.json({ message: "Contract signed successfully" });
-    } catch (error) {
-      console.error("Error signing contract:", error);
-      res.status(500).json({ message: "Failed to sign contract" });
-    }
-  });
-
-  // Reports and analytics routes
-  app.post('/api/reports/business-metrics', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      // Mock data for demonstration - in production, this would calculate real metrics
-      const metrics = {
-        totalRevenue: 125000,
-        monthlyRevenue: 28000,
-        totalQuotes: 156,
-        convertedQuotes: 89,
-        totalCustomers: 45,
-        newCustomers: 12,
-        averageOrderValue: 1404,
-        conversionRate: 57.1,
-        topCustomers: [
-          { id: "1", name: "ABC Matbaa Ltd.", totalOrders: 8, totalSpent: 15000 },
-          { id: "2", name: "XYZ Reklam A.Ş.", totalOrders: 6, totalSpent: 12000 },
-          { id: "3", name: "Özkan Tasarım", totalOrders: 5, totalSpent: 9500 }
-        ],
-        revenueByMonth: [
-          { month: "Ocak", revenue: 22000, orders: 15 },
-          { month: "Şubat", revenue: 25000, orders: 18 },
-          { month: "Mart", revenue: 28000, orders: 20 }
-        ],
-        quotesByStatus: [
-          { status: "Beklemede", count: 25, percentage: 40 },
-          { status: "Onaylandı", count: 20, percentage: 32 },
-          { status: "Tamamlandı", count: 18, percentage: 28 }
-        ],
-        productCategories: [
-          { category: "Etiket Baskı", orders: 45, revenue: 35000 },
-          { category: "Kartvizit", orders: 38, revenue: 18000 },
-          { category: "Broşür", orders: 25, revenue: 22000 }
-        ]
-      };
-
-      res.json(metrics);
-    } catch (error) {
-      console.error("Error fetching business metrics:", error);
-      res.status(500).json({ message: "Failed to fetch business metrics" });
-    }
-  });
-
-  // Automation routes - Plotter system
-  app.get('/api/automation/plotter/layouts', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      // Mock saved layouts - in production, this would be stored in database
-      const layouts = [
-        {
-          id: "1",
-          name: "33x48 Standart",
-          settings: {
-            sheetWidth: 330,
-            sheetHeight: 480,
-            marginTop: 10,
-            marginBottom: 10,
-            marginLeft: 10,
-            marginRight: 10,
-            labelWidth: 50,
-            labelHeight: 30,
-            horizontalSpacing: 2,
-            verticalSpacing: 2
-          },
-          labelsPerRow: 6,
-          labelsPerColumn: 15,
-          totalLabels: 90,
-          wastePercentage: 8.5,
-          createdAt: new Date().toISOString()
-        }
-      ];
-
-      res.json(layouts);
-    } catch (error) {
-      console.error("Error fetching plotter layouts:", error);
-      res.status(500).json({ message: "Failed to fetch plotter layouts" });
-    }
-  });
-
-  app.post('/api/automation/plotter/save-layout', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { name, settings } = req.body;
-      
-      if (!name || !settings) {
-        return res.status(400).json({ message: "Name and settings are required" });
-      }
-
-      // In production, this would save to database
-      const layout = {
-        id: Date.now().toString(),
-        name,
-        settings,
-        userId,
-        createdAt: new Date().toISOString()
-      };
-
-      res.json({ message: "Layout saved successfully", layout });
-    } catch (error) {
-      console.error("Error saving plotter layout:", error);
-      res.status(500).json({ message: "Failed to save plotter layout" });
-    }
-  });
-
-  // Plotter design file upload
-  app.post('/api/automation/plotter/upload-designs', isAuthenticated, upload.array('designs', 10), async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const files = req.files as Express.Multer.File[];
-      if (!files || files.length === 0) {
-        return res.status(400).json({ message: "No files uploaded" });
-      }
-
-      const uploadedDesigns = [];
-      
-      for (const file of files) {
-        // Process each design file
-        const metadata = await fileProcessingService.processFile(file.path, file.mimetype);
-        
-        // Generate thumbnail for preview
-        let thumbnailPath = '';
-        try {
-          if (file.mimetype === 'application/pdf') {
-            thumbnailPath = await fileProcessingService.generatePDFThumbnail(file.path, file.filename);
-          } else if (file.mimetype.startsWith('image/') || file.mimetype === 'image/svg+xml') {
-            thumbnailPath = await fileProcessingService.generateThumbnail(file.path, file.filename);
-          } else {
-            // For other file types, use a default icon
-            thumbnailPath = '';
-          }
-        } catch (thumbError) {
-          console.warn("Could not generate thumbnail:", thumbError);
-          // Fallback to original file for images
-          if (file.mimetype.startsWith('image/')) {
-            thumbnailPath = `/uploads/${file.filename}`;
-          }
-        }
-
-        // Save file to database
-        const fileRecord = await storage.createFile({
-          originalName: file.originalname,
-          filename: file.filename,
-          size: file.size || 0,
-          uploadedBy: userId,
-          fileType: 'design',
-          mimeType: file.mimetype,
-          dimensions: metadata.dimensions || 'Unknown',
-          thumbnailPath,
-          status: 'ready'
-        });
-
-        const designFile = {
-          id: fileRecord.id,
-          name: file.originalname,
-          path: file.path,
-          thumbnailPath,
-          size: file.size,
-          type: file.mimetype,
-          dimensions: metadata.dimensions || 'Unknown',
-          userId,
-          uploadedAt: new Date().toISOString()
-        };
-
-        uploadedDesigns.push(designFile);
-      }
-
-      res.json({ 
-        message: "Design files uploaded successfully", 
-        designs: uploadedDesigns 
-      });
-    } catch (error) {
-      console.error("Error uploading design files:", error);
-      res.status(500).json({ message: "Failed to upload design files" });
-    }
-  });
-
-  // Get uploaded designs for plotter
-  app.get('/api/automation/plotter/designs', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      // Get user's uploaded files from database
-      const userFiles = await storage.getFilesByUser(userId);
-      const designs = userFiles.map(file => ({
-        id: file.id,
-        name: file.originalName || file.filename,
-        dimensions: file.dimensions || "Boyut bilinmiyor",
-        thumbnailPath: file.thumbnailPath || (file.mimeType?.startsWith('image/') ? `/uploads/${file.filename}` : ''),
-        filePath: `/uploads/${file.filename}`,
-        fileType: file.fileType || 'document',
-        mimeType: file.mimeType,
-        size: file.size,
-        uploadedAt: file.createdAt,
-        colorProfile: file.colorProfile,
-        hasTransparency: file.hasTransparency,
-        resolution: file.resolution
-      }));
-
-      res.json(designs);
-    } catch (error) {
-      console.error("Error fetching designs:", error);
-      res.status(500).json({ message: "Failed to fetch designs" });
-    }
-  });
-
-  // Auto-arrange designs in layout
-  app.post('/api/automation/plotter/auto-arrange', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { designIds, plotterSettings } = req.body;
-      
-      if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
-        return res.status(400).json({ message: "Design IDs are required" });
-      }
-
-      // Calculate optimal arrangement
-      const usableWidth = plotterSettings.sheetWidth - plotterSettings.marginLeft - plotterSettings.marginRight;
-      const usableHeight = plotterSettings.sheetHeight - plotterSettings.marginTop - plotterSettings.marginBottom;
-      
-      const arrangements = [];
-      let currentRow = 0;
-      let currentCol = 0;
-      let maxRowHeight = plotterSettings.labelHeight;
-      let totalArranged = 0;
-
-      for (let i = 0; i < designIds.length; i++) {
-        const designId = designIds[i];
-        const designWidth = plotterSettings.labelWidth;
-        const designHeight = plotterSettings.labelHeight;
-        
-        // Calculate position
-        const x = plotterSettings.marginLeft + currentCol * (designWidth + plotterSettings.horizontalSpacing);
-        const y = plotterSettings.marginTop + currentRow * (designHeight + plotterSettings.verticalSpacing);
-        
-        // Check if design fits in current position
-        if (x + designWidth <= plotterSettings.sheetWidth - plotterSettings.marginRight &&
-            y + designHeight <= plotterSettings.sheetHeight - plotterSettings.marginBottom) {
-          
-          arrangements.push({
-            designId,
-            x,
-            y,
-            width: designWidth,
-            height: designHeight,
-            row: currentRow,
-            col: currentCol
-          });
-          
-          totalArranged++;
-          currentCol++;
-          
-          // Check if we need to move to next row
-          if (x + designWidth + plotterSettings.horizontalSpacing + designWidth > 
-              plotterSettings.sheetWidth - plotterSettings.marginRight) {
-            currentRow++;
-            currentCol = 0;
-          }
-        } else {
-          // No more space
-          break;
-        }
-      }
-
-      const efficiency = Math.round((totalArranged / designIds.length) * 100);
-
-      res.json({
-        arrangements,
-        totalArranged,
-        totalRequested: designIds.length,
-        efficiency: `${efficiency}%`,
-        usedArea: {
-          width: usableWidth,
-          height: usableHeight
-        }
-      });
-    } catch (error) {
-      console.error("Error in auto-arrange:", error);
-      res.status(500).json({ message: "Auto-arrange failed" });
-    }
-  });
-
-  app.post('/api/automation/plotter/generate-pdf', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { plotterSettings, arrangements } = req.body;
-
-      // Mock PDF generation - in production, this would generate actual PDF with arranged designs
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="plotter-layout-with-designs.pdf"');
-      
-      // Simple mock PDF content
-      const pdfContent = Buffer.from('Mock PDF content for plotter layout with arranged designs');
-      res.send(pdfContent);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      res.status(500).json({ message: "Failed to generate PDF" });
-    }
-  });
-
-  const httpServer = createServer(app);
-
-  // WebSocket server for real-time chat
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  const clients = new Map<string, Set<WebSocket>>();
-
-  // Broadcast function for WebSocket
-  function broadcastToRoom(roomId: string, message: any) {
-    const roomClients = clients.get(roomId);
-    if (roomClients) {
-      const messageStr = JSON.stringify(message);
-      roomClients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(messageStr);
-        }
-      });
-    }
-  }
-
-  wss.on('connection', (ws: WebSocket, req) => {
-    console.log('WebSocket client connected');
-
-    ws.on('message', async (data: Buffer) => {
-      try {
-        const message = JSON.parse(data.toString());
-        
-        if (message.type === 'join_room') {
-          const { roomId } = message;
-          
-          // Verify room exists and user has access
-          const room = await storage.getChatRoom(roomId);
-          if (!room) {
-            ws.send(JSON.stringify({
-              type: 'error',
-              message: 'Room not found'
-            }));
-            return;
-          }
-
-          // Check if contract is approved for this room
-          const quote = await storage.getQuote(room.quoteId);
-          if (!quote || quote.status !== 'approved') {
-            ws.send(JSON.stringify({
-              type: 'error',
-              message: 'Chat not available - contract not approved'
-            }));
-            return;
-          }
-          
-          if (!clients.has(roomId)) {
-            clients.set(roomId, new Set());
-          }
-          clients.get(roomId)!.add(ws);
-          
-          ws.send(JSON.stringify({
-            type: 'room_joined',
-            roomId
-          }));
-        } else if (message.type === 'leave_room') {
-          const { roomId } = message;
-          const roomClients = clients.get(roomId);
-          if (roomClients) {
-            roomClients.delete(ws);
-            if (roomClients.size === 0) {
-              clients.delete(roomId);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'Invalid message format'
-        }));
-      }
-    });
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
-
-    ws.on('close', () => {
-      // Remove client from all rooms
-      clients.forEach((roomClients, roomId) => {
-        roomClients.delete(ws);
-        if (roomClients.size === 0) {
-          clients.delete(roomId);
-        }
-      });
-      console.log('WebSocket client disconnected');
-    });
-  });
-
-  // Extended Plotter Data Service API Endpoints
-  
-  // Plotter models endpoint
-  app.get('/api/automation/plotter/models', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { plotterDataService } = await import('./plotterDataService');
-      const models = plotterDataService.getPlotterModels();
-      res.json(models);
-    } catch (error) {
-      console.error("Plotter models fetch error:", error);
-      res.status(500).json({ message: "Plotter modelleri alınamadı" });
-    }
-  });
-
-  // Material specifications endpoint
-  app.get('/api/automation/plotter/materials', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { plotterDataService } = await import('./plotterDataService');
-      const materials = plotterDataService.getMaterialSpecs();
-      res.json(materials);
-    } catch (error) {
-      console.error("Materials fetch error:", error);
-      res.status(500).json({ message: "Materyal bilgileri alınamadı" });
-    }
-  });
-
-  // Compatible materials for specific plotter
-  app.get('/api/automation/plotter/materials/:plotterId', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { plotterDataService } = await import('./plotterDataService');
-      const { plotterId } = req.params;
-      const compatibleMaterials = plotterDataService.getCompatibleMaterials(plotterId);
-      res.json(compatibleMaterials);
-    } catch (error) {
-      console.error("Compatible materials fetch error:", error);
-      res.status(500).json({ message: "Uyumlu materyal bilgileri alınamadı" });
-    }
-  });
-
-  // Optimal cutting settings
-  app.post('/api/automation/plotter/settings', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { plotterDataService } = await import('./plotterDataService');
-      const { plotterId, materialId } = req.body;
-      
-      if (!plotterId || !materialId) {
-        return res.status(400).json({ message: "Plotter ve materyal ID'si gerekli" });
-      }
-
-      const settings = plotterDataService.getOptimalSettings(plotterId, materialId);
-      res.json(settings);
-    } catch (error) {
-      console.error("Settings calculation error:", error);
-      res.status(500).json({ message: error.message || "Optimal ayarlar hesaplanamadı" });
-    }
-  });
-
-  // Material usage calculation
-  app.post('/api/automation/plotter/calculate-usage', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { plotterDataService } = await import('./plotterDataService');
-      const { designCount, designWidth, designHeight, plotterWidth, spacing } = req.body;
-      
-      if (!designCount || !designWidth || !designHeight || !plotterWidth) {
-        return res.status(400).json({ message: "Tüm boyut parametreleri gerekli" });
-      }
-
-      const usage = plotterDataService.calculateMaterialUsage(
-        designCount, designWidth, designHeight, plotterWidth, spacing || 2
-      );
-      res.json(usage);
-    } catch (error) {
-      console.error("Usage calculation error:", error);
-      res.status(500).json({ message: "Materyal kullanımı hesaplanamadı" });
-    }
-  });
-
-  // Generate cutting path
-  app.post('/api/automation/plotter/generate-path', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
-      }
-
-      const { plotterDataService } = await import('./plotterDataService');
-      const { designs, plotterSettings } = req.body;
-      
-      if (!designs || !plotterSettings) {
-        return res.status(400).json({ message: "Tasarım ve plotter ayarları gerekli" });
-      }
-
-      const cuttingPath = plotterDataService.generateCuttingPath(designs, plotterSettings);
-      res.json(cuttingPath);
-    } catch (error) {
-      console.error("Cutting path generation error:", error);
-      res.status(500).json({ message: "Kesim yolu oluşturulamadı" });
-    }
-  });
-
-  return httpServer;
-}
