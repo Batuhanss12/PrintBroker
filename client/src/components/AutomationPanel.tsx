@@ -183,7 +183,7 @@ export default function AutomationPanel() {
       
       // Auto-trigger PDF generation after successful arrangement
       setTimeout(() => {
-        generatePdfMutation.mutate({ plotterSettings, arrangements: data });
+        generatePdfMutation.mutate({ plotterSettings: plotterSettings, arrangements: data });
       }, 1000);
     },
     onError: () => {

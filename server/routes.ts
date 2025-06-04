@@ -1453,8 +1453,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { plotterSettings, arrangements } = req.body;
       
-      if (!arrangements || !arrangements.arrangements || arrangements.arrangements.length === 0) {
+      if (!arrangements || !arrangements.arrangements) {
         return res.status(400).json({ message: "No arrangements provided" });
+      }
+
+      const arrangedItems = arrangements.arrangements || [];
+      if (arrangedItems.length === 0) {
+        return res.status(400).json({ message: "No arranged items found" });
       }
 
       // Generate PDF using PDFKit
@@ -1493,7 +1498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
          .stroke();
 
       // Draw each arranged design
-      arrangements.arrangements.forEach((arrangement: any, index: number) => {
+      arrangedItems.forEach((arrangement: any, index: number) => {
         const x = (arrangement.x * 2.834645669) + BORDER_MARGIN; // Convert mm to points
         const y = (arrangement.y * 2.834645669) + BORDER_MARGIN + 100; // Convert mm to points + header offset
         const width = arrangement.width * 2.834645669; // Convert mm to points
