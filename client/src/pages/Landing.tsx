@@ -42,13 +42,13 @@ export default function Landing() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState<'customer' | 'printer' | 'admin' | 'login' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Check for URL parameters on component mount
   useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get('error');
     const existingRole = urlParams.get('existing_role');
-    
+
     if (error === 'role_mismatch' && existingRole) {
       toast({
         title: "Rol Çakışması",
@@ -61,13 +61,13 @@ export default function Landing() {
     firstName: '',
     lastName: '',
     email: '',
+    password: '',
     phone: '',
     companyName: '',
-    password: '',
     taxNumber: ''
   });
   const { toast } = useToast();
-  
+
   const getRoleDisplayName = (role: string) => {
     switch (role) {
       case 'customer': return 'Müşteri';
@@ -85,8 +85,8 @@ export default function Landing() {
       // Store selected role in session storage for after auth
       const selectedRole = showLoginForm || 'customer';
       sessionStorage.setItem('selectedRole', selectedRole);
-      
-      // In development, require email validation
+
+      // In development, require email and password validation
       if (!formData.email || !formData.email.includes('@')) {
         toast({
           title: "Geçersiz E-posta",
@@ -96,9 +96,19 @@ export default function Landing() {
         setIsLoading(false);
         return;
       }
-      
-      // Redirect to Replit Auth login with role and email
-      window.location.href = `/api/login?role=${selectedRole}&email=${encodeURIComponent(formData.email)}`;
+
+      if (!formData.password || formData.password.length < 6) {
+        toast({
+          title: "Geçersiz Şifre",
+          description: "Şifre en az 6 karakter olmalıdır",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Redirect to Replit Auth login with role, email and password
+      window.location.href = `/api/login?role=${selectedRole}&email=${encodeURIComponent(formData.email)}&password=${encodeURIComponent(formData.password)}`;
     } catch (error) {
       toast({
         title: "Giriş hatası",
@@ -1013,7 +1023,7 @@ export default function Landing() {
                 </button>
               </div>
             </div>
-            
+
             {/* Login Form */}
             {showLoginForm === 'login' && (
               <div className="p-6 space-y-6">
@@ -1031,7 +1041,7 @@ export default function Landing() {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="loginPassword" className="text-sm font-medium text-gray-700">
                         Şifre
@@ -1059,7 +1069,7 @@ export default function Landing() {
                       <UserCheck className="h-5 w-5 group-hover:scale-110 transition-transform" />
                       <span>Müşteri Olarak Giriş</span>
                     </Button>
-                    
+
                     <Button 
                       type="button"
                       onClick={(e) => {
@@ -1072,7 +1082,7 @@ export default function Landing() {
                       <Building2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
                       <span>Matbaa Olarak Giriş</span>
                     </Button>
-                    
+
                     <Button 
                       type="button"
                       onClick={(e) => {
@@ -1102,7 +1112,7 @@ export default function Landing() {
                 </form>
               </div>
             )}
-            
+
             {/* Registration Forms */}
             {(showLoginForm === 'customer' || showLoginForm === 'printer') && (
               <form onSubmit={(e) => { e.preventDefault(); handleRegister(showLoginForm); }} className="p-6 space-y-6">
@@ -1126,7 +1136,7 @@ export default function Landing() {
                         className="mt-1"
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
                         Soyad *
@@ -1140,7 +1150,7 @@ export default function Landing() {
                         className="mt-1"
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                         E-posta *
@@ -1155,7 +1165,7 @@ export default function Landing() {
                         className="mt-1"
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
                         Telefon *
@@ -1169,7 +1179,7 @@ export default function Landing() {
                         className="mt-1"
                       />
                     </div>
-                    
+
                     <div className="md:col-span-2">
                       <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                         Şifre *
@@ -1186,7 +1196,7 @@ export default function Landing() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Company Information for Printer */}
                 {showLoginForm === 'printer' && (
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -1208,7 +1218,7 @@ export default function Landing() {
                           className="mt-1"
                         />
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="taxNumber" className="text-sm font-medium text-gray-700">
                           Vergi Numarası
@@ -1224,7 +1234,7 @@ export default function Landing() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Agreements */}
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                   <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
@@ -1243,7 +1253,7 @@ export default function Landing() {
                         <span className="font-medium">Kullanım Şartları</span> ve <span className="font-medium">Gizlilik Politikası</span>'nı okudum ve kabul ediyorum. *
                       </label>
                     </div>
-                    
+
                     <div className="flex items-start space-x-3">
                       <input
                         type="checkbox"
@@ -1254,7 +1264,7 @@ export default function Landing() {
                         Kampanya, duyuru ve özel fırsatlar hakkında e-posta almak istiyorum.
                       </label>
                     </div>
-                    
+
                     {showLoginForm === 'printer' && (
                       <div className="flex items-start space-x-3">
                         <input
@@ -1270,7 +1280,7 @@ export default function Landing() {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3 pt-4">
                   <Button
                     type="button"
@@ -1302,7 +1312,7 @@ export default function Landing() {
                     )}
                   </Button>
                 </div>
-                
+
                 <div className="text-center pt-4 border-t border-gray-200">
                   <p className="text-sm text-gray-500">
                     Zaten hesabınız var mı? 

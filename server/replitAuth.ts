@@ -258,12 +258,17 @@ function setupFallbackAuth(app: Express) {
 
   app.get('/api/login', async (req, res) => {
     try {
-      // Basic validation - require email and role
+      // Basic validation - require email, password and role
       const email = req.query.email as string;
+      const password = req.query.password as string;
       const selectedRole = req.query.role || req.session?.selectedRole || 'customer';
       
       if (!email || !email.includes('@')) {
         return res.redirect('/?error=invalid_email');
+      }
+      
+      if (!password || password.length < 6) {
+        return res.redirect('/?error=invalid_password');
       }
       
       // Create a mock user in the database
@@ -277,7 +282,11 @@ function setupFallbackAuth(app: Express) {
       
       let mockUser;
       if (existingUser) {
-        // User already exists, use existing user
+        // User exists - validate password (simplified check for development)
+        // In production, this would use proper password hashing
+        if (password !== 'demo123') {
+          return res.redirect('/?error=invalid_credentials');
+        }
         mockUser = existingUser;
       } else {
         // Create new user with unique ID
