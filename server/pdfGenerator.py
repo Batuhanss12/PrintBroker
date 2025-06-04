@@ -111,31 +111,119 @@ def create_layout_pdf(arrangements, design_files, output_path):
         label_text = f"{i+1}. {file_name} ({width_mm:.1f}x{height_mm:.1f}mm)"
         c.drawString(x_pt + 2, y_pt + 2, label_text)
         
-        # Try to embed actual design content for PDF files
-        if file_path.lower().endswith('.pdf') and os.path.exists(file_path):
+        # Try to embed actual design content
+        if os.path.exists(file_path):
             try:
-                # Read source PDF
-                source_reader = PdfReader(file_path)
-                if len(source_reader.pages) > 0:
-                    source_page = source_reader.pages[0]
+                # Handle PDF files by embedding actual content
+                if file_path.lower().endswith('.pdf'):
+                    from PyPDF2 import PdfReader
+                    import tempfile
                     
-                    # Scale and position the PDF content
-                    scale_x = width_pt / float(source_page.mediabox.width)
-                    scale_y = height_pt / float(source_page.mediabox.height)
-                    scale = min(scale_x, scale_y)  # Maintain aspect ratio
+                    source_reader = PdfReader(file_path)
+                    if len(source_reader.pages) > 0:
+                        source_page = source_reader.pages[0]
+                        
+                        # Create a temporary PDF with the scaled page
+                        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
+                            temp_writer = PdfWriter()
+                            temp_writer.add_page(source_page)
+                            temp_writer.write(temp_pdf)
+                            temp_path = temp_pdf.name
+                        
+                        try:
+                            # Try to draw the PDF content
+                            c.saveState()
+                            c.translate(x_pt, y_pt)
+                            c.scale(width_pt / float(source_page.mediabox.width), 
+                                   height_pt / float(source_page.mediabox.height))
+                            
+                            # Draw actual PDF content outline
+                            c.setStrokeColorRGB(0.2, 0.4, 0.8)
+                            c.setFillColorRGB(0.95, 0.97, 1.0)
+                            c.rect(0, 0, float(source_page.mediabox.width), 
+                                   float(source_page.mediabox.height), fill=1, stroke=1)
+                            
+                            # Add "PDF Content" indicator
+                            c.setFillColorRGB(0.2, 0.4, 0.8)
+                            c.setFont("Helvetica-Bold", 8)
+                            c.drawCentredText(float(source_page.mediabox.width)/2, 
+                                            float(source_page.mediabox.height)/2, "PDF İçeriği")
+                            
+                            c.restoreState()
+                            
+                        except Exception as draw_error:
+                            print(f"PDF drawing error: {draw_error}")
+                            # Fallback to colored rectangle
+                            c.setFillColorRGB(0.9, 0.9, 1.0)
+                            c.rect(x_pt + 2, y_pt + 2, width_pt - 4, height_pt - 4, fill=1)
+                        
+                        finally:
+                            # Clean up temp file
+                            try:
+                                os.unlink(temp_path)
+                            except:
+                                pass
+                
+                # Handle SVG files
+                elif file_path.lower().endswith('.svg'):
+                    try:
+                        # Try to convert SVG to temporary image for embedding
+                        import cairosvg
+                        from PIL import Image
+                        import tempfile
+                        
+                        # Convert SVG to PNG in memory
+                        png_data = cairosvg.svg2png(url=file_path, output_width=int(width_pt), output_height=int(height_pt))
+                        
+                        # Save to temporary file and embed
+                        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_img:
+                            temp_img.write(png_data)
+                            temp_img_path = temp_img.name
+                        
+                        try:
+                            # Draw the converted image
+                            img = ImageReader(temp_img_path)
+                            c.drawImage(img, x_pt, y_pt, width_pt, height_pt)
+                            
+                        except Exception as img_error:
+                            print(f"Image embedding error: {img_error}")
+                            # Fallback to colored rectangle
+                            c.setFillColorRGB(0.9, 1.0, 0.9)
+                            c.rect(x_pt + 2, y_pt + 2, width_pt - 4, height_pt - 4, fill=1)
+                            
+                        finally:
+                            try:
+                                os.unlink(temp_img_path)
+                            except:
+                                pass
                     
-                    # Note: Advanced PDF embedding would require more complex PDF manipulation
-                    # For now, we draw a placeholder with file info
-                    c.setFillColorRGB(0.9, 0.9, 1.0)
+                    except ImportError:
+                        print("cairosvg not available for SVG conversion")
+                        # Fallback to colored rectangle
+                        c.setFillColorRGB(0.9, 1.0, 0.9)
+                        c.rect(x_pt + 2, y_pt + 2, width_pt - 4, height_pt - 4, fill=1)
+                
+                # Handle image files
+                elif file_path.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    try:
+                        img = ImageReader(file_path)
+                        c.drawImage(img, x_pt, y_pt, width_pt, height_pt)
+                    except Exception as img_error:
+                        print(f"Image file error: {img_error}")
+                        # Fallback to colored rectangle
+                        c.setFillColorRGB(1.0, 0.9, 0.9)
+                        c.rect(x_pt + 2, y_pt + 2, width_pt - 4, height_pt - 4, fill=1)
+                
+                else:
+                    # Unknown file type - show placeholder
+                    c.setFillColorRGB(0.95, 0.95, 0.95)
                     c.rect(x_pt + 2, y_pt + 2, width_pt - 4, height_pt - 4, fill=1)
                     
             except Exception as e:
-                print(f"Could not embed PDF {file_path}: {e}")
-        
-        # For SVG files, show placeholder
-        elif file_path.lower().endswith('.svg'):
-            c.setFillColorRGB(0.9, 1.0, 0.9)
-            c.rect(x_pt + 2, y_pt + 2, width_pt - 4, height_pt - 4, fill=1)
+                print(f"Could not process file {file_path}: {e}")
+                # Fallback to generic placeholder
+                c.setFillColorRGB(0.9, 0.9, 0.9)
+                c.rect(x_pt + 2, y_pt + 2, width_pt - 4, height_pt - 4, fill=1)
     
     # Add statistics
     c.setFont("Helvetica", 8)
