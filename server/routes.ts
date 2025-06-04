@@ -884,7 +884,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat API routes
-  app.get('/api/chat/rooms', isAuthenticated,The code has been updated with enhanced file upload functionality, including content preservation and detailed metadata storage. async (req: any, res) => {    try {
+  app.get('/api/chat/rooms', isAuthenticated, async (req: any,res) => {
+    try {
       const userId = req.user.claims.sub;
       const rooms = await storage.getChatRoomsByUser(userId);
       res.json(rooms);
@@ -1712,11 +1713,11 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', async (req, res) => {
               message: 'Chat not available - contract not approved'
             }));
             return;
-          }          if (!clients.has(roomId)) {
+          }          
+          if (!clients.has(roomId)) {
             clients.set(roomId, new Set());
           }
-          clients.get(roomId)!.add(```text
-ws);
+          clients.get(roomId)!.add(ws);
 
           ws.send(JSON.stringify({
             type: 'room_joined',
