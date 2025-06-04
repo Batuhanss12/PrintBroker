@@ -23,22 +23,35 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Allow common file types for printing
+    console.log('File upload attempt:', {
+      fieldname: file.fieldname,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
+
+    // Allow vector and document file types for printing
     const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
       'application/pdf',
-      'application/postscript',
       'image/svg+xml',
-      'application/zip',
-      'application/x-rar-compressed'
+      'application/postscript',
+      'application/illustrator',
+      'application/eps',
+      'image/eps',
+      'application/x-eps',
+      'image/jpeg',
+      'image/png'
     ];
     
-    if (allowedTypes.includes(file.mimetype)) {
+    // Also check file extensions for AI files (often have generic mimetype)
+    const fileExt = file.originalname.toLowerCase().split('.').pop();
+    const allowedExtensions = ['pdf', 'svg', 'ai', 'eps', 'jpg', 'jpeg', 'png'];
+    
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExt || '')) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images, PDFs, AI, SVG, ZIP, and RAR files are allowed.'));
+      console.log('Rejected file type:', file.mimetype, 'Extension:', fileExt);
+      cb(new Error(`Invalid file type: ${file.mimetype}. Only PDF, SVG, AI, EPS files are allowed.`));
     }
   }
 });
@@ -1177,16 +1190,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Printer access required" });
       }
 
+      console.log('Upload request received:', {
+        hasFiles: !!req.files,
+        filesLength: req.files?.length || 0,
+        body: req.body,
+        headers: req.headers['content-type']
+      });
+
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {
-        return res.status(400).json({ message: "No files uploaded" });
+        console.log('No files found in request');
+        return res.status(400).json({ message: "No files uploaded - please select files" });
       }
 
       const uploadedDesigns = [];
       
       for (const file of files) {
+        console.log('Processing file:', {
+          originalname: file.originalname,
+          filename: file.filename,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: file.path
+        });
+
         // Process each design file
         const metadata = await fileProcessingService.processFile(file.path, file.mimetype);
+        
+        console.log('File metadata:', metadata);
         
         // Generate thumbnail for preview
         let thumbnailPath = '';
@@ -1196,15 +1227,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (file.mimetype.startsWith('image/') || file.mimetype === 'image/svg+xml') {
             thumbnailPath = await fileProcessingService.generateThumbnail(file.path, file.filename);
           } else {
-            // For other file types, use a default icon
+            // For vector files without image preview, use placeholder
             thumbnailPath = '';
           }
         } catch (thumbError) {
           console.warn("Could not generate thumbnail:", thumbError);
-          // Fallback to original file for images
-          if (file.mimetype.startsWith('image/')) {
-            thumbnailPath = `/uploads/${file.filename}`;
-          }
+          thumbnailPath = '';
         }
 
         // Save file to database
@@ -1223,11 +1251,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const designFile = {
           id: fileRecord.id,
           name: file.originalname,
+          filename: file.filename,
           path: file.path,
           thumbnailPath,
           size: file.size,
           type: file.mimetype,
           dimensions: metadata.dimensions || 'Unknown',
+          realDimensionsMM: metadata.realDimensionsMM || 'Bilinmiyor',
+          fileSize: metadata.processingNotes || `${Math.round(file.size / 1024)}KB`,
           userId,
           uploadedAt: new Date().toISOString()
         };
@@ -1260,12 +1291,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const designs = userFiles.map(file => ({
         id: file.id,
         name: file.originalName || file.filename,
+        filename: file.filename,
         dimensions: file.dimensions || "Boyut bilinmiyor",
+        realDimensionsMM: file.realDimensionsMM || file.dimensions || "Bilinmiyor",
         thumbnailPath: file.thumbnailPath || (file.mimeType?.startsWith('image/') ? `/uploads/${file.filename}` : ''),
         filePath: `/uploads/${file.filename}`,
         fileType: file.fileType || 'document',
         mimeType: file.mimeType,
         size: file.size,
+        fileSize: `${Math.round((file.size || 0) / 1024)}KB`,
         uploadedAt: file.createdAt,
         colorProfile: file.colorProfile,
         hasTransparency: file.hasTransparency,

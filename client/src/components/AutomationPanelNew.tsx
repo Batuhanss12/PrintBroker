@@ -155,14 +155,28 @@ export default function AutomationPanelNew() {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      console.log('No files selected');
+      return;
+    }
 
+    console.log('Files selected:', files.length);
+    
     const formData = new FormData();
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file, index) => {
+      console.log(`File ${index + 1}:`, {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
       formData.append('designs', file);
     });
 
+    console.log('Uploading files...');
     uploadMutation.mutate(formData);
+    
+    // Reset input
+    event.target.value = '';
   };
 
   return (
