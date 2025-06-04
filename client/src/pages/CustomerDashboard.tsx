@@ -102,9 +102,9 @@ export default function CustomerDashboard() {
     );
   }
 
-  const pendingQuotes = quotes?.filter((q: any) => q.status === 'pending') || [];
-  const receivedQuotes = quotes?.filter((q: any) => q.status === 'received_quotes') || [];
-  const completedOrders = orders?.filter((o: any) => o.status === 'completed') || [];
+  const pendingQuotes = Array.isArray(quotes) ? quotes.filter((q: any) => q.status === 'pending') : [];
+  const receivedQuotes = Array.isArray(quotes) ? quotes.filter((q: any) => q.status === 'received_quotes') : [];
+  const completedOrders = Array.isArray(orders) ? orders.filter((o: any) => o.status === 'completed') : [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -241,7 +241,7 @@ export default function CustomerDashboard() {
               />
               <StatsCard
                 title="Toplam Tasarım"
-                value={designHistory?.total || 0}
+                value={designHistory && typeof designHistory === 'object' && 'total' in designHistory ? designHistory.total : 0}
                 icon={<Palette className="h-5 w-5 text-purple-600" />}
                 color="bg-purple-50"
               />
@@ -257,7 +257,7 @@ export default function CustomerDashboard() {
                   <div className="flex justify-center py-8">
                     <PrinterLoader size={100} color="#3B82F6" />
                   </div>
-                ) : quotes && quotes.length > 0 ? (
+                ) : Array.isArray(quotes) && quotes.length > 0 ? (
                   <div className="space-y-3">
                     {quotes.slice(0, 5).map((quote: any) => (
                       <QuoteCard key={quote.id} quote={quote} />

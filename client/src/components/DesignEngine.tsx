@@ -27,7 +27,7 @@ import {
   Grid3X3,
   Settings,
   History,
-  Template,
+  Layout,
   Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -243,7 +243,7 @@ export default function DesignEngine() {
             Tasarım Oluştur
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
-            <Template className="h-4 w-4" />
+            <Layout className="h-4 w-4" />
             Şablonlar
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
@@ -520,7 +520,7 @@ export default function DesignEngine() {
               <Card key={template.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg flex items-center justify-center">
-                    <Template className="h-12 w-12 text-gray-400" />
+                    <Layout className="h-12 w-12 text-gray-400" />
                   </div>
                   <div className="p-4 space-y-3">
                     <div>
