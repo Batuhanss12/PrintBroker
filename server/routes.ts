@@ -419,6 +419,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Design routes
+  app.get('/api/designs/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id || req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      const designHistory = await storage.getDesignHistory(userId, { page, limit });
+      res.json(designHistory);
+    } catch (error) {
+      console.error("Error fetching design history:", error);
+      res.status(500).json({ message: "Failed to fetch design history" });
+    }
+  });
+
+  app.post('/api/designs/save', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id || req.user?.claims?.sub;
+      const { prompt, options, result } = req.body;
+
+      if (!prompt || !result) {
+        return res.status(400).json({ message: "Prompt and result are required" });
+      }
+
+      const savedDesign = await storage.saveDesignGeneration({
+        userId,
+        prompt,
+        options: options || {},
+        result,
+        createdAt: new Date()
+      });
+
+      res.json(savedDesign);
+    } catch (error) {
+      console.error("Error saving design:", error);
+      res.status(500).json({ message: "Failed to save design" });
+    }
+  });
+
   // Order routes
   app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {

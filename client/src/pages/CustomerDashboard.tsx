@@ -57,13 +57,12 @@ export default function CustomerDashboard() {
 
   const { data: quotes, isLoading: quotesLoading } = useQuery({
     queryKey: ["/api/quotes"],
-    enabled: isAuthenticated && user?.role === 'customer',
+    enabled: isAuthenticated,
   });
 
-  // Fetch unread message count
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['/api/chat/unread-count'],
-    enabled: isAuthenticated,
+  const { data: unreadCount } = useQuery({
+    queryKey: ["/api/chat/unread-count"],
+    enabled: !!user?.id,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
@@ -144,144 +143,139 @@ export default function CustomerDashboard() {
             <div>
               <h4 className="text-lg font-semibold mb-4 text-gray-900">Teklif Talep Et</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/quote/sheet_label">
-              <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
-                <LayoutGrid className="text-blue-500 text-2xl mr-3" />
-                <div className="text-left">
-                  <h5 className="font-semibold text-gray-900">Tabaka Etiket</h5>
-                  <p className="text-sm text-gray-600">A3/A4 profesyonel etiket</p>
-                </div>
-              </Button>
-            </Link>
-            
-            <Link href="/quote/roll_label">
-              <Button variant="outline" className="flex items-center p-4 h-auto bg-orange-50 hover:bg-orange-100 border-orange-200 w-full justify-start">
-                <Disc className="text-orange-500 text-2xl mr-3" />
-                <div className="text-left">
-                  <h5 className="font-semibold text-gray-900">Rulo Etiket</h5>
-                  <p className="text-sm text-gray-600">Termal & yapışkanlı</p>
-                </div>
-              </Button>
-            </Link>
-            
-            <Link href="/quote/general_printing">
-              <Button variant="outline" className="flex items-center p-4 h-auto bg-green-50 hover:bg-green-100 border-green-200 w-full justify-start">
-                <Printer className="text-green-500 text-2xl mr-3" />
-                <div className="text-left">
-                  <h5 className="font-semibold text-gray-900">Genel Baskı</h5>
-                  <p className="text-sm text-gray-600">Katalog, broşür, kartvizit</p>
-                </div>
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Hızlı İşlemler */}
-        <div className="mb-8">
-          <h4 className="text-lg font-semibold mb-4 text-gray-900">Hızlı İşlemler</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/payment">
-              <Button variant="outline" className="flex items-center p-4 h-auto bg-green-50 hover:bg-green-100 border-green-200 w-full justify-start">
-                <Plus className="text-green-500 text-2xl mr-3" />
-                <div className="text-left">
-                  <h5 className="font-semibold text-gray-900">Kredi Yükle</h5>
-                  <p className="text-sm text-gray-600">Bakiye yükle</p>
-                </div>
-              </Button>
-            </Link>
-            
-            <Dialog open={isDesignDialogOpen} onOpenChange={setIsDesignDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center p-4 h-auto bg-purple-50 hover:bg-purple-100 border-purple-200 w-full justify-start">
-                  <Palette className="text-purple-500 text-2xl mr-3" />
-                  <div className="text-left">
-                    <h5 className="font-semibold text-gray-900">Tasarım Yap</h5>
-                    <p className="text-sm text-gray-600">Otomatik tasarım</p>
-                  </div>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-6xl h-[90vh] overflow-hidden">
-                <DialogHeader>
-                  <DialogTitle>AI Tasarım Motoru</DialogTitle>
-                </DialogHeader>
-                <div className="h-full overflow-y-auto">
-                  <DesignEngine />
-                </div>
-              </DialogContent>
-            </Dialog>
-            
-            <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
-              <Upload className="text-blue-500 text-2xl mr-3" />
-              <div className="text-left">
-                <h5 className="font-semibold text-gray-900">Dosya Yükle</h5>
-                <p className="text-sm text-gray-600">Hazır dosyalarım</p>
-              </div>
-            </Button>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <StatsCard
-            title="Bekleyen Teklifler"
-            value={pendingQuotes.length}
-            icon={<Clock className="h-5 w-5 text-yellow-600" />}
-            color="bg-yellow-50"
-          />
-          <StatsCard
-            title="Alınan Teklifler"
-            value={receivedQuotes.length}
-            icon={<FileText className="h-5 w-5 text-blue-600" />}
-            color="bg-blue-50"
-          />
-          <StatsCard
-            title="Tamamlanan"
-            value={completedOrders.length}
-            icon={<CheckCircle className="h-5 w-5 text-green-600" />}
-            color="bg-green-50"
-          />
-          <StatsCard
-            title="Toplam Teklif"
-            value={quotes?.length || 0}
-            icon={<FileText className="h-5 w-5 text-gray-600" />}
-            color="bg-gray-50"
-          />
-        </div>
-
-        {/* Recent Quotes */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-gray-900">Son Teklifler</CardTitle>
-              <Button variant="ghost" size="sm" className="text-primary hover:text-blue-700">
-                Tümünü Gör
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {quotesLoading ? (
-              <div className="flex justify-center py-8">
-                <PrinterLoader size={100} color="#3B82F6" />
-              </div>
-            ) : quotes && quotes.length > 0 ? (
-              <div className="space-y-3">
-                {quotes.slice(0, 5).map((quote: any) => (
-                  <QuoteCard key={quote.id} quote={quote} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Henüz teklif talebiniz bulunmuyor.</p>
                 <Link href="/quote/sheet_label">
-                  <Button className="mt-4">
-                    İlk Teklifinizi Oluşturun
+                  <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
+                    <LayoutGrid className="text-blue-500 text-2xl mr-3" />
+                    <div className="text-left">
+                      <h5 className="font-semibold text-gray-900">Tabaka Etiket</h5>
+                      <p className="text-sm text-gray-600">A3/A4 profesyonel etiket</p>
+                    </div>
+                  </Button>
+                </Link>
+                
+                <Link href="/quote/roll_label">
+                  <Button variant="outline" className="flex items-center p-4 h-auto bg-orange-50 hover:bg-orange-100 border-orange-200 w-full justify-start">
+                    <Disc className="text-orange-500 text-2xl mr-3" />
+                    <div className="text-left">
+                      <h5 className="font-semibold text-gray-900">Rulo Etiket</h5>
+                      <p className="text-sm text-gray-600">Termal & yapışkanlı</p>
+                    </div>
+                  </Button>
+                </Link>
+                
+                <Link href="/quote/general_printing">
+                  <Button variant="outline" className="flex items-center p-4 h-auto bg-green-50 hover:bg-green-100 border-green-200 w-full justify-start">
+                    <Printer className="text-green-500 text-2xl mr-3" />
+                    <div className="text-left">
+                      <h5 className="font-semibold text-gray-900">Genel Baskı</h5>
+                      <p className="text-sm text-gray-600">Katalog, broşür, kartvizit</p>
+                    </div>
                   </Button>
                 </Link>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+
+            {/* Hızlı İşlemler */}
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-gray-900">Hızlı İşlemler</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link href="/payment">
+                  <Button variant="outline" className="flex items-center p-4 h-auto bg-green-50 hover:bg-green-100 border-green-200 w-full justify-start">
+                    <Plus className="text-green-500 text-2xl mr-3" />
+                    <div className="text-left">
+                      <h5 className="font-semibold text-gray-900">Kredi Yükle</h5>
+                      <p className="text-sm text-gray-600">Bakiye yükle</p>
+                    </div>
+                  </Button>
+                </Link>
+                
+                <Dialog open={isDesignDialogOpen} onOpenChange={setIsDesignDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="flex items-center p-4 h-auto bg-purple-50 hover:bg-purple-100 border-purple-200 w-full justify-start">
+                      <Palette className="text-purple-500 text-2xl mr-3" />
+                      <div className="text-left">
+                        <h5 className="font-semibold text-gray-900">Tasarım Yap</h5>
+                        <p className="text-sm text-gray-600">Otomatik tasarım</p>
+                      </div>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-6xl h-[90vh] overflow-hidden">
+                    <DialogHeader>
+                      <DialogTitle>AI Tasarım Motoru</DialogTitle>
+                    </DialogHeader>
+                    <div className="h-full overflow-y-auto">
+                      <DesignEngine />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
+                <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
+                  <Upload className="text-blue-500 text-2xl mr-3" />
+                  <div className="text-left">
+                    <h5 className="font-semibold text-gray-900">Dosya Yükle</h5>
+                    <p className="text-sm text-gray-600">Hazır dosyalarım</p>
+                  </div>
+                </Button>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <StatsCard
+                title="Bekleyen Teklifler"
+                value={pendingQuotes.length}
+                icon={<Clock className="h-5 w-5 text-yellow-600" />}
+                color="bg-yellow-50"
+              />
+              <StatsCard
+                title="Alınan Teklifler"
+                value={receivedQuotes.length}
+                icon={<FileText className="h-5 w-5 text-blue-600" />}
+                color="bg-blue-50"
+              />
+              <StatsCard
+                title="Tamamlanan İşler"
+                value={completedOrders.length}
+                icon={<CheckCircle className="h-5 w-5 text-green-600" />}
+                color="bg-green-50"
+              />
+              <StatsCard
+                title="Toplam Tasarım"
+                value={designHistory?.total || 0}
+                icon={<Palette className="h-5 w-5 text-purple-600" />}
+                color="bg-purple-50"
+              />
+            </div>
+
+            {/* Son Teklifler */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Son Tekliflerim</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {quotesLoading ? (
+                  <div className="flex justify-center py-8">
+                    <PrinterLoader size={100} color="#3B82F6" />
+                  </div>
+                ) : quotes && quotes.length > 0 ? (
+                  <div className="space-y-3">
+                    {quotes.slice(0, 5).map((quote: any) => (
+                      <QuoteCard key={quote.id} quote={quote} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">Henüz teklif talebiniz bulunmuyor.</p>
+                    <Link href="/quote/sheet_label">
+                      <Button className="mt-4">
+                        İlk Teklifinizi Oluşturun
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="designs" className="space-y-6">
@@ -408,7 +402,7 @@ export default function CustomerDashboard() {
       >
         <div className="relative">
           <MessageCircle className="h-6 w-6" />
-          {unreadCount > 0 && (
+          {unreadCount && unreadCount > 0 && (
             <Badge 
               variant="destructive" 
               className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
@@ -420,10 +414,13 @@ export default function CustomerDashboard() {
       </Button>
 
       {/* Chat Component */}
-      <Chat
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-      />
+      {isChatOpen && (
+        <Chat
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          customerId={user.id}
+        />
+      )}
     </div>
   );
 }
