@@ -62,8 +62,8 @@ export default function Landing() {
       const selectedRole = showLoginForm || 'customer';
       sessionStorage.setItem('selectedRole', selectedRole);
       
-      // Redirect to Replit Auth login with role and return URL
-      window.location.href = `/api/login?role=${selectedRole}&returnTo=/dashboard`;
+      // Redirect to Replit Auth login with role
+      window.location.href = `/api/login?role=${selectedRole}`;
     } catch (error) {
       toast({
         title: "Giriş hatası",

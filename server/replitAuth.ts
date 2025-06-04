@@ -173,11 +173,11 @@ export async function setupAuth(app: Express) {
             delete req.session?.selectedRole;
             delete req.session?.returnTo;
             
-            // Redirect to appropriate dashboard
-            res.redirect('/dashboard');
+            // Redirect to home page (authenticated users will see their dashboard)
+            res.redirect('/');
           } catch (error) {
             console.error('User creation error:', error);
-            res.redirect('/dashboard');
+            res.redirect('/');
           }
         });
       })(req, res, next);
