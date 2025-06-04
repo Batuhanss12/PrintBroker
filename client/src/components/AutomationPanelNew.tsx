@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,498 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Play, Eye, FileText, Zap, Trash2, AlertCircle, CheckCircle, Settings, Ruler, RotateCcw, Maximize2 } from "lucide-react";
+
+// Lazy Image Component with Intersection Observer
+const LazyImage = memo(({ src, alt, className, onLoad, ...props }: {
+  src: string;
+  alt: string;
+  className?: string;
+  onLoad?: () => void;
+  [key: string]: any;
+}) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: '50px' }
+    );
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleLoad = useCallback(() => {
+    setIsLoaded(true);
+    onLoad?.();
+  }, [onLoad]);
+
+  return (
+    <div ref={imgRef} className={className} {...props}>
+      {isInView && (
+        <img
+          src={src}
+          alt={alt}
+          onLoad={handleLoad}
+          className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          loading="lazy"
+          decoding="async"
+        />
+      )}
+      {!isLoaded && isInView && (
+        <div className="w-full h-full bg-gray-200 animate-pulse flex items-center justify-center">
+          <div className="text-gray-400 text-sm">Yükleniyor...</div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+// Canvas-based Preview Renderer
+const CanvasPreviewRenderer = memo(({ 
+  arrangements, 
+  pageWidth, 
+  pageHeight, 
+  designs,
+  bleedSettings 
+}: {
+  arrangements: ArrangementItem[];
+  pageWidth: number;
+  pageHeight: number;
+  designs: Design[];
+  bleedSettings: BleedSettings;
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameRef = useRef<number>();
+  const [webglSupported, setWebglSupported] = useState(false);
+  const [renderStats, setRenderStats] = useState({ fps: 0, renderTime: 0 });
+  const lastFrameTime = useRef(performance.now());
+  const frameCount = useRef(0);
+
+  // Check WebGL support
+  useEffect(() => {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    setWebglSupported(!!gl);
+  }, []);
+
+  // WebGL Renderer
+  const renderWithWebGL = useCallback((canvas: HTMLCanvasElement) => {
+    const gl = canvas.getContext('webgl');
+    if (!gl) return false;
+
+    const startTime = performance.now();
+
+    // Vertex shader source
+    const vertexShaderSource = `
+      attribute vec2 a_position;
+      attribute vec3 a_color;
+      uniform vec2 u_resolution;
+      varying vec3 v_color;
+
+      void main() {
+        vec2 zeroToOne = a_position / u_resolution;
+        vec2 zeroToTwo = zeroToOne * 2.0;
+        vec2 clipSpace = zeroToTwo - 1.0;
+        gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+        v_color = a_color;
+      }
+    `;
+
+    // Fragment shader source
+    const fragmentShaderSource = `
+      precision mediump float;
+      varying vec3 v_color;
+
+      void main() {
+        gl_FragColor = vec4(v_color, 1.0);
+      }
+    `;
+
+    // Create and compile shader
+    const createShader = (type: number, source: string) => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      return gl.getShaderParameter(shader, gl.COMPILE_STATUS) ? shader : null;
+    };
+
+    const vertexShader = createShader(gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+    if (!vertexShader || !fragmentShader) return false;
+
+    // Create program
+    const program = gl.createProgram();
+    if (!program) return false;
+
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return false;
+
+    gl.useProgram(program);
+
+    // Get attribute and uniform locations
+    const positionLocation = gl.getAttribLocation(program, 'a_position');
+    const colorLocation = gl.getAttribLocation(program, 'a_color');
+    const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+
+    // Set resolution
+    gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+
+    // Clear canvas
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.98, 0.98, 0.98, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Render arrangements
+    arrangements.forEach((item, index) => {
+      const x = (item.x / pageWidth) * canvas.width;
+      const y = (item.y / pageHeight) * canvas.height;
+      const w = (item.width / pageWidth) * canvas.width;
+      const h = (item.height / pageHeight) * canvas.height;
+
+      // Create rectangle vertices
+      const vertices = new Float32Array([
+        x, y,
+        x + w, y,
+        x, y + h,
+        x, y + h,
+        x + w, y,
+        x + w, y + h
+      ]);
+
+      // Create colors (different color for each item)
+      const hue = (index * 137.5) % 360;
+      const [r, g, b] = hslToRgb(hue / 360, 0.7, 0.7);
+      const colors = new Float32Array([
+        r, g, b,
+        r, g, b,
+        r, g, b,
+        r, g, b,
+        r, g, b,
+        r, g, b
+      ]);
+
+      // Create and bind position buffer
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(positionLocation);
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+      // Create and bind color buffer
+      const colorBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(colorLocation);
+      gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0, 0);
+
+      // Draw triangles
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    });
+
+    const renderTime = performance.now() - startTime;
+    setRenderStats(prev => ({ ...prev, renderTime }));
+
+    return true;
+  }, [arrangements, pageWidth, pageHeight]);
+
+  // Canvas 2D Renderer (fallback)
+  const renderWithCanvas2D = useCallback((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const startTime = performance.now();
+
+    // Enable hardware acceleration hints
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Clear canvas
+    ctx.fillStyle = '#fafafa';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw page margins
+    const marginLeft = (bleedSettings.left / pageWidth) * canvas.width;
+    const marginTop = (bleedSettings.top / pageHeight) * canvas.height;
+    const marginRight = (bleedSettings.right / pageWidth) * canvas.width;
+    const marginBottom = (bleedSettings.bottom / pageHeight) * canvas.height;
+
+    ctx.strokeStyle = '#3b82f6';
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(
+      marginLeft,
+      marginTop,
+      canvas.width - marginLeft - marginRight,
+      canvas.height - marginTop - marginBottom
+    );
+    ctx.setLineDash([]);
+
+    // Batch render arrangements
+    ctx.save();
+    arrangements.forEach((item, index) => {
+      const x = (item.x / pageWidth) * canvas.width;
+      const y = (item.y / pageHeight) * canvas.height;
+      const w = (item.width / pageWidth) * canvas.width;
+      const h = (item.height / pageHeight) * canvas.height;
+
+      // Use different colors for better visualization
+      const hue = (index * 137.5) % 360;
+      ctx.fillStyle = `hsl(${hue}, 70%, 85%)`;
+      ctx.strokeStyle = `hsl(${hue}, 70%, 60%)`;
+      ctx.lineWidth = 2;
+
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeRect(x, y, w, h);
+
+      // Draw item number
+      ctx.fillStyle = `hsl(${hue}, 70%, 30%)`;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText((index + 1).toString(), x + w/2, y + h/2 + 4);
+    });
+    ctx.restore();
+
+    const renderTime = performance.now() - startTime;
+    setRenderStats(prev => ({ ...prev, renderTime }));
+  }, [arrangements, pageWidth, pageHeight, bleedSettings]);
+
+  // HSL to RGB conversion for WebGL
+  const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h * 6) % 2 - 1));
+    const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+
+    if (h < 1/6) [r, g, b] = [c, x, 0];
+    else if (h < 2/6) [r, g, b] = [x, c, 0];
+    else if (h < 3/6) [r, g, b] = [0, c, x];
+    else if (h < 4/6) [r, g, b] = [0, x, c];
+    else if (h < 5/6) [r, g, b] = [x, 0, c];
+    else [r, g, b] = [c, 0, x];
+
+    return [r + m, g + m, b + m];
+  };
+
+  // Main render function
+  const render = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || arrangements.length === 0) return;
+
+    // Set canvas size with device pixel ratio
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+
+    // Try WebGL first, fallback to Canvas 2D
+    const webglSuccess = webglSupported && renderWithWebGL(canvas);
+    if (!webglSuccess) {
+      renderWithCanvas2D(canvas);
+    }
+
+    // Calculate FPS
+    const now = performance.now();
+    frameCount.current++;
+    if (now - lastFrameTime.current >= 1000) {
+      setRenderStats(prev => ({ 
+        ...prev, 
+        fps: Math.round(frameCount.current * 1000 / (now - lastFrameTime.current))
+      }));
+      frameCount.current = 0;
+      lastFrameTime.current = now;
+    }
+  }, [arrangements, webglSupported, renderWithWebGL, renderWithCanvas2D]);
+
+  // Animation loop
+  useEffect(() => {
+    const animate = () => {
+      render();
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [render]);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (canvasRef.current) {
+        render();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [render]);
+
+  return (
+    <div className="relative">
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full border-2 border-dashed border-gray-300 rounded-lg"
+        style={{ width: '100%', height: '300px' }}
+      />
+      
+      {/* Performance Stats */}
+      <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+        <div>Renderer: {webglSupported ? 'WebGL' : 'Canvas 2D'}</div>
+        <div>FPS: {renderStats.fps}</div>
+        <div>Render: {renderStats.renderTime.toFixed(1)}ms</div>
+      </div>
+    </div>
+  );
+});
+
+// Optimized Design List Component
+const OptimizedDesignList = memo(({ designs, processVectorFileEnhanced, currentPageDimensions, bleedSettings, safeAreaSettings, scalingOptions }: {
+  designs: Design[];
+  processVectorFileEnhanced: any;
+  currentPageDimensions: any;
+  bleedSettings: any;
+  safeAreaSettings: any;
+  scalingOptions: any;
+}) => {
+  const [visibleCount, setVisibleCount] = useState(10);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer for infinite loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && visibleCount < designs.length) {
+          setVisibleCount(prev => Math.min(prev + 10, designs.length));
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [visibleCount, designs.length]);
+
+  const visibleDesigns = useMemo(() => 
+    designs.slice(0, visibleCount), 
+    [designs, visibleCount]
+  );
+
+  return (
+    <div className="max-h-60 overflow-y-auto space-y-3">
+      {visibleDesigns.map((design: Design) => {
+        const processedFile = processVectorFileEnhanced(
+          design, 
+          currentPageDimensions, 
+          bleedSettings, 
+          safeAreaSettings, 
+          scalingOptions
+        );
+        
+        return (
+          <div key={design.id} className="p-4 bg-gray-50 rounded-lg border">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium truncate flex-1 mr-2">{design.filename}</span>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="font-medium text-gray-600">Orijinal Boyut:</span>
+                <p className="text-gray-800">
+                  {processedFile.originalDimensions.width}×{processedFile.originalDimensions.height}mm
+                </p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Ölçekli Boyut:</span>
+                <p className={`${processedFile.scalingInfo.needsScaling ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
+                  {processedFile.scaledDimensions.width.toFixed(1)}×{processedFile.scaledDimensions.height.toFixed(1)}mm
+                  {processedFile.scalingInfo.needsScaling && (
+                    <span className="ml-1">({(processedFile.scalingInfo.scaleFactor * 100).toFixed(0)}%)</span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Kesim Payı ile:</span>
+                <p className="text-purple-600">
+                  {processedFile.withBleed.width.toFixed(1)}×{processedFile.withBleed.height.toFixed(1)}mm
+                </p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Renk Profili:</span>
+                <Badge 
+                  variant={processedFile.colorProfile.isValid ? "default" : "destructive"} 
+                  className="text-xs"
+                >
+                  {processedFile.colorProfile.profile}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Scaling Info */}
+            {processedFile.scalingInfo.needsScaling && (
+              <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                <p className="text-blue-800 font-medium">📏 {processedFile.scalingInfo.recommendation}</p>
+                {processedFile.scalingInfo.warnings.map((warning, index) => (
+                  <p key={index} className="text-blue-700 mt-1">⚠️ {warning}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Fit Status */}
+            <div className="mt-2 flex items-center justify-between">
+              <Badge 
+                variant={processedFile.scalingInfo.fitsInPage ? "default" : "destructive"}
+                className="text-xs"
+              >
+                {processedFile.scalingInfo.fitsInPage ? '✓ Sayfaya Sığıyor' : '✗ Sayfa Taşıyor'}
+              </Badge>
+              <span className="text-xs text-gray-500">
+                Güvenli Alan: {processedFile.safeArea.width.toFixed(1)}×{processedFile.safeArea.height.toFixed(1)}mm
+              </span>
+            </div>
+
+            {!processedFile.colorProfile.isValid && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                <p className="text-yellow-800">⚠️ {processedFile.colorProfile.recommendation}</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      
+      {visibleCount < designs.length && (
+        <div ref={loadMoreRef} className="text-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-500">Daha fazla yükleniyor...</p>
+        </div>
+      )}
+    </div>
+  );
+});
 
 // Paper size templates
 interface PaperTemplate {
@@ -2651,87 +3143,14 @@ export default function AutomationPanelNew() {
                       Tümünü Temizle
                     </Button>
                   </div>
-                  <div className="max-h-60 overflow-y-auto space-y-3">
-                    {designs.map((design: Design) => {
-                      const processedFile = processVectorFileEnhanced(
-                        design, 
-                        currentPageDimensions, 
-                        bleedSettings, 
-                        safeAreaSettings, 
-                        scalingOptions
-                      );
-                      return (
-                        <div key={design.id} className="p-4 bg-gray-50 rounded-lg border">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium truncate flex-1 mr-2">{design.filename}</span>
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 text-xs">
-                            <div>
-                              <span className="font-medium text-gray-600">Orijinal Boyut:</span>
-                              <p className="text-gray-800">
-                                {processedFile.originalDimensions.width}×{processedFile.originalDimensions.height}mm
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600">Ölçekli Boyut:</span>
-                              <p className={`${processedFile.scalingInfo.needsScaling ? 'text-blue-600 font-medium' : 'text-gray-800'}`}>
-                                {processedFile.scaledDimensions.width.toFixed(1)}×{processedFile.scaledDimensions.height.toFixed(1)}mm
-                                {processedFile.scalingInfo.needsScaling && (
-                                  <span className="ml-1">({(processedFile.scalingInfo.scaleFactor * 100).toFixed(0)}%)</span>
-                                )}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600">Kesim Payı ile:</span>
-                              <p className="text-purple-600">
-                                {processedFile.withBleed.width.toFixed(1)}×{processedFile.withBleed.height.toFixed(1)}mm
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600">Renk Profili:</span>
-                              <Badge 
-                                variant={processedFile.colorProfile.isValid ? "default" : "destructive"} 
-                                className="text-xs"
-                              >
-                                {processedFile.colorProfile.profile}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          {/* Scaling Info */}
-                          {processedFile.scalingInfo.needsScaling && (
-                            <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                              <p className="text-blue-800 font-medium">📏 {processedFile.scalingInfo.recommendation}</p>
-                              {processedFile.scalingInfo.warnings.map((warning, index) => (
-                                <p key={index} className="text-blue-700 mt-1">⚠️ {warning}</p>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Fit Status */}
-                          <div className="mt-2 flex items-center justify-between">
-                            <Badge 
-                              variant={processedFile.scalingInfo.fitsInPage ? "default" : "destructive"}
-                              className="text-xs"
-                            >
-                              {processedFile.scalingInfo.fitsInPage ? '✓ Sayfaya Sığıyor' : '✗ Sayfa Taşıyor'}
-                            </Badge>
-                            <span className="text-xs text-gray-500">
-                              Güvenli Alan: {processedFile.safeArea.width.toFixed(1)}×{processedFile.safeArea.height.toFixed(1)}mm
-                            </span>
-                          </div>
-
-                          {!processedFile.colorProfile.isValid && (
-                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                              <p className="text-yellow-800">⚠️ {processedFile.colorProfile.recommendation}</p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <OptimizedDesignList
+                    designs={designs}
+                    processVectorFileEnhanced={processVectorFileEnhanced}
+                    currentPageDimensions={currentPageDimensions}
+                    bleedSettings={bleedSettings}
+                    safeAreaSettings={safeAreaSettings}
+                    scalingOptions={scalingOptions}
+                  />
                 </div>
               )}
 
@@ -3162,28 +3581,14 @@ export default function AutomationPanelNew() {
           <CardContent>
             {arrangements && arrangements.arrangements && arrangements.arrangements.length > 0 ? (
               <div className="space-y-4">
-                <div 
-                  className="relative border-2 border-dashed border-gray-300 mx-auto bg-gray-50"
-                  style={{
-                    width: '300px',
-                    height: `${(300 * currentPageDimensions.heightMM) / currentPageDimensions.widthMM}px`,
-                    maxHeight: '400px'
-                  }}
-                >
-                  {arrangements.arrangements.map((item: ArrangementItem, index: number) => (
-                    <div
-                      key={`${item.designId}-${index}`}
-                      className="absolute bg-blue-200 border border-blue-500 rounded flex items-center justify-center text-xs font-bold text-blue-800"
-                      style={{
-                        left: `${(item.x / currentPageDimensions.widthMM) * 85}%`,
-                        top: `${(item.y / currentPageDimensions.heightMM) * 85}%`,
-                        width: `${Math.max(15, (item.width / currentPageDimensions.widthMM) * 85)}px`,
-                        height: `${Math.max(10, (item.height / currentPageDimensions.heightMM) * 85)}px`,
-                      }}
-                    >
-                      {index + 1}
-                    </div>
-                  ))}
+                <div className="w-full max-w-md mx-auto">
+                  <CanvasPreviewRenderer
+                    arrangements={arrangements.arrangements}
+                    pageWidth={currentPageDimensions.widthMM}
+                    pageHeight={currentPageDimensions.heightMM}
+                    designs={designs}
+                    bleedSettings={bleedSettings}
+                  />
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-600">
