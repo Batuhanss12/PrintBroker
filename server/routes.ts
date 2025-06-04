@@ -386,7 +386,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/quotes', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.id || req.user?.claims?.sub;
+      const userId = req.user?.id || req.user?.claims?.sub || req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User session not found" });
+      }
+      
       const user = await storage.getUser(userId);
 
       if (!user) {
@@ -562,7 +567,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Order routes
   app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.id || req.user?.claims?.sub;
+      const userId = req.user?.id || req.user?.claims?.sub || req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User session not found" });
+      }
+      
       const user = await storage.getUser(userId);
 
       if (!user) {
