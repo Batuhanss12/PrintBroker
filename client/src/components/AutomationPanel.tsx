@@ -548,41 +548,36 @@ export default function AutomationPanel() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Settings className="h-4 w-4" />
-                      Plotter Ayarları
+                      Baskı Alanı Ayarları
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-
-
-                    {/* Crop Marks Setting */}
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="cropMarks"
-                        checked={showCropMarks}
-                        onChange={(e) => setShowCropMarks(e.target.checked)}
-                        className="rounded border-gray-300"
-                      />
-                      <Label htmlFor="cropMarks">Kesim işaretlerini göster</Label>
+                    {/* Fixed Print Area Info */}
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <p className="text-sm font-semibold text-blue-900">
+                          Sabit Baskı Alanı: 33cm x 48cm
+                        </p>
+                      </div>
+                      <div className="text-xs text-blue-700 space-y-1">
+                        <p>• Kesim payı: 0.3cm (her tasarım etrafında)</p>
+                        <p>• Algoritma: 2D Bin Packing</p>
+                        <p>• Format: Vektörel PDF çıktısı</p>
+                      </div>
                     </div>
 
-                    {/* Sheet Size */}
+                    {/* Current dimensions (read-only display) */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Kağıt Genişliği (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.sheetWidth}
-                          onChange={(e) => updateSetting('sheetWidth', Number(e.target.value))}
-                        />
+                      <div className="p-3 bg-gray-50 rounded border">
+                        <Label className="text-xs text-gray-600">Genişlik</Label>
+                        <p className="text-lg font-semibold text-gray-900">33 cm</p>
+                        <p className="text-xs text-gray-500">330 mm</p>
                       </div>
-                      <div>
-                        <Label>Kağıt Yüksekliği (mm)</Label>
-                        <Input
-                          type="number"
-                          value={plotterSettings.sheetHeight}
-                          onChange={(e) => updateSetting('sheetHeight', Number(e.target.value))}
-                        />
+                      <div className="p-3 bg-gray-50 rounded border">
+                        <Label className="text-xs text-gray-600">Yükseklik</Label>
+                        <p className="text-lg font-semibold text-gray-900">48 cm</p>
+                        <p className="text-xs text-gray-500">480 mm</p>
                       </div>
                     </div>
 
