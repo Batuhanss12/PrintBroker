@@ -120,18 +120,18 @@ export default function AutomationPanel() {
         body: formData,
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
         throw new Error(errorData.message || 'Upload failed');
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
       // Refresh designs list to get new uploads
       queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
-      
+
       // Auto-select uploaded designs for arrangement if data.designs exists
       if (data.designs && data.designs.length > 0) {
         const newDesignIds = data.designs.map((design: any) => design.id);
@@ -139,7 +139,7 @@ export default function AutomationPanel() {
           const combined = [...prev, ...newDesignIds];
           return Array.from(new Set(combined));
         });
-        
+
         toast({
           title: "Başarılı",
           description: `${data.designs.length} tasarım dosyası yüklendi ve seçildi.`,
@@ -214,7 +214,7 @@ export default function AutomationPanel() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       toast({
         title: "Başarılı",
         description: "PDF oluşturuldu ve indiriliyor.",
@@ -232,10 +232,10 @@ export default function AutomationPanel() {
   const calculateLayout = () => {
     const usableWidth = plotterSettings.sheetWidth - plotterSettings.marginLeft - plotterSettings.marginRight;
     const usableHeight = plotterSettings.sheetHeight - plotterSettings.marginTop - plotterSettings.marginBottom;
-    
+
     const labelsPerRow = Math.floor((usableWidth + plotterSettings.horizontalSpacing) / (plotterSettings.labelWidth + plotterSettings.horizontalSpacing));
     const labelsPerColumn = Math.floor((usableHeight + plotterSettings.verticalSpacing) / (plotterSettings.labelHeight + plotterSettings.verticalSpacing));
-    
+
     const totalLabels = labelsPerRow * labelsPerColumn;
     const usedArea = totalLabels * plotterSettings.labelWidth * plotterSettings.labelHeight;
     const totalArea = usableWidth * usableHeight;
@@ -266,15 +266,39 @@ export default function AutomationPanel() {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    // Filter only vector files
+    const vectorFiles = Array.from(files).filter(file => {
+      const allowedTypes = [
+        'application/pdf',
+        'image/svg+xml',
+        'application/postscript', // AI files
+        'application/eps', // EPS files
+        'image/eps'
+      ];
+      return allowedTypes.includes(file.type) || 
+             file.name.toLowerCase().endsWith('.ai') ||
+             file.name.toLowerCase().endsWith('.eps') ||
+             file.name.toLowerCase().endsWith('.svg') ||
+             file.name.toLowerCase().endsWith('.pdf');
+    });
+
+    if (vectorFiles.length === 0) {
+      toast({
+        title: "Hata",
+        description: "Sadece vektörel dosyalar (PDF, SVG, AI, EPS) kabul edilmektedir.",
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
     const formData = new FormData();
-    
-    // Add all selected files to FormData
-    Array.from(files).forEach(file => {
+    vectorFiles.forEach((file) => {
       formData.append('designs', file);
     });
 
     uploadDesignsMutation.mutate(formData);
-    
+
     // Reset file input
     event.target.value = '';
   };
@@ -306,10 +330,10 @@ export default function AutomationPanel() {
   const PlotterPreview = () => {
     const { usableWidth, usableHeight } = layout;
     const scale = Math.min(600 / plotterSettings.sheetWidth, 400 / plotterSettings.sheetHeight);
-    
+
     // Get arranged designs if available
     const arrangedDesigns = arrangements && arrangements.arrangements ? arrangements.arrangements : [];
-    
+
     return (
       <div className="border rounded-lg p-4 bg-gray-50">
         <div className="flex justify-between items-center mb-4">
@@ -325,7 +349,7 @@ export default function AutomationPanel() {
             )}
           </div>
         </div>
-        
+
         <div className="flex justify-center overflow-auto">
           <div 
             className="border-2 border-gray-800 bg-white relative shadow-lg"
@@ -360,7 +384,7 @@ export default function AutomationPanel() {
                 ))}
               </>
             )}
-            
+
             {/* Margins visualization */}
             <div 
               className="absolute border border-red-300 bg-red-50 opacity-30"
@@ -371,7 +395,7 @@ export default function AutomationPanel() {
                 height: usableHeight * scale,
               }}
             />
-            
+
             {/* Grid lines for better visualization */}
             <svg 
               className="absolute inset-0 pointer-events-none"
@@ -404,12 +428,12 @@ export default function AutomationPanel() {
                 />
               ))}
             </svg>
-            
+
             {/* Arranged designs with actual content */}
             {arrangedDesigns.length > 0 ? (
               arrangedDesigns.map((arrangement, index) => {
                 const designData = selectedDesigns[index] ? designs.find(d => d.id === selectedDesigns[index]) : null;
-                
+
                 return (
                   <div
                     key={`arranged-${index}`}
@@ -421,20 +445,61 @@ export default function AutomationPanel() {
                       height: arrangement.height * scale,
                     }}
                   >
-                    {designData && designData.thumbnailPath ? (
+                    {designData ? (
                       <div className="w-full h-full relative">
-                        <img
-                          src={designData.thumbnailPath}
-                          alt={designData.name}
-                          className="w-full h-full object-contain"
-                          style={{
-                            imageRendering: 'crisp-edges',
-                          }}
-                        />
+                        {/* Vector file preview */}
+                        {designData.name.toLowerCase().endsWith('.svg') ? (
+                          <object
+                            data={designData.filePath}
+                            type="image/svg+xml"
+                            className="w-full h-full object-contain"
+                          >
+                            <div className="w-full h-full flex items-center justify-center bg-blue-50">
+                              <span className="text-xs text-blue-600">SVG</span>
+                            </div>
+                          </object>
+                        ) : designData.name.toLowerCase().endsWith('.pdf') ? (
+                          <div className="w-full h-full flex items-center justify-center bg-red-50 relative">
+                            <div className="text-center">
+                              <div className="text-lg">📄</div>
+                              <span className="text-xs text-red-600 font-medium">PDF</span>
+                            </div>
+                            {designData.realDimensionsMM && (
+                              <div className="absolute bottom-0 left-0 right-0 text-xs bg-black bg-opacity-75 text-white p-1 text-center">
+                                {designData.realDimensionsMM}
+                              </div>
+                            )}
+                          </div>
+                        ) : designData.thumbnailPath ? (
+                          <img
+                            src={designData.thumbnailPath}
+                            alt={designData.name}
+                            className="w-full h-full object-contain"
+                            style={{
+                              imageRendering: 'crisp-edges',
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-purple-50">
+                            <div className="text-center">
+                              <div className="text-lg">🎨</div>
+                              <span className="text-xs text-purple-600">{designData.name.split('.').pop()?.toUpperCase()}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Design overlay info */}
                         <div className="absolute inset-0 bg-green-500 bg-opacity-10"></div>
                         <div className="absolute top-0.5 left-0.5 text-xs font-bold text-green-700 bg-white px-1 rounded">
                           {index + 1}
                         </div>
+
+                        {/* Real dimensions display */}
+                        {designData.realDimensionsMM && designData.realDimensionsMM !== 'Unknown' && (
+                          <div className="absolute bottom-0.5 left-0.5 text-xs bg-green-600 text-white px-1 rounded">
+                            {designData.realDimensionsMM}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-green-100">
@@ -457,7 +522,7 @@ export default function AutomationPanel() {
                 Array.from({ length: layout.labelsPerRow }).map((_, col) => {
                   const index = row * layout.labelsPerRow + col;
                   const isSelected = index < selectedDesigns.length;
-                  
+
                   return (
                     <div
                       key={`${row}-${col}`}
@@ -492,7 +557,7 @@ export default function AutomationPanel() {
             )}
           </div>
         </div>
-        
+
         <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-gray-600">
@@ -511,7 +576,7 @@ export default function AutomationPanel() {
             </p>
           </div>
         </div>
-        
+
         {arrangedDesigns.length > 0 && (
           <div className="mt-4 p-3 bg-green-50 rounded-lg">
             <div className="flex items-center gap-2 text-green-800">
@@ -655,7 +720,7 @@ export default function AutomationPanel() {
                 {/* Preview and Results */}
                 <div className="space-y-4">
                   <PlotterPreview />
-                  
+
                   {/* Layout Statistics */}
                   <Card>
                     <CardHeader>
@@ -675,12 +740,12 @@ export default function AutomationPanel() {
                           <p className="text-sm text-gray-600">Sütun Başına</p>
                         </div>
                       </div>
-                      
+
                       <div className="text-center p-4 bg-purple-50 rounded">
                         <p className="text-3xl font-bold text-purple-600">{layout.totalLabels}</p>
                         <p className="text-sm text-gray-600">Toplam Etiket</p>
                       </div>
-                      
+
                       <div className="text-center p-3 bg-orange-50 rounded">
                         <p className="text-xl font-bold text-orange-600">%{layout.wastePercentage}</p>
                         <p className="text-sm text-gray-600">Fire Oranı</p>
@@ -714,7 +779,7 @@ export default function AutomationPanel() {
                     Düzeni Kaydet
                   </Button>
                 </div>
-                
+
                 <Button
                   onClick={() => generatePdfMutation.mutate({ 
                     plotterSettings, 
@@ -743,17 +808,28 @@ export default function AutomationPanel() {
                       type="file"
                       id="design-upload"
                       multiple
+<<<<<<< HEAD
                       accept=".pdf,.svg,.ai,.eps"
+=======
+                      accept=".pdf,.svg,.ai,.eps,application/pdf,image/svg+xml,application/postscript"
+>>>>>>> c31c710b20fac8d4d13b045002cad97c445901be
                       onChange={handleFileUpload}
                       className="hidden"
                     />
                     <div className="text-center">
                       <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-lg font-medium text-gray-900 mb-2">
-                        Tasarım Dosyalarını Yükleyin
+                        Vektörel Tasarım Dosyalarını Yükleyin
                       </p>
                       <p className="text-gray-600 mb-4">
+<<<<<<< HEAD
                         Vektörel dosyalar: PDF, SVG, AI, EPS formatları desteklenir
+=======
+                        Sadece vektörel formatlar: PDF, SVG, AI, EPS
+                      </p>
+                      <p className="text-sm text-blue-600 mb-4">
+                        Vektörel dosyalar gerçek ölçülerini korur ve kesim için idealdir
+>>>>>>> c31c710b20fac8d4d13b045002cad97c445901be
                       </p>
                       <Button 
                         type="button"
@@ -771,7 +847,7 @@ export default function AutomationPanel() {
                   {Array.isArray(designs) && designs.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-medium">Yüklenen Tasarımlar ({designs.length})</h4>
+                        <h4 className="font-medium">Yüklenen Tasarımlar ({designs.length})                              )</h4>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
@@ -801,48 +877,101 @@ export default function AutomationPanel() {
                             }`}
                             onClick={() => toggleDesignSelection(design.id)}
                           >
-                            <div className="aspect-square bg-white rounded border mb-2 flex items-center justify-center overflow-hidden relative">
+                            <div className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 relative group hover:border-blue-400 transition-colors overflow-hidden">
+                          {design.name.toLowerCase().endsWith('.pdf') ? (
+                            <div className="w-full h-full flex items-center justify-center bg-red-50 relative">
+                              <div className="text-center">
+                                <div className="text-2xl mb-1">📄</div>
+                                <span className="text-xs text-red-600 font-medium">PDF VEKTÖR</span>
+                                {design.realDimensionsMM && (
+                                  <div className="text-xs text-red-700 mt-1 font-bold">
+                                    {design.realDimensionsMM}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : design.name.toLowerCase().endsWith('.svg') ? (
+                            <div className="w-full h-full flex items-center justify-center bg-green-50 relative">
                               {design.thumbnailPath ? (
                                 <img
                                   src={design.thumbnailPath}
                                   alt={design.name}
-                                  className="max-w-full max-h-full object-contain"
+                                  className="w-full h-full object-contain"
                                   style={{
-                                    imageRendering: design.fileType === 'image' ? 'crisp-edges' : 'auto'
+                                    imageRendering: 'crisp-edges',
                                   }}
                                 />
                               ) : (
                                 <div className="text-center">
-                                  <FileText className="h-8 w-8 text-gray-400 mx-auto mb-1" />
-                                  <span className="text-xs text-gray-500">
-                                    {design.fileType?.toUpperCase() || 'FILE'}
-                                  </span>
+                                  <div className="text-2xl mb-1">🎨</div>
+                                  <span className="text-xs text-green-600 font-medium">SVG VEKTÖR</span>
                                 </div>
                               )}
-                              
+                              {design.realDimensionsMM && (
+                                <div className="absolute bottom-0 left-0 right-0 text-xs bg-black bg-opacity-75 text-white p-1 text-center font-bold">
+                                  {design.realDimensionsMM}
+                                </div>
+                              )}
+                            </div>
+                          ) : design.name.toLowerCase().endsWith('.ai') || design.name.toLowerCase().endsWith('.eps') ? (
+                            <div className="w-full h-full flex items-center justify-center bg-blue-50 relative">
+                              <div className="text-center">
+                                <div className="text-2xl mb-1">🎯</div>
+                                <span className="text-xs text-blue-600 font-medium">
+                                  {design.name.split('.').pop()?.toUpperCase()} VEKTÖR
+                                </span>
+                                {design.realDimensionsMM && (
+                                  <div className="text-xs text-blue-700 mt-1 font-bold">
+                                    {design.realDimensionsMM}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-purple-50">
+                              <div className="text-center">
+                                <div className="text-2xl mb-1">📐</div>
+                                <span className="text-xs text-purple-600 font-medium">VEKTÖR DOSYA</span>
+                                {design.realDimensionsMM && (
+                                  <div className="text-xs text-purple-700 mt-1 font-bold">
+                                    {design.realDimensionsMM}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
                               {/* Selection indicator */}
                               {selectedDesigns.includes(design.id) && (
                                 <div className="absolute top-1 right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                                   {selectedDesigns.indexOf(design.id) + 1}
                                 </div>
                               )}
-                              
+
                               {/* File type indicator */}
                               <div className="absolute bottom-1 left-1 px-1 py-0.5 bg-black bg-opacity-70 text-white text-xs rounded">
                                 {design.name.split('.').pop()?.toUpperCase() || 'FILE'}
                               </div>
                             </div>
-                            
+
                             <div className="space-y-1">
                               <p className="text-sm font-medium truncate" title={design.name}>
                                 {design.name}
                               </p>
-                              <p className="text-xs text-gray-600">
-                                {design.dimensions || 'Boyut bilinmiyor'}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(design.uploadedAt).toLocaleDateString('tr-TR')}
-                              </p>
+                              <div className="text-xs space-y-1">
+                                {design.realDimensionsMM && design.realDimensionsMM !== 'Unknown' ? (
+                                  <p className="text-green-600 font-medium">
+                                    📏 {design.realDimensionsMM}
+                                  </p>
+                                ) : (
+                                  <p className="text-gray-600">
+                                    {design.dimensions || 'Boyut bilinmiyor'}
+                                  </p>
+                                )}
+                                <p className="text-gray-500">
+                                  {new Date(design.uploadedAt).toLocaleDateString('tr-TR')}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -987,7 +1116,7 @@ export default function AutomationPanel() {
                                 </div>
                               ))}
                             </div>
-                            
+
                             {/* Design List */}
                             <div className="mt-4">
                               <h4 className="text-sm font-medium mb-2">Dizilen Tasarımlar: {arrangements.totalArranged || 0}</h4>

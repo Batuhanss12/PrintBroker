@@ -320,7 +320,7 @@ export default function AutomationPanelNew() {
       case 'svg':
         profile = 'RGB';
         isValid = false;
-        recommendation = 'SVG dosyası RGB renk uzayında. Baskı için CMYK'ya çevrilmesi önerilir.';
+        recommendation = 'SVG dosyası RGB renk uzayında. Baskı için CMYK\'ya çevrilmesi önerilir.';
         break;
       default:
         profile = 'UNKNOWN';

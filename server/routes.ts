@@ -1,3 +1,7 @@
+Updated file upload validation to only allow vector file types (PDF, SVG, AI, EPS).
+```
+
+```replit_final_file
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -23,6 +27,7 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: (req, file, cb) => {
+<<<<<<< HEAD
     console.log('File upload attempt:', {
       fieldname: file.fieldname,
       originalname: file.originalname,
@@ -52,6 +57,27 @@ const upload = multer({
     } else {
       console.log('Rejected file type:', file.mimetype, 'Extension:', fileExt);
       cb(new Error(`Invalid file type: ${file.mimetype}. Only PDF, SVG, AI, EPS files are allowed.`));
+=======
+    // Allow only vector file types for precise measurements
+    const allowedTypes = [
+      'application/pdf',
+      'application/postscript', // .ai files
+      'image/svg+xml',
+      'application/illustrator', // Adobe Illustrator
+      'application/x-eps', // EPS files
+      'application/eps',
+      'image/eps'
+    ];
+
+    // Also check file extensions for better validation
+    const allowedExtensions = ['.pdf', '.ai', '.svg', '.eps', '.ps'];
+    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Sadece vektörel dosya formatları kabul edilir: PDF, AI, SVG, EPS'));
+>>>>>>> c31c710b20fac8d4d13b045002cad97c445901be
     }
   }
 });
@@ -64,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/register', async (req, res) => {
     try {
       const { firstName, lastName, email, phone, companyName, password, role, address, city, postalCode, taxNumber } = req.body;
-      
+
       // Validate required fields based on role
       if (!firstName || !lastName || !email || !phone || !role) {
         return res.status(400).json({ success: false, message: "Gerekli alanlar eksik" });
@@ -76,11 +102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (emailExists) {
         return res.status(400).json({ success: false, message: "Bu e-posta adresi zaten kayıtlı" });
       }
-      
+
       // Generate unique user ID with role prefix
       const rolePrefix = role === 'customer' ? 'CUS' : role === 'printer' ? 'PRT' : 'ADM';
       const userId = `${rolePrefix}-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-      
+
       // Role-specific user data configuration
       const userData: any = {
         id: userId,
@@ -109,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userData.subscriptionStatus = 'active';
         userData.companyName = 'Matbixx Admin';
       }
-      
+
       // Create user in database
       const newUser = await storage.upsertUser(userData);
 
@@ -140,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/login', async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ success: false, message: "Email ve şifre gerekli" });
       }
@@ -148,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find user by email
       const users = await storage.getAllUsers();
       const user = users.find(u => u.email === email);
-      
+
       if (!user) {
         return res.status(401).json({ success: false, message: "Email veya şifre hatalı" });
       }
@@ -184,12 +210,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "User session not found" });
       }
-      
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -202,11 +228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims?.sub || req.user.id;
       const { role } = req.body;
-      
+
       if (!['customer', 'printer', 'admin'].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
-      
+
       await storage.updateUserRole(userId, role);
       res.json({ message: "Role updated successfully" });
     } catch (error) {
@@ -220,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const updateData = req.body;
-      
+
       const currentUser = await storage.getUser(userId);
       if (!currentUser) {
         return res.status(404).json({ message: "User not found" });
@@ -333,11 +359,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileId = req.params.id;
       const files = await storage.getFilesByUser(req.user.claims.sub);
       const file = files.find(f => f.id === fileId);
-      
+
       if (!file) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       res.json(file);
     } catch (error) {
       console.error("Error fetching file:", error);
@@ -349,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/files/:filename', isAuthenticated, (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(uploadDir, filename);
-    
+
     if (fs.existsSync(filePath)) {
       res.sendFile(filePath);
     } else {
@@ -362,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'customer') {
         return res.status(403).json({ message: "Only customers can create quotes" });
       }
@@ -387,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.id || req.user?.claims?.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -413,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const quoteId = req.params.id;
       const quote = await storage.getQuote(quoteId);
-      
+
       if (!quote) {
         return res.status(404).json({ message: "Quote not found" });
       }
@@ -431,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const quoteId = req.params.id;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'printer') {
         return res.status(403).json({ message: "Only printers can submit quotes" });
       }
@@ -443,10 +469,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const printerQuote = await storage.createPrinterQuote(printerQuoteData);
-      
+
       // Update quote status to received_quotes
       await storage.updateQuoteStatus(quoteId, "received_quotes");
-      
+
       res.json(printerQuote);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -492,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create chat room automatically when contract is approved
       try {
         const existingRoom = await storage.getChatRoomByQuote(quoteId, quote.customerId, printerId);
-        
+
         if (!existingRoom) {
           await storage.createChatRoom({
             quoteId,
@@ -518,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.id || req.user?.claims?.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -563,7 +589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.id || req.user?.claims?.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -590,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'customer') {
         return res.status(403).json({ message: "Only customers can submit ratings" });
       }
@@ -616,13 +642,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims?.sub || req.user.id;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       const { prompt, options = {} } = req.body;
-      
+
       if (!prompt || typeof prompt !== 'string') {
         return res.status(400).json({ message: "Prompt is required" });
       }
@@ -638,7 +664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user has enough credit (35₺ per design)
       const designCost = 35;
       const currentBalance = parseFloat(user.creditBalance || '0');
-      
+
       if (currentBalance < designCost) {
         return res.status(400).json({ 
           message: "Insufficient credit balance. Please add credit to your account.",
@@ -648,11 +674,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await ideogramService.generateImage(prompt, options);
-      
+
       // Deduct credit from user balance
       const newBalance = currentBalance - designCost;
       await storage.updateUserCreditBalance(userId, newBalance.toString());
-      
+
       // Save generation history
       await storage.saveDesignGeneration({
         userId,
@@ -677,13 +703,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       const { requests } = req.body;
-      
+
       if (!Array.isArray(requests) || requests.length === 0) {
         return res.status(400).json({ message: "Requests array is required" });
       }
@@ -693,7 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const results = await ideogramService.generateBatch(requests);
-      
+
       // Save batch generation history
       for (let i = 0; i < requests.length; i++) {
         await storage.saveDesignGeneration({
@@ -716,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { page = 1, limit = 20 } = req.query;
-      
+
       const history = await storage.getDesignHistory(userId, {
         page: parseInt(page),
         limit: parseInt(limit)
@@ -743,22 +769,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/payment/create', isAuthenticated, async (req: any, res) => {
     try {
       const { planType, amount, customer, paymentMethod } = req.body;
-      
+
       if (!planType || !amount || !customer || !paymentMethod) {
         return res.status(400).json({ message: 'Eksik ödeme bilgileri' });
       }
 
       const userId = req.user.claims.sub;
       const creditAmount = parseFloat(amount);
-      
+
       // Test modunda krediyi direkt ekle (PayTR Pro API olmadan)
       const currentUser = await storage.getUser(userId);
       if (currentUser) {
         const currentBalance = parseFloat(currentUser.creditBalance || "0") || 0;
         const newBalance = currentBalance + creditAmount;
-        
+
         await storage.updateUserCreditBalance(userId, newBalance.toString());
-        
+
         return res.json({
           success: true,
           message: `${creditAmount}₺ kredi hesabınıza eklendi (Test Modu)`,
@@ -781,21 +807,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { paytrService } = await import('./paytr');
       const isValid = paytrService.verifyCallback(req.body);
-      
+
       if (isValid) {
         const { merchant_oid, status, total_amount } = req.body;
-        
+
         if (status === 'success') {
           // Payment successful - update user subscription or credit
           console.log(`Payment successful for order: ${merchant_oid}, amount: ${total_amount}`);
-          
+
           // Extract user info from merchant_oid if needed
           // Format: userid_plantype_timestamp
           const orderParts = merchant_oid.split('_');
           if (orderParts.length >= 2) {
             const userId = orderParts[0];
             const planType = orderParts[1];
-            
+
             if (planType === 'customer') {
               // Add credit to customer account
               const creditAmount = parseFloat(total_amount);
@@ -811,7 +837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
-        
+
         res.send('OK');
       } else {
         res.status(400).send('Invalid hash');
@@ -836,7 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -853,7 +879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -870,7 +896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -892,6 +918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching chat rooms:", error);
       res.status(500).json({ message: "Failed to fetch chat rooms" });
+<<<<<<< HEAD
     }
   });
 
@@ -1891,3 +1918,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   return httpServer;
 }
+=======
+    }
+>>>>>>> c31c710b20fac8d4d13b045002cad97c445901be
