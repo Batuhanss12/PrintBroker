@@ -1453,11 +1453,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { plotterSettings, arrangements } = req.body;
       
-      if (!arrangements || !arrangements.arrangements) {
-        return res.status(400).json({ message: "No arrangements provided" });
+      console.log('PDF generation request:', { 
+        hasArrangements: !!arrangements,
+        arrangementsType: typeof arrangements,
+        structure: arrangements ? Object.keys(arrangements) : []
+      });
+
+      // Handle both direct arrangements array and nested structure
+      let arrangedItems = [];
+      if (Array.isArray(arrangements)) {
+        arrangedItems = arrangements;
+      } else if (arrangements && Array.isArray(arrangements.arrangements)) {
+        arrangedItems = arrangements.arrangements;
+      } else {
+        return res.status(400).json({ message: "No valid arrangements structure found" });
       }
 
-      const arrangedItems = arrangements.arrangements || [];
       if (arrangedItems.length === 0) {
         return res.status(400).json({ message: "No arranged items found" });
       }
