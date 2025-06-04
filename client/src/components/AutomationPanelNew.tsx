@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Play, Download, Eye, FileText, Zap } from "lucide-react";
+import { Upload, Play, Eye, FileText, Zap, Trash2 } from "lucide-react";
 
 interface PlotterSettings {
   sheetWidth: number;
@@ -97,8 +99,8 @@ export default function AutomationPanelNew() {
   // Auto-arrange mutation with auto PDF generation
   const autoArrangeMutation = useMutation({
     mutationFn: async (): Promise<ArrangementResult> => {
-      const designIds = designs.map((d: Design) => d.id);
-      return await apiRequest('POST', '/api/automation/plotter/auto-arrange', {
+      const designIds = (designs as Design[]).map((d: Design) => d.id);
+      return await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
         designIds,
         plotterSettings
       });
