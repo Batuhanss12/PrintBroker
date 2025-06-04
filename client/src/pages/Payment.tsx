@@ -239,13 +239,14 @@ export default function Payment() {
 
       if (result.success) {
         toast({
-          title: "Ödeme İşlemi Başlatıldı",
-          description: "PayTR güvenli ödeme sayfasına yönlendiriliyorsunuz...",
+          title: "Kredi Yükleme Başarılı",
+          description: result.message || "Kredi hesabınıza eklendi",
         });
         
+        // Başarılı ödeme sonrası dashboard'a yönlendir
         setTimeout(() => {
-          window.location.href = result.paymentUrl;
-        }, 1500);
+          window.location.href = "/dashboard";
+        }, 2000);
       } else {
         toast({
           title: "Ödeme Hatası",

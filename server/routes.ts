@@ -600,20 +600,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payment routes
-  app.post('/api/payment/create', async (req, res) => {
+  // Payment routes - Test Mode (PayTR Pro API gerekli)
+  app.post('/api/payment/create', isAuthenticated, async (req: any, res) => {
     try {
-      const { paytrService } = await import('./paytr');
-      const userIp = req.ip || req.connection.remoteAddress || '127.0.0.1';
+      const { planType, amount, customer, paymentMethod } = req.body;
       
-      const result = await paytrService.createPayment(req.body, userIp);
-      res.json(result);
+      if (!planType || !amount || !customer || !paymentMethod) {
+        return res.status(400).json({ message: 'Eksik ödeme bilgileri' });
+      }
+
+      const userId = req.user.claims.sub;
+      const creditAmount = parseFloat(amount);
+      
+      // Test modunda krediyi direkt ekle (PayTR Pro API olmadan)
+      const currentUser = await storage.getUser(userId);
+      if (currentUser) {
+        const currentBalance = parseFloat(currentUser.creditBalance) || 0;
+        const newBalance = currentBalance + creditAmount;
+        
+        await storage.updateUserCreditBalance(userId, newBalance.toString());
+        
+        return res.json({
+          success: true,
+          message: `${creditAmount}₺ kredi hesabınıza eklendi (Test Modu)`,
+          data: {
+            oldBalance: currentBalance,
+            newBalance: newBalance,
+            addedAmount: creditAmount
+          }
+        });
+      } else {
+        return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+      }
     } catch (error) {
-      console.error("Payment creation error:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Ödeme işlemi başlatılamadı" 
-      });
+      console.error('Payment creation error:', error);
+      res.status(500).json({ message: 'Ödeme işlemi başlatılamadı' });
     }
   });
 

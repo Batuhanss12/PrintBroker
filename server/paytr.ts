@@ -130,8 +130,8 @@ class PayTRService {
       // Generate PayTR token
       paymentData.paytr_token = this.createPayTRToken(paymentData);
 
-      // PayTR Basic API - iframe token endpoint
-      const response = await fetch("https://www.paytr.com/odeme/api/get-token", {
+      // PayTR Basic API - link çözümü için basit POST
+      const response = await fetch("https://www.paytr.com/odeme", {
         method: "POST", 
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
