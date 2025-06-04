@@ -235,54 +235,99 @@ const CanvasPreviewRenderer = memo(({
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // Clear canvas
-    ctx.fillStyle = '#fafafa';
+    // Clear canvas with light background
+    ctx.fillStyle = '#f9fafb';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw page margins
-    const marginLeft = (bleedSettings.left / pageWidth) * canvas.width;
-    const marginTop = (bleedSettings.top / pageHeight) * canvas.height;
-    const marginRight = (bleedSettings.right / pageWidth) * canvas.width;
-    const marginBottom = (bleedSettings.bottom / pageHeight) * canvas.height;
+    // Draw page border
+    ctx.strokeStyle = '#6b7280';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 
-    ctx.strokeStyle = '#3b82f6';
-    ctx.setLineDash([5, 5]);
-    ctx.strokeRect(
-      marginLeft,
-      marginTop,
-      canvas.width - marginLeft - marginRight,
-      canvas.height - marginTop - marginBottom
-    );
-    ctx.setLineDash([]);
+    // Draw page margins if they exist
+    if (bleedSettings && pageWidth && pageHeight) {
+      const marginLeft = (bleedSettings.left / pageWidth) * canvas.width;
+      const marginTop = (bleedSettings.top / pageHeight) * canvas.height;
+      const marginRight = (bleedSettings.right / pageWidth) * canvas.width;
+      const marginBottom = (bleedSettings.bottom / pageHeight) * canvas.height;
 
-    // Batch render arrangements
-    ctx.save();
-    arrangements.forEach((item, index) => {
-      const x = (item.x / pageWidth) * canvas.width;
-      const y = (item.y / pageHeight) * canvas.height;
-      const w = (item.width / pageWidth) * canvas.width;
-      const h = (item.height / pageHeight) * canvas.height;
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(
+        marginLeft,
+        marginTop,
+        canvas.width - marginLeft - marginRight,
+        canvas.height - marginTop - marginBottom
+      );
+      ctx.setLineDash([]);
+    }
 
-      // Use different colors for better visualization
-      const hue = (index * 137.5) % 360;
-      ctx.fillStyle = `hsl(${hue}, 70%, 85%)`;
-      ctx.strokeStyle = `hsl(${hue}, 70%, 60%)`;
-      ctx.lineWidth = 2;
+    // Render arrangements if they exist
+    if (arrangements && arrangements.length > 0) {
+      ctx.save();
+      
+      arrangements.forEach((item, index) => {
+        // Calculate positions with safety checks
+        const x = pageWidth > 0 ? (item.x / pageWidth) * canvas.width : 0;
+        const y = pageHeight > 0 ? (item.y / pageHeight) * canvas.height : 0;
+        const w = pageWidth > 0 ? (item.width / pageWidth) * canvas.width : 50;
+        const h = pageHeight > 0 ? (item.height / pageHeight) * canvas.height : 30;
 
-      ctx.fillRect(x, y, w, h);
-      ctx.strokeRect(x, y, w, h);
+        // Ensure valid dimensions
+        if (x >= 0 && y >= 0 && w > 0 && h > 0) {
+          // Use different colors for each item
+          const hue = (index * 137.5) % 360;
+          
+          // Fill the rectangle
+          ctx.fillStyle = `hsl(${hue}, 65%, 85%)`;
+          ctx.fillRect(x, y, w, h);
+          
+          // Draw border
+          ctx.strokeStyle = `hsl(${hue}, 65%, 50%)`;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, w, h);
 
-      // Draw item number
-      ctx.fillStyle = `hsl(${hue}, 70%, 30%)`;
-      ctx.font = 'bold 12px sans-serif';
+          // Draw item number/label
+          ctx.fillStyle = `hsl(${hue}, 65%, 25%)`;
+          ctx.font = `bold ${Math.max(10, Math.min(w/4, h/2, 16))}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          // Find corresponding design
+          const design = designs.find(d => d.id === item.designId);
+          const label = design ? `${index + 1}` : `${index + 1}`;
+          
+          ctx.fillText(label, x + w/2, y + h/2);
+
+          // Add filename if space allows
+          if (w > 60 && h > 40 && design) {
+            ctx.font = `${Math.max(8, Math.min(w/8, h/4, 10))}px sans-serif`;
+            const shortName = design.filename.length > 12 ? 
+              design.filename.substring(0, 10) + '...' : 
+              design.filename;
+            ctx.fillText(shortName, x + w/2, y + h/2 + 15);
+          }
+        }
+      });
+      
+      ctx.restore();
+    } else {
+      // Draw placeholder when no arrangements
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText((index + 1).toString(), x + w/2, y + h/2 + 4);
-    });
-    ctx.restore();
+      ctx.textBaseline = 'middle';
+      ctx.fillText(
+        'Dizim yapılmadı', 
+        canvas.width / 2, 
+        canvas.height / 2
+      );
+    }
 
     const renderTime = performance.now() - startTime;
     setRenderStats(prev => ({ ...prev, renderTime }));
-  }, [arrangements, pageWidth, pageHeight, bleedSettings]);
+  }, [arrangements, pageWidth, pageHeight, bleedSettings, designs]);
 
   // HSL to RGB conversion for WebGL
   const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
@@ -2518,25 +2563,45 @@ export default function AutomationPanelNew() {
       setIsOptimizing(true);
 
       try {
+        console.log('Starting arrangement with designs:', designs.length);
+        console.log('Page dimensions:', currentPageDimensions);
+        console.log('Optimization options:', optimizationOptions);
+
+        // Extract design dimensions properly
+        const processedDesigns = designs.map(design => {
+          const dims = extractDimensions(design);
+          console.log(`Design ${design.filename}: ${dims.width}x${dims.height}mm`);
+          return {
+            ...design,
+            realWidth: dims.width,
+            realHeight: dims.height
+          };
+        });
+
         // Run local optimization first
-        const optimizedLayout = await optimizeLayout(designs, currentPageDimensions, optimizationOptions);
+        const optimizedLayout = await optimizeLayout(processedDesigns, currentPageDimensions, optimizationOptions);
+        console.log('Optimization result:', optimizedLayout);
 
         // Calculate cost analysis
         const costAnalysis = calculateCostAnalysis(optimizedLayout, currentPageDimensions, designs.length);
         setCostAnalysis(costAnalysis);
 
         // Convert optimized layout to API format
-        const arrangements = optimizedLayout.items.map(item => ({
-          designId: item.designId,
-          x: item.x,
-          y: item.y,
-          width: item.width,
-          height: item.height,
-          withMargins: {
-            width: item.width + bleedSettings.left + bleedSettings.right,
-            height: item.height + bleedSettings.top + bleedSettings.bottom
-          }
-        }));
+        const arrangements = optimizedLayout.items.map(item => {
+          const arrangement = {
+            designId: item.designId,
+            x: item.x,
+            y: item.y,
+            width: item.width,
+            height: item.height,
+            withMargins: {
+              width: item.width + bleedSettings.left + bleedSettings.right,
+              height: item.height + bleedSettings.top + bleedSettings.bottom
+            }
+          };
+          console.log('Created arrangement:', arrangement);
+          return arrangement;
+        });
 
         const result: ArrangementResult = {
           arrangements,
@@ -2549,8 +2614,11 @@ export default function AutomationPanelNew() {
           }
         };
 
-        // Also try the original API for comparison if needed
-        if (optimizationOptions.mode !== 'maximum_efficiency') {
+        console.log('Final arrangement result:', result);
+
+        // Fallback to API if local optimization fails or produces poor results
+        if (optimizedLayout.items.length === 0 || optimizedLayout.efficiency < 10) {
+          console.log('Local optimization failed, trying API fallback...');
           try {
             const designIds = designs.map((d: Design) => d.id);
             const apiResult = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
@@ -2558,13 +2626,15 @@ export default function AutomationPanelNew() {
               plotterSettings
             });
 
-            // Use API result if it's better
-            if (apiResult && parseFloat(apiResult.efficiency) > optimizedLayout.efficiency) {
+            console.log('API fallback result:', apiResult);
+            
+            if (apiResult && apiResult.arrangements && apiResult.arrangements.length > 0) {
               setIsOptimizing(false);
               return apiResult;
             }
           } catch (apiError) {
             console.warn('API fallback failed:', apiError);
+            // Continue with local result even if poor
           }
         }
 
@@ -2582,31 +2652,63 @@ export default function AutomationPanelNew() {
 
       if (!data.arrangements || data.arrangements.length === 0 || data.totalArranged === 0) {
         toast({
-          title: "Uyarı",
-          description: "Hiçbir tasarım baskı alanına sığmadı. Tasarım boyutlarını kontrol edin.",
+          title: "Dizim Uyarısı",
+          description: `Hiçbir tasarım baskı alanına sığmadı. Sayfa boyutunu büyütün veya tasarım boyutlarını küçültün. Mevcut sayfa: ${currentPageDimensions.widthMM}×${currentPageDimensions.heightMM}mm`,
           variant: "destructive",
         });
         return;
       }
 
+      const efficiency = parseFloat(data.efficiency.replace('%', ''));
+      const statusColor = efficiency > 70 ? "default" : efficiency > 50 ? "secondary" : "destructive";
+      
       toast({
-        title: "Dizim Tamamlandı",
-        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik)`,
+        title: "✅ Dizim Tamamlandı",
+        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi. Verimlilik: ${data.efficiency}`,
+        variant: statusColor === "destructive" ? "destructive" : "default",
       });
 
+      // Auto-generate PDF if arrangement is successful
       if (data.arrangements.length > 0) {
         setTimeout(() => {
           const pdfData = {
             plotterSettings: plotterSettings,
             arrangements: data.arrangements
           };
-          console.log('Sending to PDF generation:', pdfData);
+          console.log('Auto-generating PDF with data:', pdfData);
           generatePdfMutation.mutate(pdfData);
-        }, 1000);
+        }, 1500);
       }
     },
     onError: (error: unknown) => {
-      handleError(error, "Otomatik dizim başarısız");
+      console.error('Auto-arrange error:', error);
+      
+      let errorMessage = "Otomatik dizim başarısız";
+      let suggestions = "";
+
+      if (error instanceof Error) {
+        if (error.message.includes('tasarım bulunamadı')) {
+          errorMessage = "Dizim için dosya bulunamadı";
+          suggestions = "Lütfen önce vektörel dosyalar yükleyin.";
+        } else if (error.message.includes('sığmadı')) {
+          errorMessage = "Tasarımlar sayfa alanına sığmıyor";
+          suggestions = "Sayfa boyutunu büyütün veya daha az dosya seçin.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Sunucu bağlantı hatası";
+          suggestions = "İnternet bağlantınızı kontrol edin ve tekrar deneyin.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast({
+        title: "❌ Dizim Hatası",
+        description: `${errorMessage}${suggestions ? '\n💡 ' + suggestions : ''}`,
+        variant: "destructive",
+      });
+
+      // Reset processing state
+      setIsOptimizing(false);
     },
   });
 
@@ -3591,13 +3693,38 @@ export default function AutomationPanelNew() {
                   />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-600">
-                    {formatDimension(currentPageDimensions.widthMM, 'mm')} × {formatDimension(currentPageDimensions.heightMM, 'mm')} | {arrangements.totalArranged} tasarım dizildi
-                  </p>
-                  <p className="text-xs text-green-600 font-medium">
-                    Verimlilik: {arrangements.efficiency}
-                  </p>
+                  <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                    <p className="text-sm font-medium text-green-800 mb-1">
+                      📄 Sayfa: {formatDimension(currentPageDimensions.widthMM, 'mm')} × {formatDimension(currentPageDimensions.heightMM, 'mm')}
+                    </p>
+                    <p className="text-sm text-green-700">
+                      ✅ {arrangements.totalArranged}/{arrangements.totalRequested} tasarım dizildi
+                    </p>
+                    <p className="text-xs text-green-600 font-bold mt-1">
+                      📊 Verimlilik: {arrangements.efficiency}
+                    </p>
+                  </div>
+                  
+                  {costAnalysis && (
+                    <div className="mt-2 text-xs text-gray-600">
+                      💰 Tahmini Maliyet: {costAnalysis.totalCost.toFixed(2)} ₺ | 
+                      🗑️ Fire: {costAnalysis.wastePercentage.toFixed(1)}%
+                    </div>
+                  )}
                 </div>
+              </div>
+            ) : (autoArrangeMutation.isPending || isOptimizing) ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Play className="h-10 w-10 text-blue-500 animate-pulse" />
+                </div>
+                <p className="text-blue-600 text-lg font-medium mb-2">
+                  {isOptimizing ? 'Optimizasyon Yapılıyor' : 'Dizilim Hesaplanıyor'}
+                </p>
+                <p className="text-blue-500 text-sm">
+                  {designs.length} dosya işleniyor...
+                </p>
+                <Progress value={isOptimizing ? 75 : 45} className="w-48 mx-auto mt-3" />
               </div>
             ) : (
               <div className="text-center py-16">
@@ -3605,11 +3732,18 @@ export default function AutomationPanelNew() {
                   <Eye className="h-10 w-10 text-gray-400" />
                 </div>
                 <p className="text-gray-500 text-lg font-medium mb-2">
-                  Önizleme Boş
+                  Önizleme Hazır Değil
                 </p>
-                <p className="text-gray-400 text-sm">
-                  Dosya yükleyin ve dizim yapın
+                <p className="text-gray-400 text-sm mb-3">
+                  {designs.length === 0 ? 
+                    'Önce vektörel dosyalar yükleyin' : 
+                    'Dizim yapmak için "AKILLI DİZİN" butonuna basın'}
                 </p>
+                {designs.length > 0 && (
+                  <p className="text-xs text-blue-600">
+                    📁 {designs.length} dosya yüklendi, dizim için hazır
+                  </p>
+                )}
               </div>
             )}
           </CardContent>
@@ -3628,22 +3762,39 @@ export default function AutomationPanelNew() {
           <div className="flex flex-col items-center space-y-4">
             <Button
               size="lg"
-              onClick={() => autoArrangeMutation.mutate()}
-              disabled={designs.length === 0 || uploadMutation.isPending}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-4 text-lg font-bold disabled:opacity-50"
+              onClick={() => {
+                console.log('Auto-arrange button clicked');
+                console.log('Designs available:', designs.length);
+                console.log('Designs data:', designs);
+                autoArrangeMutation.mutate();
+              }}
+              disabled={designs.length === 0 || uploadMutation.isPending || autoArrangeMutation.isPending || isOptimizing}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-4 text-lg font-bold disabled:opacity-50 transition-all duration-200"
             >
-              {autoArrangeMutation.isPending ? (
+              {(autoArrangeMutation.isPending || isOptimizing) ? (
                 <>
                   <Play className="animate-spin h-6 w-6 mr-3" />
-                  DİZİLİYOR...
+                  {isOptimizing ? 'OPTİMİZE EDİLİYOR...' : 'DİZİLİYOR...'}
                 </>
               ) : (
                 <>
                   <Play className="h-6 w-6 mr-3" />
-                  AKILLI DİZİN
+                  AKILLI DİZİN ({designs.length} DOSYA)
                 </>
               )}
             </Button>
+
+            {/* Progress indicator */}
+            {(autoArrangeMutation.isPending || isOptimizing) && (
+              <div className="mt-4 space-y-2">
+                <Progress value={isOptimizing ? 75 : 45} className="w-full" />
+                <p className="text-sm text-gray-600 text-center">
+                  {isOptimizing ? 
+                    'Optimizasyon algoritması çalışıyor...' : 
+                    'Tasarımlar analiz ediliyor...'}
+                </p>
+              </div>
+            )}
 
             {costAnalysis && (
               <div className="text-center mt-4">
