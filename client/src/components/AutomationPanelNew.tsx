@@ -71,185 +71,135 @@ const LazyImage = memo(({ src, alt, className, onLoad, ...props }: {
   );
 });
 
-// Canvas-based Preview Renderer
-const CanvasPreviewRenderer = memo(({ 
+// Enhanced Preview Renderer with proper scaling and visual feedback
+const EnhancedPreviewRenderer = memo(({ 
   arrangements, 
   pageWidth, 
   pageHeight, 
   designs,
-  bleedSettings 
+  bleedSettings,
+  isLoading = false,
+  error = null 
 }: {
   arrangements: ArrangementItem[];
   pageWidth: number;
   pageHeight: number;
   designs: Design[];
   bleedSettings: BleedSettings;
+  isLoading?: boolean;
+  error?: string | null;
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>();
-  const [webglSupported, setWebglSupported] = useState(false);
-  const [renderStats, setRenderStats] = useState({ fps: 0, renderTime: 0 });
-  const lastFrameTime = useRef(performance.now());
-  const frameCount = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
+  const [canvasSize, setCanvasSize] = useState({ width: 400, height: 300 });
+  const [renderStats, setRenderStats] = useState({ efficiency: 0, itemCount: 0 });
 
-  // Check WebGL support
+  // Calculate optimal canvas dimensions maintaining aspect ratio
+  const calculateCanvasSize = useCallback(() => {
+    if (!containerRef.current || !pageWidth || !pageHeight) return { width: 400, height: 300 };
+
+    const container = containerRef.current;
+    const containerWidth = container.clientWidth - 40; // Account for padding
+    const containerHeight = 350; // Fixed height for consistency
+
+    // Calculate scale to fit page in container while maintaining aspect ratio
+    const scaleX = containerWidth / pageWidth;
+    const scaleY = containerHeight / pageHeight;
+    const scale = Math.min(scaleX, scaleY, 2); // Max 2x scale
+
+    const canvasWidth = pageWidth * scale;
+    const canvasHeight = pageHeight * scale;
+
+    return {
+      width: Math.max(300, canvasWidth),
+      height: Math.max(200, canvasHeight)
+    };
+  }, [pageWidth, pageHeight]);
+
+  // Update canvas size on mount and resize
   useEffect(() => {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    setWebglSupported(!!gl);
-  }, []);
-
-  // WebGL Renderer
-  const renderWithWebGL = useCallback((canvas: HTMLCanvasElement) => {
-    const gl = canvas.getContext('webgl');
-    if (!gl) return false;
-
-    const startTime = performance.now();
-
-    // Vertex shader source
-    const vertexShaderSource = `
-      attribute vec2 a_position;
-      attribute vec3 a_color;
-      uniform vec2 u_resolution;
-      varying vec3 v_color;
-
-      void main() {
-        vec2 zeroToOne = a_position / u_resolution;
-        vec2 zeroToTwo = zeroToOne * 2.0;
-        vec2 clipSpace = zeroToTwo - 1.0;
-        gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-        v_color = a_color;
-      }
-    `;
-
-    // Fragment shader source
-    const fragmentShaderSource = `
-      precision mediump float;
-      varying vec3 v_color;
-
-      void main() {
-        gl_FragColor = vec4(v_color, 1.0);
-      }
-    `;
-
-    // Create and compile shader
-    const createShader = (type: number, source: string) => {
-      const shader = gl.createShader(type);
-      if (!shader) return null;
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      return gl.getShaderParameter(shader, gl.COMPILE_STATUS) ? shader : null;
+    const updateSize = () => {
+      const newSize = calculateCanvasSize();
+      setCanvasSize(newSize);
     };
 
-    const vertexShader = createShader(gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, [calculateCanvasSize]);
 
-    if (!vertexShader || !fragmentShader) return false;
+  // Enhanced render function with proper scaling
+  const renderPreview = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    // Create program
-    const program = gl.createProgram();
-    if (!program) return false;
-
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return false;
-
-    gl.useProgram(program);
-
-    // Get attribute and uniform locations
-    const positionLocation = gl.getAttribLocation(program, 'a_position');
-    const colorLocation = gl.getAttribLocation(program, 'a_color');
-    const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
-
-    // Set resolution
-    gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-
-    // Clear canvas
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.98, 0.98, 0.98, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    // Render arrangements
-    arrangements.forEach((item, index) => {
-      const x = (item.x / pageWidth) * canvas.width;
-      const y = (item.y / pageHeight) * canvas.height;
-      const w = (item.width / pageWidth) * canvas.width;
-      const h = (item.height / pageHeight) * canvas.height;
-
-      // Create rectangle vertices
-      const vertices = new Float32Array([
-        x, y,
-        x + w, y,
-        x, y + h,
-        x, y + h,
-        x + w, y,
-        x + w, y + h
-      ]);
-
-      // Create colors (different color for each item)
-      const hue = (index * 137.5) % 360;
-      const [r, g, b] = hslToRgb(hue / 360, 0.7, 0.7);
-      const colors = new Float32Array([
-        r, g, b,
-        r, g, b,
-        r, g, b,
-        r, g, b,
-        r, g, b,
-        r, g, b
-      ]);
-
-      // Create and bind position buffer
-      const positionBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(positionLocation);
-      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-      // Create and bind color buffer
-      const colorBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(colorLocation);
-      gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0, 0);
-
-      // Draw triangles
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-    });
-
-    const renderTime = performance.now() - startTime;
-    setRenderStats(prev => ({ ...prev, renderTime }));
-
-    return true;
-  }, [arrangements, pageWidth, pageHeight]);
-
-  // Canvas 2D Renderer (fallback)
-  const renderWithCanvas2D = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const startTime = performance.now();
 
-    // Enable hardware acceleration hints
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    // Set high DPI for crisp rendering
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = canvasSize.width * zoom;
+    const displayHeight = canvasSize.height * zoom;
 
-    // Clear canvas with light background
-    ctx.fillStyle = '#f9fafb';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
+
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, displayWidth, displayHeight);
+
+    // Apply zoom and pan transformations
+    ctx.save();
+    ctx.translate(pan.x, pan.y);
+    ctx.scale(zoom, zoom);
+
+    // Calculate scale factor from mm to canvas pixels
+    const scaleX = canvasSize.width / pageWidth;
+    const scaleY = canvasSize.height / pageHeight;
+
+    // Draw page background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
 
     // Draw page border
-    ctx.strokeStyle = '#6b7280';
+    ctx.strokeStyle = '#374151';
     ctx.lineWidth = 2;
-    ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+    ctx.strokeRect(0, 0, canvasSize.width, canvasSize.height);
 
-    // Draw page margins if they exist
-    if (bleedSettings && pageWidth && pageHeight) {
-      const marginLeft = (bleedSettings.left / pageWidth) * canvas.width;
-      const marginTop = (bleedSettings.top / pageHeight) * canvas.height;
-      const marginRight = (bleedSettings.right / pageWidth) * canvas.width;
-      const marginBottom = (bleedSettings.bottom / pageHeight) * canvas.height;
+    // Draw grid for better visual reference
+    ctx.strokeStyle = '#f3f4f6';
+    ctx.lineWidth = 0.5;
+    const gridSize = 50; // 50mm grid
+    const gridPixelsX = gridSize * scaleX;
+    const gridPixelsY = gridSize * scaleY;
+
+    for (let x = gridPixelsX; x < canvasSize.width; x += gridPixelsX) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvasSize.height);
+      ctx.stroke();
+    }
+
+    for (let y = gridPixelsY; y < canvasSize.height; y += gridPixelsY) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvasSize.width, y);
+      ctx.stroke();
+    }
+
+    // Draw bleed margins
+    if (bleedSettings) {
+      const marginLeft = bleedSettings.left * scaleX;
+      const marginTop = bleedSettings.top * scaleY;
+      const marginRight = bleedSettings.right * scaleX;
+      const marginBottom = bleedSettings.bottom * scaleY;
 
       ctx.strokeStyle = '#3b82f6';
       ctx.lineWidth = 1;
@@ -257,169 +207,321 @@ const CanvasPreviewRenderer = memo(({
       ctx.strokeRect(
         marginLeft,
         marginTop,
-        canvas.width - marginLeft - marginRight,
-        canvas.height - marginTop - marginBottom
+        canvasSize.width - marginLeft - marginRight,
+        canvasSize.height - marginTop - marginBottom
       );
       ctx.setLineDash([]);
     }
 
-    // Render arrangements if they exist
-    if (arrangements && arrangements.length > 0) {
-      ctx.save();
-      
-      arrangements.forEach((item, index) => {
-        // Calculate positions with safety checks
-        const x = pageWidth > 0 ? (item.x / pageWidth) * canvas.width : 0;
-        const y = pageHeight > 0 ? (item.y / pageHeight) * canvas.height : 0;
-        const w = pageWidth > 0 ? (item.width / pageWidth) * canvas.width : 50;
-        const h = pageHeight > 0 ? (item.height / pageHeight) * canvas.height : 30;
+    // Render arrangements with proper positioning
+    let validItemCount = 0;
+    let totalArea = 0;
 
-        // Ensure valid dimensions
-        if (x >= 0 && y >= 0 && w > 0 && h > 0) {
-          // Use different colors for each item
+    if (arrangements && arrangements.length > 0) {
+      arrangements.forEach((item, index) => {
+        // Convert mm coordinates to canvas pixels
+        const x = item.x * scaleX;
+        const y = item.y * scaleY;
+        const w = item.width * scaleX;
+        const h = item.height * scaleY;
+
+        // Validate dimensions
+        if (w > 0 && h > 0 && x >= 0 && y >= 0) {
+          validItemCount++;
+          totalArea += item.width * item.height;
+
+          // Generate distinct colors for each item
           const hue = (index * 137.5) % 360;
-          
-          // Fill the rectangle
-          ctx.fillStyle = `hsl(${hue}, 65%, 85%)`;
+          const saturation = 70;
+          const lightness = 75;
+
+          // Draw item background
+          ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
           ctx.fillRect(x, y, w, h);
-          
-          // Draw border
-          ctx.strokeStyle = `hsl(${hue}, 65%, 50%)`;
+
+          // Draw item border
+          ctx.strokeStyle = `hsl(${hue}, ${saturation}%, ${lightness - 25}%)`;
           ctx.lineWidth = 2;
           ctx.strokeRect(x, y, w, h);
 
-          // Draw item number/label
-          ctx.fillStyle = `hsl(${hue}, 65%, 25%)`;
-          ctx.font = `bold ${Math.max(10, Math.min(w/4, h/2, 16))}px sans-serif`;
+          // Draw margins if available
+          if (item.withMargins) {
+            const marginW = (item.withMargins.width - item.width) * scaleX / 2;
+            const marginH = (item.withMargins.height - item.height) * scaleY / 2;
+            
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.strokeRect(x - marginW, y - marginH, w + marginW * 2, h + marginH * 2);
+            ctx.setLineDash([]);
+          }
+
+          // Draw item label
+          const fontSize = Math.max(10, Math.min(w / 6, h / 3, 14));
+          ctx.fillStyle = `hsl(${hue}, ${saturation}%, 25%)`;
+          ctx.font = `bold ${fontSize}px Arial, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          
+
           // Find corresponding design
           const design = designs.find(d => d.id === item.designId);
-          const label = design ? `${index + 1}` : `${index + 1}`;
+          const label = `${index + 1}`;
           
           ctx.fillText(label, x + w/2, y + h/2);
 
           // Add filename if space allows
-          if (w > 60 && h > 40 && design) {
-            ctx.font = `${Math.max(8, Math.min(w/8, h/4, 10))}px sans-serif`;
-            const shortName = design.filename.length > 12 ? 
-              design.filename.substring(0, 10) + '...' : 
+          if (w > 80 && h > 50 && design) {
+            const smallFontSize = Math.max(8, fontSize * 0.7);
+            ctx.font = `${smallFontSize}px Arial, sans-serif`;
+            const maxNameLength = Math.floor(w / 6);
+            const shortName = design.filename.length > maxNameLength ? 
+              design.filename.substring(0, maxNameLength - 3) + '...' : 
               design.filename;
-            ctx.fillText(shortName, x + w/2, y + h/2 + 15);
+            ctx.fillText(shortName, x + w/2, y + h/2 + fontSize + 2);
+          }
+
+          // Add dimensions info
+          if (w > 60 && h > 40) {
+            const dimFontSize = Math.max(7, fontSize * 0.6);
+            ctx.font = `${dimFontSize}px Arial, sans-serif`;
+            ctx.fillStyle = `hsl(${hue}, ${saturation}%, 35%)`;
+            ctx.fillText(
+              `${Math.round(item.width)}×${Math.round(item.height)}mm`, 
+              x + w/2, 
+              y + h - dimFontSize - 2
+            );
           }
         }
       });
-      
-      ctx.restore();
-    } else {
-      // Draw placeholder when no arrangements
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(
-        'Dizim yapılmadı', 
-        canvas.width / 2, 
-        canvas.height / 2
-      );
     }
+
+    ctx.restore();
+
+    // Update render stats
+    const pageArea = pageWidth * pageHeight;
+    const efficiency = pageArea > 0 ? (totalArea / pageArea) * 100 : 0;
+    setRenderStats({ efficiency, itemCount: validItemCount });
 
     const renderTime = performance.now() - startTime;
-    setRenderStats(prev => ({ ...prev, renderTime }));
-  }, [arrangements, pageWidth, pageHeight, bleedSettings, designs]);
+    
+    // Draw loading state
+    if (isLoading) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillRect(0, 0, displayWidth, displayHeight);
+      
+      ctx.fillStyle = '#3b82f6';
+      ctx.font = 'bold 16px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Dizilim hesaplanıyor...', displayWidth / 2, displayHeight / 2);
+      
+      // Spinning loader
+      const time = Date.now() / 200;
+      ctx.save();
+      ctx.translate(displayWidth / 2, displayHeight / 2 - 30);
+      ctx.rotate(time);
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 15, 0, Math.PI * 1.5);
+      ctx.stroke();
+      ctx.restore();
+    }
 
-  // HSL to RGB conversion for WebGL
-  const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
-    const c = (1 - Math.abs(2 * l - 1)) * s;
-    const x = c * (1 - Math.abs((h * 6) % 2 - 1));
-    const m = l - c / 2;
-    let r = 0, g = 0, b = 0;
+    // Draw error state
+    if (error) {
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+      ctx.fillRect(0, 0, displayWidth, displayHeight);
+      
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 14px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('❌ Dizilim Hatası', displayWidth / 2, displayHeight / 2 - 10);
+      
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillText(error, displayWidth / 2, displayHeight / 2 + 10);
+    }
 
-    if (h < 1/6) [r, g, b] = [c, x, 0];
-    else if (h < 2/6) [r, g, b] = [x, c, 0];
-    else if (h < 3/6) [r, g, b] = [0, c, x];
-    else if (h < 4/6) [r, g, b] = [0, x, c];
-    else if (h < 5/6) [r, g, b] = [x, 0, c];
-    else [r, g, b] = [c, 0, x];
+  }, [
+    arrangements, 
+    pageWidth, 
+    pageHeight, 
+    designs, 
+    bleedSettings, 
+    canvasSize, 
+    zoom, 
+    pan, 
+    isLoading, 
+    error
+  ]);
 
-    return [r + m, g + m, b + m];
+  // Render on dependencies change
+  useEffect(() => {
+    const timeoutId = setTimeout(renderPreview, 10);
+    return () => clearTimeout(timeoutId);
+  }, [renderPreview]);
+
+  // Animation loop for loading state
+  useEffect(() => {
+    if (!isLoading) return;
+    
+    const animate = () => {
+      renderPreview();
+      if (isLoading) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    const animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [isLoading, renderPreview]);
+
+  // Mouse event handlers for pan and zoom
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setLastMouse({ x: e.clientX, y: e.clientY });
   };
 
-  // Main render function
-  const render = useCallback(() => {
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+
+    const deltaX = e.clientX - lastMouse.x;
+    const deltaY = e.clientY - lastMouse.y;
+
+    setPan(prev => ({
+      x: prev.x + deltaX / zoom,
+      y: prev.y + deltaY / zoom
+    }));
+
+    setLastMouse({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(prev => Math.max(0.1, Math.min(3, prev * delta)));
+  };
+
+  const resetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const downloadPreview = () => {
     const canvas = canvasRef.current;
-    if (!canvas || arrangements.length === 0) return;
+    if (!canvas) return;
 
-    // Set canvas size with device pixel ratio
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = rect.height + 'px';
-
-    // Try WebGL first, fallback to Canvas 2D
-    const webglSuccess = webglSupported && renderWithWebGL(canvas);
-    if (!webglSuccess) {
-      renderWithCanvas2D(canvas);
-    }
-
-    // Calculate FPS
-    const now = performance.now();
-    frameCount.current++;
-    if (now - lastFrameTime.current >= 1000) {
-      setRenderStats(prev => ({ 
-        ...prev, 
-        fps: Math.round(frameCount.current * 1000 / (now - lastFrameTime.current))
-      }));
-      frameCount.current = 0;
-      lastFrameTime.current = now;
-    }
-  }, [arrangements, webglSupported, renderWithWebGL, renderWithCanvas2D]);
-
-  // Animation loop
-  useEffect(() => {
-    const animate = () => {
-      render();
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [render]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (canvasRef.current) {
-        render();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [render]);
+    const link = document.createElement('a');
+    link.download = `matbixx-preview-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+  };
 
   return (
-    <div className="relative">
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full border-2 border-dashed border-gray-300 rounded-lg"
-        style={{ width: '100%', height: '300px' }}
-      />
-      
-      {/* Performance Stats */}
-      <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-        <div>Renderer: {webglSupported ? 'WebGL' : 'Canvas 2D'}</div>
-        <div>FPS: {renderStats.fps}</div>
-        <div>Render: {renderStats.renderTime.toFixed(1)}ms</div>
+    <div ref={containerRef} className="relative w-full">
+      {/* Controls */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setZoom(prev => Math.min(prev * 1.2, 3))}
+            disabled={isLoading}
+            className="h-8 w-8 p-0"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setZoom(prev => Math.max(prev / 1.2, 0.1))}
+            disabled={isLoading}
+            className="h-8 w-8 p-0"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={resetView}
+            disabled={isLoading}
+            className="h-8 px-2 text-xs"
+          >
+            Sıfırla
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={downloadPreview}
+            disabled={isLoading || !arrangements.length}
+            className="h-8 px-2 text-xs"
+          >
+            PNG İndir
+          </Button>
+        </div>
+        
+        <div className="flex items-center gap-2 text-xs text-gray-600">
+          <span>Zoom: {Math.round(zoom * 100)}%</span>
+          {renderStats.itemCount > 0 && (
+            <>
+              <span>•</span>
+              <span>{renderStats.itemCount} parça</span>
+              <span>•</span>
+              <span>{renderStats.efficiency.toFixed(1)}% verimlilik</span>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Canvas Container */}
+      <div className="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 overflow-hidden">
+        <canvas
+          ref={canvasRef}
+          className={`block mx-auto ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+        />
+      </div>
+
+      {/* Status Info */}
+      <div className="mt-3 grid grid-cols-3 gap-4 text-center text-sm">
+        <div>
+          <div className="font-medium text-gray-900">
+            {arrangements?.length || 0}
+          </div>
+          <div className="text-gray-500 text-xs">Yerleştirilen</div>
+        </div>
+        <div>
+          <div className="font-medium text-gray-900">
+            {pageWidth}×{pageHeight}mm
+          </div>
+          <div className="text-gray-500 text-xs">Sayfa Boyutu</div>
+        </div>
+        <div>
+          <div className="font-medium text-gray-900">
+            {renderStats.efficiency.toFixed(1)}%
+          </div>
+          <div className="text-gray-500 text-xs">Alan Verimliliği</div>
+        </div>
+      </div>
+
+      {/* Empty state */}
+      {!isLoading && !error && (!arrangements || arrangements.length === 0) && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <Eye className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Dizilim yapıldığında önizleme görünecek</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
@@ -3681,68 +3783,75 @@ export default function AutomationPanelNew() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {arrangements && arrangements.arrangements && arrangements.arrangements.length > 0 ? (
-              <div className="space-y-4">
-                <div className="w-full max-w-md mx-auto">
-                  <CanvasPreviewRenderer
-                    arrangements={arrangements.arrangements}
-                    pageWidth={currentPageDimensions.widthMM}
-                    pageHeight={currentPageDimensions.heightMM}
-                    designs={designs}
-                    bleedSettings={bleedSettings}
-                  />
-                </div>
-                <div className="text-center">
-                  <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                    <p className="text-sm font-medium text-green-800 mb-1">
-                      📄 Sayfa: {formatDimension(currentPageDimensions.widthMM, 'mm')} × {formatDimension(currentPageDimensions.heightMM, 'mm')}
-                    </p>
-                    <p className="text-sm text-green-700">
-                      ✅ {arrangements.totalArranged}/{arrangements.totalRequested} tasarım dizildi
-                    </p>
-                    <p className="text-xs text-green-600 font-bold mt-1">
-                      📊 Verimlilik: {arrangements.efficiency}
-                    </p>
+            <EnhancedPreviewRenderer
+              arrangements={arrangements?.arrangements || []}
+              pageWidth={currentPageDimensions.widthMM}
+              pageHeight={currentPageDimensions.heightMM}
+              designs={designs}
+              bleedSettings={bleedSettings}
+              isLoading={autoArrangeMutation.isPending || isOptimizing}
+              error={autoArrangeMutation.error?.message || null}
+            />
+
+            {/* Results Summary */}
+            {arrangements && arrangements.arrangements && arrangements.arrangements.length > 0 && (
+              <div className="mt-4 space-y-3">
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div className="text-center">
+                      <p className="font-medium text-green-800">Sayfa Boyutu</p>
+                      <p className="text-green-700">
+                        {formatDimension(currentPageDimensions.widthMM, 'mm')} × {formatDimension(currentPageDimensions.heightMM, 'mm')}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-green-800">Yerleştirme</p>
+                      <p className="text-green-700">
+                        ✅ {arrangements.totalArranged}/{arrangements.totalRequested} tasarım
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-green-800">Verimlilik</p>
+                      <p className="text-green-700 font-bold">
+                        📊 {arrangements.efficiency}
+                      </p>
+                    </div>
                   </div>
                   
                   {costAnalysis && (
-                    <div className="mt-2 text-xs text-gray-600">
-                      💰 Tahmini Maliyet: {costAnalysis.totalCost.toFixed(2)} ₺ | 
-                      🗑️ Fire: {costAnalysis.wastePercentage.toFixed(1)}%
+                    <div className="mt-3 pt-3 border-t border-green-300">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <div className="text-center">
+                          <span className="text-green-800 font-medium">Toplam Maliyet:</span>
+                          <p className="text-green-900 font-bold">{costAnalysis.totalCost.toFixed(2)} ₺</p>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-green-800 font-medium">Birim Maliyet:</span>
+                          <p className="text-green-900">{costAnalysis.costPerItem.toFixed(2)} ₺</p>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-green-800 font-medium">Fire Oranı:</span>
+                          <p className="text-green-900">{costAnalysis.wastePercentage.toFixed(1)}%</p>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-green-800 font-medium">İsraf:</span>
+                          <p className="text-green-900">{costAnalysis.wasteCost.toFixed(2)} ₺</p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            ) : (autoArrangeMutation.isPending || isOptimizing) ? (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Play className="h-10 w-10 text-blue-500 animate-pulse" />
-                </div>
-                <p className="text-blue-600 text-lg font-medium mb-2">
-                  {isOptimizing ? 'Optimizasyon Yapılıyor' : 'Dizilim Hesaplanıyor'}
-                </p>
-                <p className="text-blue-500 text-sm">
-                  {designs.length} dosya işleniyor...
-                </p>
-                <Progress value={isOptimizing ? 75 : 45} className="w-48 mx-auto mt-3" />
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Eye className="h-10 w-10 text-gray-400" />
-                </div>
-                <p className="text-gray-500 text-lg font-medium mb-2">
-                  Önizleme Hazır Değil
-                </p>
-                <p className="text-gray-400 text-sm mb-3">
-                  {designs.length === 0 ? 
-                    'Önce vektörel dosyalar yükleyin' : 
-                    'Dizim yapmak için "AKILLI DİZİN" butonuna basın'}
-                </p>
-                {designs.length > 0 && (
-                  <p className="text-xs text-blue-600">
-                    📁 {designs.length} dosya yüklendi, dizim için hazır
-                  </p>
+
+                {/* Smart Recommendations */}
+                {costAnalysis && costAnalysis.suggestions.length > 0 && (
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-blue-800 mb-2">💡 Akıllı Öneriler:</p>
+                    <div className="space-y-1">
+                      {costAnalysis.suggestions.slice(0, 3).map((suggestion, index) => (
+                        <p key={index} className="text-xs text-blue-700">• {suggestion}</p>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
