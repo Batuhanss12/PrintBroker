@@ -87,19 +87,22 @@ class PayTRService {
   async createPayment(request: PaymentRequest, userIp: string): Promise<{ success: boolean; paymentUrl?: string; data?: any; message?: string }> {
     try {
       const orderId = this.generateOrderId();
-      const amount = request.planType === "firm" ? Math.round(request.amount * 1.2 * 100) : 0; // Include VAT and convert to kuruş
+      // Convert to kuruş (multiply by 100) and add VAT for firm plans
+      const amount = request.planType === "firm" 
+        ? Math.round(request.amount * 1.2 * 100) // Firm plan with VAT
+        : Math.round(request.amount * 100); // Customer credit loading
       
-      if (amount === 0) {
-        // Free plan - no payment needed
+      if (amount <= 0) {
         return {
-          success: true,
-          message: "Free plan activated"
+          success: false,
+          message: "Geçersiz ödeme tutarı"
         };
       }
 
       // Create user basket (required by PayTR)
+      const productName = request.planType === "firm" ? "Firma Paketi" : "Kredi Yükleme";
       const userBasket = JSON.stringify([
-        [request.planType === "firm" ? "Firma Paketi" : "Müşteri Paketi", `${amount / 100}`, 1]
+        [productName, `${(amount / 100).toFixed(2)}`, 1]
       ]);
 
       const paymentData = {
