@@ -107,8 +107,30 @@ export default function Landing() {
         return;
       }
 
-      // Redirect to Replit Auth login with role, email and password
-      window.location.href = `/api/login?role=${selectedRole}&email=${encodeURIComponent(formData.email)}&password=${encodeURIComponent(formData.password)}`;
+      // Make login request
+      const response = await apiRequest('/api/login', {
+        method: 'POST',
+        body: {
+          email: formData.email,
+          password: formData.password
+        }
+      });
+
+      if (response.success) {
+        toast({
+          title: "Giriş başarılı",
+          description: "Hoş geldiniz!",
+        });
+        
+        // Refresh page to update auth state
+        window.location.reload();
+      } else {
+        toast({
+          title: "Giriş hatası",
+          description: response.message || "Email veya şifre hatalı",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Giriş hatası",
