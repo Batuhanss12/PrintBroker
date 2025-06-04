@@ -1738,6 +1738,50 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
   }
 });
 
+  // Simple Node.js PDF generation endpoint
+  app.post('/api/automation/plotter/generate-pdf', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { plotterSettings, arrangements } = req.body;
+      
+      console.log('📄 PDF generation request received');
+      console.log('📋 Extracted arranged items:', arrangements?.length || 0);
+      
+      // Use Node.js PDF generator
+      const result = await nodePDFGenerator.generateArrangementPDF({
+        plotterSettings,
+        arrangements
+      });
+      
+      if (result.success) {
+        console.log('✅ PDF generation successful');
+        res.json({
+          success: true,
+          downloadUrl: result.filePath,
+          message: result.message
+        });
+      } else {
+        console.error('❌ PDF generation failed:', result.message);
+        res.status(500).json({
+          success: false,
+          message: result.message
+        });
+      }
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'PDF generation failed'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time chat
