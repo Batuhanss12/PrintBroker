@@ -122,12 +122,27 @@ export default function AutomationPanel() {
       return response.json();
     },
     onSuccess: (data) => {
-      setUploadedDesigns(prev => [...prev, ...data.designs]);
+      // Refresh designs list to get new uploads
       queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
+      
+      // Auto-select uploaded designs for arrangement
+      const newDesignIds = data.designs.map((design: any) => design.id);
+      setSelectedDesigns(prev => [...new Set([...prev, ...newDesignIds])]);
+      
       toast({
         title: "Başarılı",
-        description: `${data.designs.length} tasarım dosyası yüklendi.`,
+        description: `${data.designs.length} tasarım dosyası yüklendi ve seçildi.`,
       });
+
+      // Auto-trigger arrangement after upload
+      if (newDesignIds.length > 0) {
+        setTimeout(() => {
+          autoArrangeMutation.mutate({
+            designIds: newDesignIds,
+            plotterSettings
+          });
+        }, 500);
+      }
     },
     onError: () => {
       toast({

@@ -1235,16 +1235,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Printer access required" });
       }
 
-      // Mock designs - in production, this would be stored in database
-      const designs = [
-        {
-          id: "design1",
-          name: "Logo Tasarımı.pdf",
-          dimensions: "50x30mm",
-          thumbnailPath: "/uploads/thumbnails/logo-thumb.png",
-          uploadedAt: new Date().toISOString()
-        }
-      ];
+      // Get user's uploaded files from database
+      const userFiles = await storage.getFilesByUser(userId);
+      const designs = userFiles.map(file => ({
+        id: file.id,
+        name: file.originalName,
+        dimensions: file.metadata?.dimensions || "Bilinmiyor",
+        thumbnailPath: file.thumbnailPath || file.filePath,
+        filePath: file.filePath,
+        fileType: file.fileType,
+        uploadedAt: file.createdAt
+      }));
 
       res.json(designs);
     } catch (error) {
@@ -1276,46 +1277,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const arrangements = [];
       let currentRow = 0;
       let currentCol = 0;
-      let maxRowHeight = 0;
+      let maxRowHeight = plotterSettings.labelHeight;
+      let totalArranged = 0;
 
-      for (const designId of designIds) {
-        // Check if design fits in current row
+      for (let i = 0; i < designIds.length; i++) {
+        const designId = designIds[i];
         const designWidth = plotterSettings.labelWidth;
         const designHeight = plotterSettings.labelHeight;
         
-        if (currentCol * (designWidth + plotterSettings.horizontalSpacing) + designWidth > usableWidth) {
-          // Move to next row
-          currentRow++;
-          currentCol = 0;
-          maxRowHeight = 0;
+        // Calculate position
+        const x = plotterSettings.marginLeft + currentCol * (designWidth + plotterSettings.horizontalSpacing);
+        const y = plotterSettings.marginTop + currentRow * (designHeight + plotterSettings.verticalSpacing);
+        
+        // Check if design fits in current position
+        if (x + designWidth <= plotterSettings.sheetWidth - plotterSettings.marginRight &&
+            y + designHeight <= plotterSettings.sheetHeight - plotterSettings.marginBottom) {
+          
+          arrangements.push({
+            designId,
+            x,
+            y,
+            width: designWidth,
+            height: designHeight,
+            row: currentRow,
+            col: currentCol
+          });
+          
+          totalArranged++;
+          currentCol++;
+          
+          // Check if we need to move to next row
+          if (x + designWidth + plotterSettings.horizontalSpacing + designWidth > 
+              plotterSettings.sheetWidth - plotterSettings.marginRight) {
+            currentRow++;
+            currentCol = 0;
+          }
+        } else {
+          // No more space
+          break;
         }
-
-        // Check if design fits in sheet height
-        if (currentRow * (designHeight + plotterSettings.verticalSpacing) + designHeight > usableHeight) {
-          break; // No more space
-        }
-
-        arrangements.push({
-          designId,
-          x: plotterSettings.marginLeft + currentCol * (designWidth + plotterSettings.horizontalSpacing),
-          y: plotterSettings.marginTop + currentRow * (designHeight + plotterSettings.verticalSpacing),
-          width: designWidth,
-          height: designHeight
-        });
-
-        currentCol++;
-        maxRowHeight = Math.max(maxRowHeight, designHeight);
       }
+
+      const efficiency = Math.round((totalArranged / designIds.length) * 100);
 
       res.json({
         arrangements,
-        totalArranged: arrangements.length,
+        totalArranged,
         totalRequested: designIds.length,
-        efficiency: ((arrangements.length / designIds.length) * 100).toFixed(1) + '%'
+        efficiency: `${efficiency}%`,
+        usedArea: {
+          width: usableWidth,
+          height: usableHeight
+        }
       });
     } catch (error) {
-      console.error("Error auto-arranging designs:", error);
-      res.status(500).json({ message: "Failed to auto-arrange designs" });
+      console.error("Error in auto-arrange:", error);
+      res.status(500).json({ message: "Auto-arrange failed" });
     }
   });
 

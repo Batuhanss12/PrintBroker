@@ -131,12 +131,9 @@ export class FileProcessingService {
   }
 
   async generatePDFThumbnail(filePath: string, filename: string): Promise<string> {
-    const thumbnailPath = path.join(this.thumbnailDir, `thumb_${filename}.jpg`);
-    
     try {
-      // Using ImageMagick to convert first page of PDF to thumbnail
-      await execAsync(`convert "${filePath}[0]" -resize 300x300 -quality 80 "${thumbnailPath}"`);
-      return path.relative(this.uploadDir, thumbnailPath);
+      // For now, return original file path as thumbnail - in production use pdf2pic or similar
+      return path.relative(this.uploadDir, filePath);
     } catch (error) {
       console.error('PDF thumbnail generation failed:', error);
       return '';
