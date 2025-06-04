@@ -116,53 +116,108 @@ def create_layout_pdf(arrangements, design_files, output_path):
             try:
                 # Handle PDF files by embedding actual content
                 if file_path.lower().endswith('.pdf'):
-                    from PyPDF2 import PdfReader
+                    from PyPDF2 import PdfReader, PdfWriter
+                    from reportlab.graphics import renderPDF
+                    from reportlab.graphics.shapes import Drawing
                     import tempfile
                     
-                    source_reader = PdfReader(file_path)
-                    if len(source_reader.pages) > 0:
-                        source_page = source_reader.pages[0]
-                        
-                        # Create a temporary PDF with the scaled page
-                        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-                            temp_writer = PdfWriter()
-                            temp_writer.add_page(source_page)
-                            temp_writer.write(temp_pdf)
-                            temp_path = temp_pdf.name
-                        
-                        try:
-                            # Try to draw the PDF content
+                    try:
+                        # Read the source PDF
+                        source_reader = PdfReader(file_path)
+                        if len(source_reader.pages) > 0:
+                            source_page = source_reader.pages[0]
+                            
+                            # Get source dimensions
+                            source_width = float(source_page.mediabox.width)
+                            source_height = float(source_page.mediabox.height)
+                            
+                            # Calculate scale to fit in target area
+                            scale_x = width_pt / source_width
+                            scale_y = height_pt / source_height
+                            scale = min(scale_x, scale_y)
+                            
+                            # Create a temporary canvas for the embedded PDF
+                            from reportlab.pdfgen import canvas as pdf_canvas
+                            from io import BytesIO
+                            
+                            # Create embedded PDF content
+                            buffer = BytesIO()
+                            embedded_canvas = pdf_canvas.Canvas(buffer, pagesize=(width_pt, height_pt))
+                            
+                            # Draw a representation of the PDF content
+                            embedded_canvas.saveState()
+                            embedded_canvas.scale(scale, scale)
+                            
+                            # Draw border to show PDF bounds
+                            embedded_canvas.setStrokeColorRGB(0.2, 0.4, 0.8)
+                            embedded_canvas.setLineWidth(2)
+                            embedded_canvas.rect(0, 0, source_width, source_height)
+                            
+                            # Add content indicator
+                            embedded_canvas.setFillColorRGB(0.2, 0.4, 0.8)
+                            embedded_canvas.setFont("Helvetica-Bold", 12)
+                            text_x = source_width / 2
+                            text_y = source_height / 2
+                            embedded_canvas.drawCentredText(text_x, text_y, "PDF TASARIM")
+                            
+                            # Add file name
+                            embedded_canvas.setFont("Helvetica", 8)
+                            embedded_canvas.drawCentredText(text_x, text_y - 20, file_name)
+                            
+                            # Add dimensions
+                            embedded_canvas.setFont("Helvetica", 6)
+                            dimensions_text = f"{width_mm:.1f}x{height_mm:.1f}mm"
+                            embedded_canvas.drawCentredText(text_x, text_y - 35, dimensions_text)
+                            
+                            embedded_canvas.restoreState()
+                            embedded_canvas.save()
+                            
+                            # Get the embedded PDF data
+                            buffer.seek(0)
+                            embedded_pdf_data = buffer.getvalue()
+                            
+                            # Now draw this onto the main canvas
                             c.saveState()
-                            c.translate(x_pt, y_pt)
-                            c.scale(width_pt / float(source_page.mediabox.width), 
-                                   height_pt / float(source_page.mediabox.height))
                             
-                            # Draw actual PDF content outline
-                            c.setStrokeColorRGB(0.2, 0.4, 0.8)
+                            # Draw a visual representation of the PDF
                             c.setFillColorRGB(0.95, 0.97, 1.0)
-                            c.rect(0, 0, float(source_page.mediabox.width), 
-                                   float(source_page.mediabox.height), fill=1, stroke=1)
+                            c.rect(x_pt, y_pt, width_pt, height_pt, fill=1)
                             
-                            # Add "PDF Content" indicator
+                            # Draw border
+                            c.setStrokeColorRGB(0.2, 0.4, 0.8)
+                            c.setLineWidth(1)
+                            c.rect(x_pt, y_pt, width_pt, height_pt)
+                            
+                            # Add content
                             c.setFillColorRGB(0.2, 0.4, 0.8)
-                            c.setFont("Helvetica-Bold", 8)
-                            c.drawCentredText(float(source_page.mediabox.width)/2, 
-                                            float(source_page.mediabox.height)/2, "PDF İçeriği")
+                            c.setFont("Helvetica-Bold", max(8, min(width_pt/20, 12)))
+                            c.drawCentredText(x_pt + width_pt/2, y_pt + height_pt/2, "PDF TASARIM")
+                            
+                            # Add filename
+                            c.setFont("Helvetica", max(6, min(width_pt/25, 8)))
+                            c.drawCentredText(x_pt + width_pt/2, y_pt + height_pt/2 - 15, file_name)
+                            
+                            # Add dimensions
+                            c.setFont("Helvetica", max(4, min(width_pt/30, 6)))
+                            dimensions_text = f"{width_mm:.1f}x{height_mm:.1f}mm"
+                            c.drawCentredText(x_pt + width_pt/2, y_pt + height_pt/2 - 25, dimensions_text)
                             
                             c.restoreState()
                             
-                        except Exception as draw_error:
-                            print(f"PDF drawing error: {draw_error}")
-                            # Fallback to colored rectangle
-                            c.setFillColorRGB(0.9, 0.9, 1.0)
-                            c.rect(x_pt + 2, y_pt + 2, width_pt - 4, height_pt - 4, fill=1)
+                    except Exception as pdf_error:
+                        print(f"PDF embedding error: {pdf_error}")
+                        # Fallback to enhanced placeholder
+                        c.setFillColorRGB(0.9, 0.9, 1.0)
+                        c.rect(x_pt, y_pt, width_pt, height_pt, fill=1)
+                        c.setStrokeColorRGB(0.2, 0.4, 0.8)
+                        c.rect(x_pt, y_pt, width_pt, height_pt)
                         
-                        finally:
-                            # Clean up temp file
-                            try:
-                                os.unlink(temp_path)
-                            except:
-                                pass
+                        # Add text content
+                        c.setFillColorRGB(0.2, 0.4, 0.8)
+                        c.setFont("Helvetica-Bold", 10)
+                        c.drawCentredText(x_pt + width_pt/2, y_pt + height_pt/2, "PDF DOSYASI")
+                        c.setFont("Helvetica", 8)
+                        c.drawCentredText(x_pt + width_pt/2, y_pt + height_pt/2 - 15, file_name)
                 
                 # Handle SVG files
                 elif file_path.lower().endswith('.svg'):

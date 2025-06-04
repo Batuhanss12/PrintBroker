@@ -1381,46 +1381,97 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     const designFiles = files.filter(f => f.fileType === 'design');
     console.log('📁 Design files found:', designFiles.length);
 
-    // Enhanced PDF generation using PDFKit with quality settings
-    const PDFDocument = (await import('pdfkit')).default;
+    // Use Python PDF generator for better content embedding
+    const path = await import('path');
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
 
     // Calculate page dimensions based on plotter settings
     const pageWidthMM = plotterSettings?.sheetWidth || 330; // Default 33cm
     const pageHeightMM = plotterSettings?.sheetHeight || 480; // Default 48cm
 
-    // Convert mm to points (1mm = 2.834645669 points)
-    const mmToPoints = 2.834645669;
-    const pageWidthPt = pageWidthMM * mmToPoints;
-    const pageHeightPt = pageHeightMM * mmToPoints;
+    console.log('🐍 Preparing Python PDF generation...');
 
-    // Create PDF with enhanced settings
-    const doc = new PDFDocument({
-      size: [pageWidthPt, pageHeightPt],
-      margins: { 
-        top: (bleedSettings?.top || 5) * mmToPoints, 
-        bottom: (bleedSettings?.bottom || 5) * mmToPoints, 
-        left: (bleedSettings?.left || 5) * mmToPoints, 
-        right: (bleedSettings?.right || 5) * mmToPoints 
-      },
-      info: {
-        Title: 'Matbixx - Professional Layout',
-        Author: 'Matbixx Automation System',
-        Subject: `Layout with ${arrangements.length} designs`,
-        Keywords: 'cutting, layout, vector, professional',
-        Creator: 'Matbixx PDF Engine v2.0',
-        Producer: 'Enhanced PDF Generator'
-      },
-      compress: !qualitySettings?.preserveVectorData,
-      autoFirstPage: true
+    // Prepare file paths for arrangements
+    const designFilesWithPaths = arrangements.map(arr => {
+      const designFile = designFiles.find(d => d.id === arr.designId);
+      return {
+        id: arr.designId,
+        name: designFile?.originalName || `Design_${arr.designId}`,
+        filePath: designFile ? path.join(process.cwd(), 'uploads', designFile.filename) : '',
+        ...designFile
+      };
     });
 
-    // Set response headers for PDF
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="matbixx-enhanced-layout.pdf"');
-    res.setHeader('Cache-Control', 'no-cache');
+    // Create temporary output path
+    const outputFilename = `layout_${Date.now()}.pdf`;
+    const outputPath = path.join(process.cwd(), 'uploads', outputFilename);
 
-    // Pipe PDF to response
-    doc.pipe(res);
+    // Prepare Python script input data
+    const pythonInput = {
+      arrangements,
+      designFiles: designFilesWithPaths,
+      outputPath,
+      sheetWidth: pageWidthMM,
+      sheetHeight: pageHeightMM,
+      qualitySettings,
+      cuttingMarks,
+      bleedSettings
+    };
+
+    console.log('🐍 Calling Python PDF generator with data:', {
+      arrangements: arrangements.length,
+      designFiles: designFilesWithPaths.length,
+      outputPath
+    });
+
+    try {
+      // Call Python script
+      const pythonScriptPath = path.join(process.cwd(), 'server', 'pdfGenerator.py');
+      const command = `python3 "${pythonScriptPath}" '${JSON.stringify(pythonInput)}'`;
+      
+      const { stdout, stderr } = await execAsync(command);
+      
+      if (stderr) {
+        console.warn('Python script warnings:', stderr);
+      }
+      
+      console.log('Python script output:', stdout);
+
+      // Check if PDF was created
+      const fs = await import('fs');
+      if (fs.existsSync(outputPath)) {
+        // Set response headers for PDF
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="matbixx-enhanced-layout.pdf"');
+        res.setHeader('Cache-Control', 'no-cache');
+
+        // Stream the generated PDF
+        const stream = fs.createReadStream(outputPath);
+        stream.pipe(res);
+        
+        // Clean up the file after streaming
+        stream.on('end', () => {
+          setTimeout(() => {
+            try {
+              fs.unlinkSync(outputPath);
+            } catch (cleanupError) {
+              console.warn('Cleanup error:', cleanupError);
+            }
+          }, 5000);
+        });
+        
+        console.log('✅ Python PDF generated and streamed successfully');
+        return;
+      } else {
+        throw new Error('Python script did not generate PDF file');
+      }
+    } catch (pythonError) {
+      console.error('❌ Python PDF generation failed:', pythonError);
+      // Fallback to Node.js implementation
+      console.log('🔄 Falling back to Node.js PDF generation...');
+    }
 
     // PDF Generation Status Tracking
     let generationSteps = 0;
