@@ -112,7 +112,19 @@ export const files = pgTable("files", {
   size: integer("size").notNull(),
   uploadedBy: varchar("uploaded_by").notNull().references(() => users.id),
   quoteId: uuid("quote_id").references(() => quotes.id),
+  fileType: varchar("file_type", { enum: ["design", "document", "image", "proof", "other"] }).notNull().default("other"),
+  status: varchar("status", { enum: ["uploading", "processing", "ready", "error"] }).notNull().default("uploading"),
+  thumbnailPath: varchar("thumbnail_path"),
+  dimensions: varchar("dimensions"), // width x height for images
+  colorProfile: varchar("color_profile"), // RGB, CMYK, etc.
+  resolution: integer("resolution"), // DPI
+  hasTransparency: boolean("has_transparency").default(false),
+  pageCount: integer("page_count").default(1),
+  processingNotes: text("processing_notes"),
+  downloadCount: integer("download_count").default(0),
+  isPublic: boolean("is_public").default(false),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Chat system tables
