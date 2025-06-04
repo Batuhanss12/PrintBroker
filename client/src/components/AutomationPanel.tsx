@@ -73,7 +73,6 @@ export default function AutomationPanel() {
   const [uploadedDesigns, setUploadedDesigns] = useState<any[]>([]);
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [arrangements, setArrangements] = useState<any>(null);
-  const [selectedPlotter, setSelectedPlotter] = useState<string>('');
   const [showCropMarks, setShowCropMarks] = useState(true);
 
   const { toast } = useToast();
@@ -89,12 +88,6 @@ export default function AutomationPanel() {
   const { data: designs = [] } = useQuery({
     queryKey: ['/api/automation/plotter/designs'],
     queryFn: () => apiRequest('GET', '/api/automation/plotter/designs'),
-  });
-
-  // Fetch plotter models
-  const { data: plotterModels = [] } = useQuery({
-    queryKey: ['/api/automation/plotter/models'],
-    queryFn: () => apiRequest('GET', '/api/automation/plotter/models'),
   });
 
   // Save layout mutation
@@ -368,36 +361,7 @@ export default function AutomationPanel() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Plotter Selection */}
-                    <div>
-                      <Label>Plotter Modeli</Label>
-                      <Select value={selectedPlotter} onValueChange={setSelectedPlotter}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Plotter modelini seçin" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.isArray(plotterModels) && plotterModels.map((plotter: any) => (
-                            <SelectItem key={plotter.id} value={plotter.id}>
-                              {plotter.brand} {plotter.model} - {plotter.maxWidth}mm
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {selectedPlotter && plotterModels.length > 0 && (
-                        <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-                          {(() => {
-                            const plotter = plotterModels.find((p: any) => p.id === selectedPlotter);
-                            return plotter ? (
-                              <div>
-                                <strong>{plotter.brand} {plotter.model}</strong><br/>
-                                Maksimum genişlik: {plotter.maxWidth}mm | Hız: {plotter.speed}<br/>
-                                Yazılım: {plotter.specifications.software.join(', ')}
-                              </div>
-                            ) : null;
-                          })()}
-                        </div>
-                      )}
-                    </div>
+
 
                     {/* Crop Marks Setting */}
                     <div className="flex items-center space-x-2">
@@ -843,19 +807,16 @@ export default function AutomationPanel() {
                             
                             {/* Design List */}
                             <div className="mt-4">
-                              <h4 className="text-sm font-medium mb-2">Dizilen Tasarımlar:</h4>
+                              <h4 className="text-sm font-medium mb-2">Dizilen Tasarımlar: {arrangements.totalArranged || 0}</h4>
                               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                                {selectedDesigns.slice(0, arrangements.totalArranged || 0).map((designId, index) => {
-                                  const design = Array.isArray(designs) ? designs.find((d: any) => d.id === designId) : null;
-                                  return design ? (
-                                    <div key={designId} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs">
-                                      <span className="flex-shrink-0 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs">
-                                        {index + 1}
-                                      </span>
-                                      <span className="truncate">{design.name}</span>
-                                    </div>
-                                  ) : null;
-                                })}
+                                {selectedDesigns.slice(0, arrangements.totalArranged || 0).map((designId, index) => (
+                                  <div key={designId} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs">
+                                    <span className="flex-shrink-0 w-5 h-5 bg-green-500 text-white rounded-full flex items-center justify-center text-xs">
+                                      {index + 1}
+                                    </span>
+                                    <span className="truncate">Tasarım {index + 1}</span>
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           </div>

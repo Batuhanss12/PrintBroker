@@ -1200,8 +1200,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.warn("Could not generate thumbnail:", thumbError);
         }
 
+        // Save file to database
+        const fileRecord = await storage.createFile({
+          originalName: file.originalname,
+          filename: file.filename,
+          filePath: file.path,
+          thumbnailPath,
+          fileSize: file.size,
+          fileType: fileProcessingService.getFileTypeFromMime(file.mimetype),
+          mimeType: file.mimetype,
+          dimensions: metadata.dimensions || 'Unknown',
+          userId,
+          metadata: metadata
+        });
+
         const designFile = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: fileRecord.id,
           name: file.originalname,
           path: file.path,
           thumbnailPath,
