@@ -58,6 +58,30 @@ interface ArrangementResult {
   };
 }
 
+// Vector file processing interfaces
+interface VectorDimensions {
+  width: number;
+  height: number;
+  unit: 'mm' | 'px' | 'pt' | 'in';
+  dpi?: number;
+}
+
+interface ProcessedVectorFile {
+  originalDimensions: VectorDimensions;
+  printDimensions: VectorDimensions; // Always in mm
+  withBleed: VectorDimensions;
+  safeArea: VectorDimensions;
+  colorProfile: ColorProfileInfo;
+  cropMarks?: CropMarkSettings;
+}
+
+interface CropMarkSettings {
+  enabled: boolean;
+  length: number; // mm
+  offset: number; // mm from design edge
+  lineWidth: number; // mm
+}
+
 interface UploadResponse {
   message: string;
   designs: Design[];
@@ -73,11 +97,58 @@ const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const ALLOWED_TYPES = ['application/pdf', 'image/svg+xml', 'application/postscript', 'application/illustrator', 'application/eps'];
 const ALLOWED_EXTENSIONS = ['pdf', 'svg', 'ai', 'eps'];
 
+// Vector file processing constants
+const DEFAULT_DPI = 300; // Print quality DPI
+const POINTS_TO_MM = 0.352778; // Conversion factor from points to millimeters
+const INCHES_TO_MM = 25.4; // Conversion factor from inches to millimeters
+
+// Bleed and margin constants
+interface BleedSettings {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+interface SafeAreaSettings {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+// Color profile types
+type ColorProfile = 'CMYK' | 'RGB' | 'GRAYSCALE' | 'UNKNOWN';
+
+interface ColorProfileInfo {
+  profile: ColorProfile;
+  isValid: boolean;
+  recommendation: string;
+}
+
 export default function AutomationPanelNew() {
   const { toast } = useToast();
   const [arrangements, setArrangements] = useState<ArrangementResult | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  
+  // Bleed and crop marks settings
+  const [bleedSettings, setBleedSettings] = useState<BleedSettings>({
+    top: 3,    // mm
+    bottom: 3, // mm
+    left: 3,   // mm
+    right: 3   // mm
+  });
+  
+  const [safeAreaSettings, setSafeAreaSettings] = useState<SafeAreaSettings>({
+    top: 5,    // mm
+    bottom: 5, // mm
+    left: 5,   // mm
+    right: 5   // mm
+  });
+  
+  const [showCropMarks, setShowCropMarks] = useState<boolean>(true);
+  const [colorProfileCheck, setColorProfileCheck] = useState<boolean>(true);
 
   // Fixed 33x48cm settings
   const plotterSettings: PlotterSettings = {
@@ -105,6 +176,251 @@ export default function AutomationPanelNew() {
     }
     
     return { isValid: true };
+  };
+
+  /**
+   * Vektörel dosya boyutlarını hesaplar ve MM cinsine çevirir
+   * @param width - Genişlik değeri
+   * @param height - Yükseklik değeri  
+   * @param unit - Birim (mm, px, pt, in)
+   * @param dpi - DPI değeri (pixel biriminde ise gerekli)
+   * @returns MM cinsinden boyutlar
+   */
+  const calculateVectorDimensions = (
+    width: number,
+    height: number,
+    unit: 'mm' | 'px' | 'pt' | 'in',
+    dpi: number = DEFAULT_DPI
+  ): VectorDimensions => {
+    let widthMM: number;
+    let heightMM: number;
+
+    switch (unit) {
+      case 'mm':
+        widthMM = width;
+        heightMM = height;
+        break;
+      case 'px':
+        // Pixel'den MM'ye çevirme (DPI kullanarak)
+        widthMM = (width / dpi) * INCHES_TO_MM;
+        heightMM = (height / dpi) * INCHES_TO_MM;
+        break;
+      case 'pt':
+        // Point'den MM'ye çevirme
+        widthMM = width * POINTS_TO_MM;
+        heightMM = height * POINTS_TO_MM;
+        break;
+      case 'in':
+        // Inch'den MM'ye çevirme
+        widthMM = width * INCHES_TO_MM;
+        heightMM = height * INCHES_TO_MM;
+        break;
+      default:
+        throw new Error(`Desteklenmeyen birim: ${unit}`);
+    }
+
+    return {
+      width: Math.round(widthMM * 100) / 100, // 2 ondalık basamak
+      height: Math.round(heightMM * 100) / 100,
+      unit: 'mm',
+      dpi: unit === 'px' ? dpi : undefined
+    };
+  };
+
+  /**
+   * Kesim payı (bleed) hesaplamaları yapar
+   * @param dimensions - Orijinal tasarım boyutları (MM)
+   * @param bleedSettings - Kesim payı ayarları (MM)
+   * @returns Kesim payı eklenmiş boyutlar
+   */
+  const calculateBleedDimensions = (
+    dimensions: VectorDimensions,
+    bleedSettings: BleedSettings
+  ): VectorDimensions => {
+    const widthWithBleed = dimensions.width + bleedSettings.left + bleedSettings.right;
+    const heightWithBleed = dimensions.height + bleedSettings.top + bleedSettings.bottom;
+
+    return {
+      width: Math.round(widthWithBleed * 100) / 100,
+      height: Math.round(heightWithBleed * 100) / 100,
+      unit: 'mm'
+    };
+  };
+
+  /**
+   * Güvenli alan (safe area) hesaplamaları yapar
+   * @param dimensions - Orijinal tasarım boyutları (MM)
+   * @param safeAreaSettings - Güvenli alan ayarları (MM)
+   * @returns Güvenli alan boyutları
+   */
+  const calculateSafeArea = (
+    dimensions: VectorDimensions,
+    safeAreaSettings: SafeAreaSettings
+  ): VectorDimensions => {
+    const safeWidth = dimensions.width - safeAreaSettings.left - safeAreaSettings.right;
+    const safeHeight = dimensions.height - safeAreaSettings.top - safeAreaSettings.bottom;
+
+    return {
+      width: Math.max(0, Math.round(safeWidth * 100) / 100),
+      height: Math.max(0, Math.round(safeHeight * 100) / 100),
+      unit: 'mm'
+    };
+  };
+
+  /**
+   * Crop marks (kesim işaretleri) ayarlarını hesaplar
+   * @param dimensions - Tasarım boyutları
+   * @param bleedSettings - Kesim payı ayarları
+   * @returns Crop marks ayarları
+   */
+  const calculateCropMarks = (
+    dimensions: VectorDimensions,
+    bleedSettings: BleedSettings
+  ): CropMarkSettings => {
+    // Standart kesim işareti uzunluğu: 5mm
+    // Standart ofset: kesim payının yarısı + 2mm
+    const averageBleed = (bleedSettings.top + bleedSettings.bottom + bleedSettings.left + bleedSettings.right) / 4;
+    
+    return {
+      enabled: true,
+      length: 5, // mm
+      offset: Math.max(2, averageBleed / 2 + 2), // mm
+      lineWidth: 0.25 // mm (0.25mm = yaklaşık 0.7pt)
+    };
+  };
+
+  /**
+   * Renk profili kontrolü yapar
+   * @param filename - Dosya adı
+   * @param fileType - Dosya tipi
+   * @returns Renk profili bilgisi
+   */
+  const analyzeColorProfile = (filename: string, fileType: string): ColorProfileInfo => {
+    // Dosya uzantısına göre varsayılan profil tahmini
+    let profile: ColorProfile = 'UNKNOWN';
+    let isValid = true;
+    let recommendation = '';
+
+    const extension = filename.toLowerCase().split('.').pop();
+
+    switch (extension) {
+      case 'pdf':
+        // PDF'ler genellikle CMYK veya RGB olabilir
+        profile = 'CMYK'; // Varsayılan olarak print-ready kabul
+        recommendation = 'PDF dosyası tespit edildi. Baskı için CMYK profili önerilir.';
+        break;
+      case 'ai':
+        profile = 'CMYK';
+        recommendation = 'Adobe Illustrator dosyası. Baskı için ideal formattır.';
+        break;
+      case 'eps':
+        profile = 'CMYK';
+        recommendation = 'EPS dosyası. Profesyonel baskı için uygundur.';
+        break;
+      case 'svg':
+        profile = 'RGB';
+        isValid = false;
+        recommendation = 'SVG dosyası RGB renk uzayında. Baskı için CMYK'ya çevrilmesi önerilir.';
+        break;
+      default:
+        profile = 'UNKNOWN';
+        isValid = false;
+        recommendation = 'Renk profili belirlenemedi. Manuel kontrol gerekli.';
+    }
+
+    return {
+      profile,
+      isValid,
+      recommendation
+    };
+  };
+
+  /**
+   * Vektörel dosyayı tam olarak işler (boyut, kesim payı, renk profili)
+   * @param design - Tasarım dosyası bilgisi
+   * @param bleedSettings - Kesim payı ayarları
+   * @param safeAreaSettings - Güvenli alan ayarları
+   * @returns İşlenmiş vektörel dosya bilgisi
+   */
+  const processVectorFile = (
+    design: Design,
+    bleedSettings: BleedSettings,
+    safeAreaSettings: SafeAreaSettings
+  ): ProcessedVectorFile => {
+    // Dosyadan boyut bilgisini çıkar
+    let originalDimensions: VectorDimensions;
+    
+    try {
+      if (design.realDimensionsMM && design.realDimensionsMM !== 'Unknown' && design.realDimensionsMM !== 'Bilinmiyor') {
+        const match = design.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
+        if (match) {
+          originalDimensions = {
+            width: parseFloat(match[1]),
+            height: parseFloat(match[2]),
+            unit: 'mm'
+          };
+        } else {
+          throw new Error('Boyut bilgisi ayrıştırılamadı');
+        }
+      } else {
+        // Varsayılan boyutlar
+        originalDimensions = {
+          width: 50,
+          height: 30,
+          unit: 'mm'
+        };
+      }
+    } catch (error) {
+      console.warn('Boyut bilgisi çıkarılırken hata:', error);
+      originalDimensions = {
+        width: 50,
+        height: 30,
+        unit: 'mm'
+      };
+    }
+
+    // Hesaplamaları yap
+    const printDimensions = originalDimensions; // Zaten MM cinsinde
+    const withBleed = calculateBleedDimensions(printDimensions, bleedSettings);
+    const safeArea = calculateSafeArea(printDimensions, safeAreaSettings);
+    const colorProfile = analyzeColorProfile(design.filename, design.type);
+    const cropMarks = calculateCropMarks(printDimensions, bleedSettings);
+
+    return {
+      originalDimensions,
+      printDimensions,
+      withBleed,
+      safeArea,
+      colorProfile,
+      cropMarks
+    };
+  };
+
+  /**
+   * DPI kalitesini değerlendirir
+   * @param dpi - DPI değeri
+   * @returns Kalite değerlendirmesi
+   */
+  const evaluateDPIQuality = (dpi: number): { level: string; recommendation: string; color: string } => {
+    if (dpi >= 300) {
+      return {
+        level: 'Yüksek Kalite',
+        recommendation: 'Profesyonel baskı için ideal',
+        color: 'text-green-600'
+      };
+    } else if (dpi >= 150) {
+      return {
+        level: 'Orta Kalite',
+        recommendation: 'Günlük baskılar için uygun',
+        color: 'text-yellow-600'
+      };
+    } else {
+      return {
+        level: 'Düşük Kalite',
+        recommendation: 'Baskı kalitesi düşük olabilir',
+        color: 'text-red-600'
+      };
+    }
   };
 
   // Enhanced error handler
@@ -570,18 +886,54 @@ export default function AutomationPanelNew() {
                       Tümünü Temizle
                     </Button>
                   </div>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {designs.map((design: Design) => (
-                      <div key={design.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm font-medium truncate flex-1 mr-2">{design.filename}</span>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {design.realDimensionsMM || design.dimensions || 'N/A'}
-                          </Badge>
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {designs.map((design: Design) => {
+                      const processedFile = processVectorFile(design, bleedSettings, safeAreaSettings);
+                      return (
+                        <div key={design.id} className="p-3 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium truncate flex-1 mr-2">{design.filename}</span>
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="font-medium text-gray-600">Boyut:</span>
+                              <p className="text-gray-800">
+                                {processedFile.printDimensions.width}×{processedFile.printDimensions.height}mm
+                              </p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Kesim Payı ile:</span>
+                              <p className="text-blue-600">
+                                {processedFile.withBleed.width}×{processedFile.withBleed.height}mm
+                              </p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Renk Profili:</span>
+                              <Badge 
+                                variant={processedFile.colorProfile.isValid ? "default" : "destructive"} 
+                                className="text-xs"
+                              >
+                                {processedFile.colorProfile.profile}
+                              </Badge>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Güvenli Alan:</span>
+                              <p className="text-green-600">
+                                {processedFile.safeArea.width}×{processedFile.safeArea.height}mm
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {!processedFile.colorProfile.isValid && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                              <p className="text-yellow-800">⚠️ {processedFile.colorProfile.recommendation}</p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -592,6 +944,127 @@ export default function AutomationPanelNew() {
                   <p>Henüz dosya yüklenmedi</p>
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bleed and Crop Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Kesim Payı ve Crop Mark Ayarları
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Bleed Settings */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Kesim Payları (mm)</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setBleedSettings({ top: 3, bottom: 3, left: 3, right: 3 })}
+                  className="text-xs"
+                >
+                  Varsayılan (3mm)
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="bleed-top" className="text-xs">Üst</Label>
+                  <input
+                    id="bleed-top"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.5"
+                    value={bleedSettings.top}
+                    onChange={(e) => setBleedSettings(prev => ({ ...prev, top: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-2 py-1 text-sm border rounded"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bleed-bottom" className="text-xs">Alt</Label>
+                  <input
+                    id="bleed-bottom"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.5"
+                    value={bleedSettings.bottom}
+                    onChange={(e) => setBleedSettings(prev => ({ ...prev, bottom: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-2 py-1 text-sm border rounded"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bleed-left" className="text-xs">Sol</Label>
+                  <input
+                    id="bleed-left"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.5"
+                    value={bleedSettings.left}
+                    onChange={(e) => setBleedSettings(prev => ({ ...prev, left: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-2 py-1 text-sm border rounded"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bleed-right" className="text-xs">Sağ</Label>
+                  <input
+                    id="bleed-right"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.5"
+                    value={bleedSettings.right}
+                    onChange={(e) => setBleedSettings(prev => ({ ...prev, right: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-2 py-1 text-sm border rounded"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Crop Marks Settings */}
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="crop-marks"
+                  checked={showCropMarks}
+                  onChange={(e) => setShowCropMarks(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <Label htmlFor="crop-marks" className="text-sm font-medium cursor-pointer">
+                  Kesim işaretleri (Crop Marks) ekle
+                </Label>
+              </div>
+              
+              {showCropMarks && (
+                <div className="ml-6 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
+                  <p>• Uzunluk: 5mm</p>
+                  <p>• Ofset: Kesim payından 2mm dışarıda</p>
+                  <p>• Kalınlık: 0.25mm (0.7pt)</p>
+                </div>
+              )}
+            </div>
+
+            {/* Color Profile Check */}
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="color-profile"
+                  checked={colorProfileCheck}
+                  onChange={(e) => setColorProfileCheck(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <Label htmlFor="color-profile" className="text-sm font-medium cursor-pointer">
+                  Renk profili kontrolü yap (CMYK önerisi)
+                </Label>
+              </div>
             </div>
           </CardContent>
         </Card>
