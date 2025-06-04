@@ -130,7 +130,7 @@ class PayTRService {
       // Generate PayTR token
       paymentData.paytr_token = this.createPayTRToken(paymentData);
 
-      // PayTR Basic API - Token al
+      // PayTR Basic API - iframe token endpoint
       const response = await fetch("https://www.paytr.com/odeme/api/get-token", {
         method: "POST", 
         headers: {
@@ -142,26 +142,52 @@ class PayTRService {
       const result = await response.text();
       console.log("PayTR Response:", result);
       
-      if (result.startsWith("SUCCESS")) {
-        // Token başarılı şekilde alındı
-        const token = result.split(":")[1];
-        const paymentUrl = `https://www.paytr.com/odeme/guvenli/${token}`;
+      try {
+        // JSON response bekliyoruz
+        const jsonResult = JSON.parse(result);
         
-        return {
-          success: true,
-          paymentUrl,
-          data: {
-            orderId,
-            token,
-            amount: amount / 100
-          }
-        };
-      } else {
-        console.error("PayTR Error:", result);
-        return {
-          success: false,
-          message: result.includes("Test islem") ? "Test modunda doğru kart bilgilerini kullanın" : "Ödeme sistemi hatası"
-        };
+        if (jsonResult.status === "success") {
+          const token = jsonResult.token;
+          const paymentUrl = `https://www.paytr.com/odeme/guvenli/${token}`;
+          
+          return {
+            success: true,
+            paymentUrl,
+            data: {
+              orderId,
+              token,
+              amount: amount / 100
+            }
+          };
+        } else {
+          console.error("PayTR Error:", jsonResult);
+          return {
+            success: false,
+            message: jsonResult.reason || "Ödeme sistemi hatası"
+          };
+        }
+      } catch (parseError) {
+        // String response ise (eski format)
+        if (result.startsWith("SUCCESS")) {
+          const token = result.split(":")[1];
+          const paymentUrl = `https://www.paytr.com/odeme/guvenli/${token}`;
+          
+          return {
+            success: true,
+            paymentUrl,
+            data: {
+              orderId,
+              token,
+              amount: amount / 100
+            }
+          };
+        } else {
+          console.error("PayTR Error:", result);
+          return {
+            success: false,
+            message: result.includes("Test islem") ? "Test modunda doğru kart bilgilerini kullanın" : "Ödeme sistemi hatası"
+          };
+        }
       }
     } catch (error) {
       console.error("PayTR Service Error:", error);
