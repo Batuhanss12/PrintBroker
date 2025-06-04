@@ -2309,7 +2309,7 @@ export default function AutomationPanelNew() {
   );
 
   // Check if system is busy
-  const isBusy = uploadMutation.isPending || autoArrangeMutation.isPending || generatePdfMutation.isPending || isProcessing;
+  const isBusy = uploadMutation.isPending || generatePdfMutation.isPending || isProcessing;
   const selectedDesigns = designs;
 
   const runValidation = async () => {
@@ -3224,13 +3224,13 @@ export default function AutomationPanelNew() {
             <Button
               size="lg"
               onClick={() => autoArrangeMutation.mutate()}
-              disabled={designs.length === 0 || isBusy || isOptimizing}
+              disabled={designs.length === 0 || uploadMutation.isPending}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-4 text-lg font-bold disabled:opacity-50"
             >
-              {isOptimizing || autoArrangeMutation.isPending ? (
+              {autoArrangeMutation.isPending ? (
                 <>
                   <Play className="animate-spin h-6 w-6 mr-3" />
-                  {isOptimizing ? 'OPTİMİZE EDİLİYOR...' : 'DİZİLİYOR...'}
+                  DİZİLİYOR...
                 </>
               ) : (
                 <>
