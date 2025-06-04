@@ -191,8 +191,8 @@ export async function setupAuth(app: Express) {
             delete req.session?.selectedRole;
             delete req.session?.returnTo;
             
-            // Redirect to home page (authenticated users will see their dashboard)
-            res.redirect('/');
+            // Redirect to dashboard endpoint for role-based routing
+            res.redirect('/dashboard');
           } catch (error) {
             console.error('User creation error:', error);
             res.redirect('/');
@@ -270,7 +270,7 @@ function setupFallbackAuth(app: Express) {
           return res.redirect('/?error=session_failed');
         }
         
-        // Clear session storage and redirect to dashboard
+        // Clear session storage and redirect to dashboard for role-based routing
         delete req.session?.selectedRole;
         res.redirect('/dashboard');
       });

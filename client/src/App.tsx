@@ -1,3 +1,4 @@
+
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -5,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "./pages/Landing";
-import Home from "./pages/HomeNew";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import PrinterDashboard from "@/pages/PrinterDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -40,6 +40,7 @@ function Router() {
           <Route path="/" component={() => {
             // Auto-redirect to appropriate dashboard based on role
             const userRole = (user as any)?.role || 'customer';
+            
             if (userRole === 'admin') {
               window.location.href = '/admin-dashboard';
               return null;
@@ -48,6 +49,24 @@ function Router() {
               window.location.href = '/printer-dashboard';
               return null;
             }
+            // Default to customer dashboard
+            window.location.href = '/customer-dashboard';
+            return null;
+          }} />
+          
+          <Route path="/dashboard" component={() => {
+            // Universal dashboard route that redirects based on role
+            const userRole = (user as any)?.role || 'customer';
+            
+            if (userRole === 'admin') {
+              window.location.href = '/admin-dashboard';
+              return null;
+            }
+            if (userRole === 'printer') {
+              window.location.href = '/printer-dashboard';
+              return null;
+            }
+            // Default to customer dashboard
             window.location.href = '/customer-dashboard';
             return null;
           }} />
@@ -101,18 +120,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Switch>
-          <Route path="/" component={Landing} />
-          <Route path="/home" component={Home} />
-          <Route path="/customer" component={CustomerDashboard} />
-          <Route path="/printer" component={PrinterDashboard} />
-          <Route path="/admin" component={AdminDashboard} />
-          <Route path="/quote" component={QuoteForm} />
-          <Route path="/payment" component={Payment} />
-          <Route path="/customer-register" component={CustomerRegister} />
-          <Route path="/printer-register" component={PrinterRegister} />
-          <Route component={NotFound} />
-        </Switch>
+        <Router />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
