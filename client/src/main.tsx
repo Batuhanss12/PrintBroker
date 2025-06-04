@@ -4,24 +4,30 @@ import "./index.css";
 
 // Global error handling for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  
-  // Check if it's a network error or auth error
+  // Silently handle common network errors to reduce console spam
   if (event.reason?.message?.includes('fetch') || 
+      event.reason?.message?.includes('Failed to fetch') ||
       event.reason?.status === 401 || 
-      event.reason?.status === 404) {
-    console.warn('Network or auth error caught, handling gracefully');
+      event.reason?.status === 404 ||
+      event.reason?.name === 'AbortError') {
+    event.preventDefault();
+    return;
   }
   
-  // Prevent the default browser behavior of logging to console
+  console.warn('Promise rejection handled:', event.reason);
   event.preventDefault();
 });
 
 // Global error handling for uncaught errors
 window.addEventListener('error', (event) => {
-  console.error('Uncaught error:', event.error);
+  // Prevent crashes from minor errors
+  if (event.error?.name === 'ChunkLoadError' || 
+      event.error?.message?.includes('Loading chunk')) {
+    window.location.reload();
+    return;
+  }
   
-  // Don't let the app crash on minor errors
+  console.warn('Error handled:', event.error);
   event.preventDefault();
 });
 
