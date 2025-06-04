@@ -3270,8 +3270,11 @@ export default function AutomationPanelNew() {
 
             {/* Status indicators */}
             <div className="flex items-center gap-4 text-xs text-gray-500">
-              {/* Layout Options */}
-            <Tabs defaultValue="layout" className="space-y-6">
+            </div>
+          </div>
+          
+          {/* Layout Options */}
+          <Tabs defaultValue="layout" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="layout">📐 Layout Seçenekleri</TabsTrigger>
               <TabsTrigger value="processing">⚙️ İşlem Seçenekleri</TabsTrigger>
@@ -3316,10 +3319,6 @@ export default function AutomationPanelNew() {
               </div>
             </TabsContent>
           </Tabs>
-            </div>
-        </CardContent>
-      </Card>
-    </div>
         </CardContent>
       </Card>
     </div>
