@@ -1386,20 +1386,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`Processing design ${file!.id}: realDimensionsMM=${file!.realDimensionsMM}, dimensions=${file!.dimensions}`);
 
-        // Try multiple parsing strategies
-        let dimensionStr = file!.realDimensionsMM || file!.dimensions || '';
-
-        // Strategy 1: Extract from realDimensionsMM (e.g., "85x54mm")
-        let match = dimensionStr.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)(?:mm)?/i);
-        if (match) {
-          width = parseFloat(match[1]);
-          height = parseFloat(match[2]);
-          console.log(`Extracted dimensions: ${width}x${height}mm`);
+        // Parse real dimensions with priority on realDimensionsMM
+        if (file!.realDimensionsMM && file!.realDimensionsMM !== 'Unknown') {
+          const realMatch = file!.realDimensionsMM.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+          if (realMatch) {
+            width = parseFloat(realMatch[1]);
+            height = parseFloat(realMatch[2]);
+            console.log(`Using realDimensionsMM: ${width}x${height}mm`);
+          }
         }
         // Strategy 2: Look for dimensions in various formats
         else {
+          let dimensionStr = file!.dimensions || '';
           // Try "85x54", "85 x 54", "85×54" patterns
-          match = dimensionStr.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+          const match = dimensionStr.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
           if (match) {
             let w = parseFloat(match[1]);
             let h = parseFloat(match[2]);

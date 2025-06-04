@@ -84,12 +84,16 @@ export default function ValidationPanel({
       totalIssues += pageValidation.errors.length + pageValidation.warnings.length;
     }
 
-    // Dosya validasyonları
-    fileValidations.forEach(validation => {
-      score -= validation.errors.length * 15;
-      score -= validation.warnings.length * 8;
-      totalIssues += validation.errors.length + validation.warnings.length;
-    });
+    // Dosya validasyonları - safe check for undefined
+    if (fileValidations && fileValidations.length > 0) {
+      fileValidations.forEach(validation => {
+        if (validation && validation.errors && validation.warnings) {
+          score -= validation.errors.length * 15;
+          score -= validation.warnings.length * 8;
+          totalIssues += validation.errors.length + validation.warnings.length;
+        }
+      });
+    }
 
     // Layout validasyonu
     if (layoutValidation) {
