@@ -11,9 +11,9 @@ declare module 'express-session' {
       id: string;
       email: string;
       role: string;
-      firstName?: string;
-      lastName?: string;
-      profileImageUrl?: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      profileImageUrl?: string | null;
     };
   }
 }
