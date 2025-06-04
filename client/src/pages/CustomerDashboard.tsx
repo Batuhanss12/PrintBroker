@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { PrinterLoader, RollingPaperLoader } from "@/components/PrintingLoaders";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";

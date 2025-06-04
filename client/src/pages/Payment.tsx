@@ -21,6 +21,7 @@ import {
   Star
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PrintSpinner } from "@/components/PrintingLoaders";
 
 interface PaymentFormData {
   firstName: string;
@@ -615,7 +616,7 @@ export default function Payment() {
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <PrintSpinner size={20} color="#ffffff" />
                       <span>İşleminiz Gerçekleştiriliyor...</span>
                     </div>
                   ) : (
