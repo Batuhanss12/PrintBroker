@@ -104,23 +104,33 @@ export default function AutomationPanelNew() {
       });
     },
     onSuccess: (data: ArrangementResult) => {
+      console.log('Arrangement response received:', data);
       setArrangements(data);
       toast({
         title: "Dizim Tamamlandı",
         description: `${data.totalArranged} tasarım dizildi. PDF oluşturuluyor...`,
       });
       
-      // Auto-generate PDF after 1 second - pass the arrangement data correctly
-      setTimeout(() => {
-        console.log('Sending to PDF generation:', { 
-          plotterSettings, 
-          arrangements: data.arrangements 
+      // Ensure we have valid arrangement data before sending to PDF generation
+      if (data.arrangements && Array.isArray(data.arrangements) && data.arrangements.length > 0) {
+        setTimeout(() => {
+          console.log('Sending to PDF generation:', { 
+            plotterSettings, 
+            arrangements: data.arrangements 
+          });
+          generatePdfMutation.mutate({ 
+            plotterSettings: plotterSettings, 
+            arrangements: data.arrangements
+          });
+        }, 1000);
+      } else {
+        console.error('No valid arrangements to send for PDF generation');
+        toast({
+          title: "Hata",
+          description: "Dizim verisi eksik - PDF oluşturulamıyor",
+          variant: "destructive",
         });
-        generatePdfMutation.mutate({ 
-          plotterSettings: plotterSettings, 
-          arrangements: data.arrangements
-        });
-      }, 1000);
+      }
     },
     onError: () => {
       toast({
