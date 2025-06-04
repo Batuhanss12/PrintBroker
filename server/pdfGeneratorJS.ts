@@ -72,7 +72,6 @@ export class NodePDFGenerator {
 
       // Draw grid (10mm grid)
       const gridSpacing = 10 * mmToPoints;
-      page.setLineWidth(0.5);
       
       // Vertical grid lines
       for (let x = 0; x <= width; x += gridSpacing) {

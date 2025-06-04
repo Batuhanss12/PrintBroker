@@ -11,6 +11,7 @@ import { ValidationService } from './validationService';
 import { insertQuoteSchema, insertPrinterQuoteSchema, insertRatingSchema, insertChatRoomSchema, insertChatMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { ideogramService } from "./ideogramApi";
+import { nodePDFGenerator } from "./pdfGeneratorJS";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
