@@ -9,7 +9,7 @@ import Navigation from "@/components/Navigation";
 import StatsCard from "@/components/StatsCard";
 import ContractManager from "@/components/ContractManager";
 import ReportsAndAnalytics from "@/components/ReportsAndAnalytics";
-import AutomationPanelFixed from "@/components/AutomationPanelFixed";
+import AutomationPanelNew from "@/components/AutomationPanelNew";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -415,7 +415,7 @@ export default function PrinterDashboard() {
           </TabsContent>
 
           <TabsContent value="automation">
-            <AutomationPanelFixed />
+            <AutomationPanelNew />
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">

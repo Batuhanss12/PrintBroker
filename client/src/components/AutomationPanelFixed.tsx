@@ -141,11 +141,10 @@ export default function AutomationPanelFixed() {
   // Get designs with enhanced error handling
   const { data: designs = [], isLoading: designsLoading, refetch: refetchDesigns } = useQuery({
     queryKey: ['/api/automation/plotter/designs'],
-    queryFn: () => apiRequest('GET', '/api/automation/plotter/designs'),
+    queryFn: () => apiRequest<Design[]>('GET', '/api/automation/plotter/designs'),
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 1000 * 60 * 5, // 5 minutes
-    onError: (error: unknown) => handleError(error, "Tasarımlar yüklenemedi")
   });
 
   // Clear designs mutation
