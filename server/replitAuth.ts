@@ -33,11 +33,18 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Always use fallback auth in development
+  // Check if we have proper Replit auth credentials
   if (!process.env.REPLIT_CLIENT_ID || !process.env.REPLIT_CLIENT_SECRET) {
-    console.log('Missing Replit auth credentials, using fallback authentication');
-    setupFallbackAuth(app);
-    return;
+    console.warn('Warning: Missing Replit auth credentials. Users will need to provide proper authentication.');
+    // Only use fallback in development environment
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode: Using fallback authentication');
+      setupFallbackAuth(app);
+      return;
+    } else {
+      console.error('Production mode: Cannot proceed without proper authentication credentials');
+      throw new Error('Replit authentication credentials are required for production');
+    }
   }
 
   try {
@@ -251,8 +258,14 @@ function setupFallbackAuth(app: Express) {
 
   app.get('/api/login', async (req, res) => {
     try {
-      // Get role from session storage or query parameter
+      // Basic validation - require email and role
+      const email = req.query.email as string;
       const selectedRole = req.query.role || req.session?.selectedRole || 'customer';
+      
+      if (!email || !email.includes('@')) {
+        return res.redirect('/?error=invalid_email');
+      }
+      
       const baseUserId = Date.now();
       const userId = `${selectedRole}_dev-user-${baseUserId}`;
       
@@ -261,7 +274,7 @@ function setupFallbackAuth(app: Express) {
       
       const mockUser = await storage.upsertUser({
         id: userId,
-        email: `dev-${selectedRole}-${Date.now()}@example.com`,
+        email: email,
         firstName: 'Development',
         lastName: 'User',
         role: selectedRole as 'customer' | 'printer' | 'admin',

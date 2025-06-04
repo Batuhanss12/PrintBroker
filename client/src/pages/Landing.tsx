@@ -86,8 +86,19 @@ export default function Landing() {
       const selectedRole = showLoginForm || 'customer';
       sessionStorage.setItem('selectedRole', selectedRole);
       
-      // Redirect to Replit Auth login with role
-      window.location.href = `/api/login?role=${selectedRole}`;
+      // In development, require email validation
+      if (!formData.email || !formData.email.includes('@')) {
+        toast({
+          title: "Geçersiz E-posta",
+          description: "Lütfen geçerli bir e-posta adresi girin",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Redirect to Replit Auth login with role and email
+      window.location.href = `/api/login?role=${selectedRole}&email=${encodeURIComponent(formData.email)}`;
     } catch (error) {
       toast({
         title: "Giriş hatası",
