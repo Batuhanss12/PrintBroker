@@ -149,6 +149,8 @@ export default function AutomationPanelNew() {
     let errorMessage = fallbackMessage;
     if (error instanceof Error) {
       errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
     }
     toast({
       title: "Hata",
@@ -168,38 +170,64 @@ export default function AutomationPanelNew() {
   // Upload designs mutation
   const uploadDesignsMutation = useMutation({
     mutationFn: async (formData: FormData): Promise<{ designs: Design[] }> => {
+      console.log('🚀 Starting file upload...');
       setUploadProgress(0);
+      
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 15, 90));
       }, 300);
 
       try {
-        const result = await apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
+        const response = await fetch('/api/automation/plotter/upload-designs', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+
         clearInterval(progressInterval);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
         setUploadProgress(100);
         setTimeout(() => setUploadProgress(0), 1500);
+        
+        console.log('✅ Upload successful:', result);
         return result;
       } catch (error) {
         clearInterval(progressInterval);
         setUploadProgress(0);
+        console.error('❌ Upload error:', error);
         throw error;
       }
     },
     onSuccess: (data) => {
-      if (data.designs && data.designs.length > 0) {
+      console.log('📦 Upload mutation success:', data);
+      if (data && data.designs && Array.isArray(data.designs) && data.designs.length > 0) {
         const newDesignIds = data.designs.map(d => d.id);
         setSelectedDesigns(prev => [...prev, ...newDesignIds]);
         toast({
           title: "✅ Yükleme Başarılı",
           description: `${data.designs.length} dosya başarıyla yüklendi ve analiz edildi.`,
         });
+      } else {
+        toast({
+          title: "⚠️ Yükleme Tamamlandı",
+          description: "Dosyalar yüklendi ancak analiz edilemedi.",
+          variant: "default",
+        });
       }
       queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
     },
     onError: (error: any) => {
+      console.error('❌ Upload mutation error:', error);
+      const errorMessage = error?.message || error?.toString() || "Dosya yükleme başarısız";
       toast({
         title: "❌ Yükleme Hatası",
-        description: error.message || "Dosyalar yüklenemedi",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -408,15 +436,81 @@ export default function AutomationPanelNew() {
   // Event handlers
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      console.warn('No files selected');
+      return;
+    }
 
-    const formData = new FormData();
+    console.log('📁 Files selected:', files.length);
+
+    // Validate files
+    const allowedTypes = ['application/pdf', 'image/svg+xml', 'application/postscript', 'application/illustrator', 'image/jpeg', 'image/png'];
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
     Array.from(files).forEach(file => {
-      formData.append('designs', file);
+      console.log(`📄 Validating file: ${file.name} (${file.type}, ${file.size} bytes)`);
+      
+      if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().match(/\.(pdf|svg|ai|eps|jpg|jpeg|png)$/)) {
+        errors.push(`${file.name}: Desteklenmeyen dosya türü`);
+        return;
+      }
+      
+      if (file.size > maxSize) {
+        errors.push(`${file.name}: Dosya boyutu çok büyük (max 50MB)`);
+        return;
+      }
+      
+      if (file.size === 0) {
+        errors.push(`${file.name}: Dosya boş`);
+        return;
+      }
+      
+      validFiles.push(file);
     });
-    uploadDesignsMutation.mutate(formData);
+
+    if (errors.length > 0) {
+      toast({
+        title: "❌ Dosya Validasyon Hatası",
+        description: errors.join('\n'),
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
+    if (validFiles.length === 0) {
+      toast({
+        title: "⚠️ Uyarı",
+        description: "Yüklenecek geçerli dosya bulunamadı",
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      validFiles.forEach(file => {
+        formData.append('designs', file);
+        console.log(`✅ Added to FormData: ${file.name}`);
+      });
+
+      console.log('🚀 Starting upload mutation with', validFiles.length, 'files');
+      uploadDesignsMutation.mutate(formData);
+    } catch (error) {
+      console.error('❌ Error preparing upload:', error);
+      toast({
+        title: "❌ Yükleme Hazırlık Hatası",
+        description: "Dosyalar yükleme için hazırlanamadı",
+        variant: "destructive",
+      });
+    }
+
+    // Clear the input
     event.target.value = '';
-  }, [uploadDesignsMutation]);
+  }, [uploadDesignsMutation, toast]);
 
   const toggleDesignSelection = (designId: string) => {
     setSelectedDesigns(prev => 
@@ -835,7 +929,7 @@ export default function AutomationPanelNew() {
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept=".pdf,.svg,.ai,.eps,application/pdf,image/svg+xml,application/postscript"
+                  accept=".pdf,.svg,.ai,.eps,.jpg,.jpeg,.png,application/pdf,image/svg+xml,application/postscript,application/illustrator,image/jpeg,image/png"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
@@ -846,24 +940,42 @@ export default function AutomationPanelNew() {
                     Vektörel Dosyalarınızı Yükleyin
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
+                    PDF, SVG, AI, EPS, JPG, PNG formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
                   </p>
                 </div>
 
                 <Button 
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    console.log('📁 File input button clicked');
+                    fileInputRef.current?.click();
+                  }}
                   disabled={uploadDesignsMutation.isPending}
                   size="lg"
                   className="mb-6"
                 >
-                  {uploadDesignsMutation.isPending ? "🔄 Analiz Ediliyor..." : "📁 Dosya Seç ve Yükle"}
+                  {uploadDesignsMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      🔄 Analiz Ediliyor...
+                    </>
+                  ) : (
+                    "📁 Dosya Seç ve Yükle"
+                  )}
                 </Button>
 
                 {uploadProgress > 0 && (
-                  <div className="mt-4">
+                  <div className="mt-4 mb-4">
                     <Progress value={uploadProgress} className="w-full" />
                     <p className="text-sm text-blue-600 mt-2">
                       Yükleniyor ve analiz ediliyor: {uploadProgress.toFixed(0)}%
+                    </p>
+                  </div>
+                )}
+
+                {uploadDesignsMutation.isError && (
+                  <div className="mt-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">
+                      ❌ Yükleme hatası: Lütfen dosyalarınızı kontrol edip tekrar deneyin
                     </p>
                   </div>
                 )}
