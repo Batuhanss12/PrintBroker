@@ -63,11 +63,18 @@ export default function AdvancedFileUpload({
       const formData = new FormData();
       formData.append('file', file);
       
-      return await apiRequest('POST', '/api/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || 'Upload failed');
+      }
+
+      return response.json();
     },
     onSuccess: (response, file) => {
       const uploadedFile = files.find(f => f.name === file.name);

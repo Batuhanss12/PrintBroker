@@ -29,13 +29,13 @@ const upload = multer({
   dest: uploadDir,
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB limit
+    files: 10
   },
   fileFilter: (req, file, cb) => {
     console.log('File upload attempt:', {
       fieldname: file.fieldname,
       originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size
+      mimetype: file.mimetype
     });
 
     // Allow vector and document file types for printing
@@ -48,18 +48,22 @@ const upload = multer({
       'image/eps',
       'application/x-eps',
       'image/jpeg',
-      'image/png'
+      'image/png',
+      'image/gif',
+      'image/bmp',
+      'image/tiff',
+      'image/webp'
     ];
 
     // Also check file extensions for AI files (often have generic mimetype)
     const fileExt = file.originalname.toLowerCase().split('.').pop();
-    const allowedExtensions = ['pdf', 'svg', 'ai', 'eps', 'jpg', 'jpeg', 'png'];
+    const allowedExtensions = ['pdf', 'svg', 'ai', 'eps', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp'];
 
     if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExt || '')) {
       cb(null, true);
     } else {
       console.log('Rejected file type:', file.mimetype, 'Extension:', fileExt);
-      cb(new Error(`Invalid file type: ${file.mimetype}. Only PDF, SVG, AI, EPS files are allowed.`));
+      cb(new Error(`Desteklenmeyen dosya türü: ${file.mimetype}. Sadece PDF, SVG, AI, EPS, JPG, PNG dosyaları kabul edilir.`));
     }
   }
 });
@@ -67,6 +71,23 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+
+  // Multer error handling middleware
+  app.use((error: any, req: any, res: any, next: any) => {
+    if (error instanceof multer.MulterError) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'Dosya boyutu çok büyük (maksimum 100MB)' });
+      }
+      if (error.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({ message: 'Çok fazla dosya (maksimum 10 dosya)' });
+      }
+      return res.status(400).json({ message: 'Dosya yükleme hatası: ' + error.message });
+    }
+    if (error.message.includes('Invalid file type')) {
+      return res.status(400).json({ message: error.message });
+    }
+    next(error);
+  });
 
   // Registration endpoint
   app.post('/api/register', async (req, res) => {
@@ -254,7 +275,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
       const { quoteId } = req.body;
 
       // Basic file validation

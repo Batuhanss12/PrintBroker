@@ -57,14 +57,15 @@ export default function FileUpload({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/files/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || 'Upload failed');
       }
 
       return response.json();
