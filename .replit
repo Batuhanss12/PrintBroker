@@ -4,6 +4,27 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
+
+[[nix.packages]]
+name = "ghostscript"
+
+[[nix.packages]]
+name = "inkscape"
+
+[[nix.packages]]
+name = "imagemagick"
+
+[[nix.packages]]
+name = "python311Packages.reportlab"
+
+[[nix.packages]]
+name = "python311Packages.pymupdf"
+
+[[nix.packages]]
+name = "python311Packages.pillow"
+
+[[nix.packages]]
+name = "python311Packages.cairosvg"
 packages = ["freetype", "glibcLocales", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
 [deployment]

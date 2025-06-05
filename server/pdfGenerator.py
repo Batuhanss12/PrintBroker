@@ -13,10 +13,21 @@ from PIL import Image
 import tempfile
 import subprocess
 import logging
+import shutil
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Check system tools availability
+SYSTEM_TOOLS = {
+    'ghostscript': shutil.which('gs'),
+    'inkscape': shutil.which('inkscape'),
+    'imagemagick': shutil.which('convert'),
+    'rsvg': shutil.which('rsvg-convert')
+}
+
+logger.info(f"🔧 System tools availability: {SYSTEM_TOOLS}")
 
 class ProfessionalPDFGenerator:
     def __init__(self):
@@ -227,75 +238,84 @@ class ProfessionalPDFGenerator:
             target_height_pt = target_height_mm * 2.834645669
 
             # Method 1: Ghostscript (best for EPS/AI)
-            try:
-                cmd = [
-                    'gs',
-                    '-dNOPAUSE',
-                    '-dBATCH',
-                    '-dSAFER',
-                    '-sDEVICE=pdfwrite',
-                    '-dEPSCrop',
-                    '-dPDFFitPage',
-                    f'-dDEVICEWIDTHPOINTS={target_width_pt}',
-                    f'-dDEVICEHEIGHTPOINTS={target_height_pt}',
-                    '-dCompatibilityLevel=1.5',
-                    '-dColorConversionStrategy=/LeaveColorUnchanged',
-                    '-dDownsampleMonoImages=false',
-                    '-dDownsampleGrayImages=false',
-                    '-dDownsampleColorImages=false',
-                    f'-sOutputFile={output_path}',
-                    eps_path
-                ]
+            if SYSTEM_TOOLS['ghostscript']:
+                try:
+                    cmd = [
+                        SYSTEM_TOOLS['ghostscript'],
+                        '-dNOPAUSE',
+                        '-dBATCH',
+                        '-dSAFER',
+                        '-sDEVICE=pdfwrite',
+                        '-dEPSCrop',
+                        '-dPDFFitPage',
+                        f'-dDEVICEWIDTHPOINTS={target_width_pt}',
+                        f'-dDEVICEHEIGHTPOINTS={target_height_pt}',
+                        '-dCompatibilityLevel=1.5',
+                        '-dColorConversionStrategy=/LeaveColorUnchanged',
+                        '-dDownsampleMonoImages=false',
+                        '-dDownsampleGrayImages=false',
+                        '-dDownsampleColorImages=false',
+                        f'-sOutputFile={output_path}',
+                        eps_path
+                    ]
 
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-                if result.returncode == 0:
-                    logger.info("✅ EPS/AI converted using Ghostscript (vector preserved)")
-                    return True
-                else:
-                    logger.warning(f"⚠️ Ghostscript conversion failed: {result.stderr}")
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    if result.returncode == 0:
+                        logger.info("✅ EPS/AI converted using Ghostscript (vector preserved)")
+                        return True
+                    else:
+                        logger.warning(f"⚠️ Ghostscript conversion failed: {result.stderr}")
 
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                logger.warning("⚠️ Ghostscript not available")
+                except (subprocess.TimeoutExpired, Exception) as e:
+                    logger.warning(f"⚠️ Ghostscript execution failed: {e}")
+            else:
+                logger.warning("⚠️ Ghostscript not available in system")
 
             # Method 2: Inkscape (can handle some AI files)
-            try:
-                cmd = [
-                    'inkscape',
-                    '--export-type=pdf',
-                    f'--export-filename={output_path}',
-                    f'--export-width={target_width_mm}mm',
-                    f'--export-height={target_height_mm}mm',
-                    '--export-dpi=300',
-                    eps_path
-                ]
+            if SYSTEM_TOOLS['inkscape']:
+                try:
+                    cmd = [
+                        SYSTEM_TOOLS['inkscape'],
+                        '--export-type=pdf',
+                        f'--export-filename={output_path}',
+                        f'--export-width={target_width_mm}mm',
+                        f'--export-height={target_height_mm}mm',
+                        '--export-dpi=300',
+                        eps_path
+                    ]
 
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-                if result.returncode == 0:
-                    logger.info("✅ EPS/AI converted using Inkscape")
-                    return True
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    if result.returncode == 0:
+                        logger.info("✅ EPS/AI converted using Inkscape")
+                        return True
 
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                logger.info("📝 Inkscape not available for EPS")
+                except (subprocess.TimeoutExpired, Exception) as e:
+                    logger.warning(f"⚠️ Inkscape execution failed: {e}")
+            else:
+                logger.info("📝 Inkscape not available in system")
 
             # Method 3: ImageMagick (raster fallback with high quality)
-            try:
-                cmd = [
-                    'convert',
-                    '-density', '300',
-                    '-colorspace', 'RGB',
-                    f'-resize', f'{target_width_mm * 11.81}x{target_height_mm * 11.81}',
-                    '-quality', '95',
-                    eps_path,
-                    output_path
-                ]
+            if SYSTEM_TOOLS['imagemagick']:
+                try:
+                    cmd = [
+                        SYSTEM_TOOLS['imagemagick'],
+                        '-density', '300',
+                        '-colorspace', 'RGB',
+                        f'-resize', f'{target_width_mm * 11.81}x{target_height_mm * 11.81}',
+                        '-quality', '95',
+                        eps_path,
+                        output_path
+                    ]
 
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-                if result.returncode == 0:
-                    logger.info("✅ EPS/AI converted using ImageMagick (high-quality raster)")
-                    return True
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    if result.returncode == 0:
+                        logger.info("✅ EPS/AI converted using ImageMagick (high-quality raster)")
+                        return True
 
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                logger.warning("⚠️ ImageMagick not available")
+                except (subprocess.TimeoutExpired, Exception) as e:
+                    logger.warning(f"⚠️ ImageMagick execution failed: {e}")
+            else:
+                logger.warning("⚠️ ImageMagick not available in system")
 
             # Final fallback
             return self.create_placeholder_pdf(output_path, target_width_mm, target_height_mm, "EPS/AI Content (conversion tools unavailable)")
