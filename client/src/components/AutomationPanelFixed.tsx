@@ -31,6 +31,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
+import AnalysisResultsDisplay from './AnalysisResultsDisplay';
 
 interface Design {
   id: string;
@@ -84,6 +85,8 @@ export default function AutomationPanelFixed() {
   
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
+  const [analysisResults, setAnalysisResults] = useState<any[]>([]);
+  const [showAnalysisResults, setShowAnalysisResults] = useState(false);
   const [plotterSettings, setPlotterSettings] = useState<PlotterSettings>({
     sheetWidth: 330,
     sheetHeight: 480,
@@ -95,6 +98,41 @@ export default function AutomationPanelFixed() {
   // Fetch uploaded designs
   const { data: designs = [], isLoading: designsLoading, error: designsError } = useQuery({
     queryKey: ['/api/designs']
+  });
+
+  // Enhanced analysis mutation
+  const enhancedAnalysisMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/analyze-design', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Enhanced analysis failed');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data, file) => {
+      setAnalysisResults(prev => [...prev, { file: file.name, ...data }]);
+      setShowAnalysisResults(true);
+      toast({
+        title: "Analysis Complete",
+        description: `${file.name} has been analyzed successfully`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/designs'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Analysis Failed",
+        description: error instanceof Error ? error.message : 'Analysis failed',
+        variant: "destructive"
+      });
+    }
   });
 
   // Upload designs mutation
