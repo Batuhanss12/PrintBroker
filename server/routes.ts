@@ -872,6 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (status === 'success') {
           // Payment successful - update user subscription or credit
+```text
           console.log(`Payment successful for order: ${merchant_oid}, amount: ${total_amount}`);
 
           // Extract user info from merchant_oid if needed
@@ -1491,178 +1492,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced plotter design file upload with content preservation
-  app.post('/api/automation/plotter/upload-designs', isAuthenticated, upload.array('designs', 10), async (req: any, res) => {
+  app.post('/api/automation/plotter/upload-designs', isAuthenticated, upload.single('designs'), async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub || req.session?.user?.id;
-      const user = await storage.getUser(userId);
+      console.log('📁 Otomatik dizim için dosya yükleme başlatıldı');
 
-      if (!user || user.role !== 'printer') {
-        return res.status(403).json({ message: "Printer access required" });
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
       }
 
-      console.log('🚀 Enhanced upload with content preservation started:', {
-        userId,
-        hasFiles: !!req.files,
-        filesLength: req.files?.length || 0
-      });
-
-      const files = req.files as Express.Multer.File[];
-
-      if (!files || files.length === 0) {
-        return res.status(400).json({ message: "No files uploaded - please select files" });
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
       }
 
-      const uploadedDesigns = [];
-      const processingErrors = [];
+      const { v4: uuidv4 } = await import('uuid');
+      const { formatFileSize } = await import('./utils');
 
-      for (const file of files) {
+      const file = req.file;
+      console.log(`🔍 Processing file: ${file.originalname} (${file.size} bytes)`);
+
+      try {
+        // Enhanced professional design analysis
+        const designAnalysis = await professionalDesignAnalyzer.analyzeDesignFile(file.path, {
+          preserveVectorQuality: true,
+          generateThumbnail: true,
+          extractDimensions: true,
+          validateContent: true
+        });
+
+        // Advanced Python-based analysis for accuracy  
+        let pythonAnalysis;
         try {
-          console.log(`📄 Processing file: ${file.originalname} (${file.mimetype})`);
-
-          // Enhanced file validation
-          const validation = await fileProcessingService.validateFile(file.path, file.mimetype);
-          if (!validation.isValid) {
-            processingErrors.push(`${file.originalname}: ${validation.errors.join(', ')}`);
-            continue;
-          }
-
-          // Process file with content preservation
-          const metadata = await fileProcessingService.processFile(file.path, file.mimetype);
-          console.log(`✅ Content analysis completed:`, {
-            contentPreserved: metadata.contentPreserved,
-            realDimensions: metadata.realDimensionsMM,
-            processingNotes: metadata.processingNotes
-          });
-
-          // Python tabanlı gelişmiş dosya analizi
-          let designAnalysisResult = null;
-          try {
-            console.log(`🐍 Python analizi başlatılıyor: ${file.originalname}`);
-            designAnalysisResult = await pythonAnalyzerService.analyzeFile(
-              file.path, 
-              file.originalname, 
-              file.mimetype
-            );
-            console.log(`✅ Python analizi tamamlandı:`, {
-              success: designAnalysisResult.success,
-              dimensions: `${designAnalysisResult.dimensions.widthMM}x${designAnalysisResult.dimensions.heightMM}mm`,
-              category: designAnalysisResult.dimensions.category,
-              confidence: designAnalysisResult.dimensions.confidence
-            });
-          } catch (analysisError) {
-            console.warn("Python analizi başarısız, fallback kullanılıyor:", analysisError);
-            // Fallback olarak JavaScript analizi
-            try {
-              designAnalysisResult = await professionalDesignAnalyzer.analyzeDesignFile(
-                file.path, 
-                file.originalname, 
-                file.mimetype
-              );
-            } catch (fallbackError) {
-              console.warn("Fallback analizi de başarısız:", fallbackError);
-            }
-          }
-
-          // Enhanced thumbnail generation
-          let thumbnailPath = '';
-          try {
-            if (file.mimetype === 'application/pdf') {
-              thumbnailPath = await fileProcessingService.generatePDFThumbnail(file.path, `${file.filename}.jpg`);
-            } else if (file.mimetype.startsWith('image/') || file.mimetype === 'image/svg+xml') {
-              thumbnailPath = await fileProcessingService.generateThumbnail(file.path, file.filename);
-            }
-            console.log(`🖼️ Thumbnail generated: ${thumbnailPath}`);
-          } catch (thumbError) {
-            console.warn("Thumbnail generation failed:", thumbError);
-          }
-
-          // Save to database with enhanced metadata
-          const fileRecord = await storage.createFile({
-            originalName: file.originalname,
-            filename: file.filename,
-            size: file.size || 0,
-            uploadedBy: userId,
-            fileType: 'design',
-            mimeType: file.mimetype,
-            dimensions: metadata.dimensions || 'Unknown',
-            realDimensionsMM: metadata.realDimensionsMM || 'Boyut tespit edilemedi',
-            thumbnailPath,
-            status: (metadata.contentPreserved !== false) ? 'ready' : 'warning',
-            colorProfile: metadata.colorProfile,
-            resolution: metadata.resolution,
-            hasTransparency: metadata.hasTransparency,
-            pageCount: metadata.pageCount,
-            processingNotes: metadata.processingNotes
-          });
-
-          // Create enhanced design object with AI analysis
-          const designFile = {
-            id: fileRecord.id,
-            name: file.originalname,
-            filename: file.filename,
-            filePath: `/uploads/${file.filename}`,
-            thumbnailPath: thumbnailPath || '',
-            size: file.size,
-            type: file.mimetype,
-            mimeType: file.mimetype,
-            dimensions: metadata.dimensions || 'Unknown',
-            realDimensionsMM: designAnalysisResult?.success ? 
-              `${designAnalysisResult.dimensions.widthMM}x${designAnalysisResult.dimensions.heightMM}mm` : 
-              metadata.realDimensionsMM || 'Boyut bilinmiyor',
-            fileSize: `${Math.round(file.size / 1024)}KB`,
-            fileType: 'design',
-            contentPreserved: metadata.contentPreserved !== false,
-            processingStatus: (metadata.contentPreserved !== false) ? 'success' : 'warning',
-            processingNotes: metadata.processingNotes,
-            colorProfile: metadata.colorProfile,
-            resolution: metadata.resolution,
-            userId,
-            uploadedAt: new Date().toISOString(),
-            // Profesyonel Analiz Sonuçları
-            designAnalysis: designAnalysisResult || null,
-            detectedDesigns: designAnalysisResult?.success ? [designAnalysisResult.dimensions] : [],
-            professionallyAnalyzed: !!designAnalysisResult?.success,
-            smartDimensions: designAnalysisResult?.success ? {
-              width: designAnalysisResult.dimensions.widthMM,
-              height: designAnalysisResult.dimensions.heightMM,
-              category: designAnalysisResult.dimensions.category,
-              confidence: designAnalysisResult.dimensions.confidence
-            } : null
-          };
-
-          uploadedDesigns.push(designFile);
-
-          console.log(`✅ File processed successfully: ${file.originalname}`);
-
-        } catch (fileError) {
-          console.error(`❌ Error processing file ${file.originalname}:`, fileError);
-          processingErrors.push(`${file.originalname}: Processing failed`);
+          pythonAnalysis = await pythonAnalyzerService.analyzeSingleFile(file.path, file.mimetype);
+          console.log('🐍 Python analiz sonucu:', pythonAnalysis);
+        } catch (pythonError) {
+          console.warn('⚠️ Python analiz hatası:', pythonError);
+          pythonAnalysis = null;
         }
+
+        // Create comprehensive design object
+        const designData = {
+          id: uuidv4(),
+          name: file.originalname,
+          originalName: file.originalname,
+          filename: file.filename,
+          filePath: `/uploads/${file.filename}`,
+          fileType: 'design',
+          mimeType: file.mimetype,
+          size: file.size,
+          fileSize: formatFileSize(file.size),
+          uploadedAt: new Date().toISOString(),
+
+          // Dimensions from professional analysis
+          dimensions: designAnalysis.dimensions || '50x30mm',
+          realDimensionsMM: designAnalysis.realWorldDimensions || '50x30mm',
+
+          // Content analysis
+          contentPreserved: designAnalysis.vectorContentPreserved || false,
+          hasTransparency: designAnalysis.hasTransparency || false,
+          colorProfile: designAnalysis.colorProfile || 'RGB',
+          resolution: designAnalysis.resolution || 300,
+
+          // Processing status
+          processingStatus: 'success',
+          processingNotes: designAnalysis.notes || 'Başarıyla analiz edildi',
+
+          // Python analysis integration
+          smartDimensions: pythonAnalysis ? {
+            width: pythonAnalysis.realWorldDimensions?.widthMM || 50,
+            height: pythonAnalysis.realWorldDimensions?.heightMM || 30,
+            confidence: pythonAnalysis.confidence || 0.8,
+            source: 'python_analyzer',
+            category: pythonAnalysis.contentType || 'unknown',
+            shouldRotate: pythonAnalysis.recommendedRotation || false
+          } : null,
+
+          // AI analysis integration
+          aiAnalysis: pythonAnalysis ? {
+            success: true,
+            designs: [{
+              ...pythonAnalysis,
+              realWorldDimensions: {
+                widthMM: pythonAnalysis.realWorldDimensions?.widthMM || 50,
+                heightMM: pythonAnalysis.realWorldDimensions?.heightMM || 30
+              }
+            }]
+          } : null,
+
+          // Thumbnail generation
+          thumbnailPath: designAnalysis.thumbnailPath || null
+        };
+
+        // Store in database
+        await storage.storeFile(userId, designData);
+
+        console.log(`✅ Design processed successfully: ${file.originalname}`);
+
+        // Return single design instead of array
+        res.json({
+          success: true,
+          design: designData,
+          message: `${file.originalname} başarıyla yüklendi ve analiz edildi`
+        });
+
+      } catch (fileError) {
+        console.error(`❌ File processing error for ${file.originalname}:`, fileError);
+
+        // Store with error status
+        const errorDesign = {
+          id: uuidv4(),
+          name: file.originalname,
+          originalName: file.originalname,
+          filename: file.filename,
+          filePath: `/uploads/${file.filename}`,
+          fileType: 'design',
+          mimeType: file.mimetype,
+          size: file.size,
+          fileSize: formatFileSize(file.size),
+          uploadedAt: new Date().toISOString(),
+          dimensions: '50x30mm',
+          realDimensionsMM: '50x30mm',
+          processingStatus: 'error',
+          processingNotes: `Analiz hatası: ${fileError.message}`,
+          contentPreserved: false
+        };
+
+        await storage.storeFile(userId, errorDesign);
+
+        res.status(500).json({
+          success: false,
+          design: errorDesign,
+          message: `${file.originalname} yüklendi ancak analiz hatası oluştu: ${fileError.message}`
+        });
       }
-
-      // Generate response
-      const response = {
-        message: `${uploadedDesigns.length} files uploaded successfully${processingErrors.length > 0 ? ` (${processingErrors.length} errors)` : ''}`,
-        designs: uploadedDesigns,
-        contentPreservationSummary: {
-          totalFiles: uploadedDesigns.length,
-          contentPreserved: uploadedDesigns.filter(d => d.contentPreserved).length,
-          warnings: uploadedDesigns.filter(d => d.processingStatus === 'warning').length
-        }
-      };
-
-      if (processingErrors.length > 0) {
-        (response as any).errors = processingErrors;
-      }
-
-      console.log('🎉 Upload completed:', {
-        successful: uploadedDesigns.length,
-        errors: processingErrors.length,
-        contentPreserved: uploadedDesigns.filter(d => d.contentPreserved).length
-      });
-
-      res.json(response);
-
     } catch (error) {
       console.error("❌ Upload system error:", error);
       res.status(500).json({ 

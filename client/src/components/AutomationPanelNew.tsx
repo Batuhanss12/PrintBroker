@@ -157,8 +157,8 @@ export default function AutomationPanelNew() {
 
   // Fetch designs query
   const { data: designs = [], isLoading: designsLoading, error: designsError, refetch } = useQuery({
-    queryKey: ['/api/files'],
-    queryFn: () => apiRequest('GET', '/api/files'),
+    queryKey: ['/api/automation/plotter/designs'],
+    queryFn: () => apiRequest('GET', '/api/automation/plotter/designs'),
     staleTime: 30000,
     retry: 2,
   });
@@ -172,7 +172,7 @@ export default function AutomationPanelNew() {
       try {
         setUploadProgress(25);
 
-        const response = await fetch('/api/upload', {
+        const response = await fetch('/api/automation/plotter/upload-designs', {
           method: 'POST',
           credentials: 'include',
           body: formData,
@@ -181,8 +181,17 @@ export default function AutomationPanelNew() {
         setUploadProgress(75);
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Dosya yükleme başarısız' }));
-          throw new Error(errorData.message || `Yükleme hatası: ${response.status}`);
+          const errorText = await response.text();
+          let errorMessage = 'Dosya yükleme başarısız';
+          
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorMessage;
+          } catch {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          }
+          
+          throw new Error(errorMessage);
         }
 
         const result = await response.json();
@@ -193,12 +202,18 @@ export default function AutomationPanelNew() {
         // Reset progress after delay
         setTimeout(() => setUploadProgress(0), 2000);
 
-        // Convert single file response to designs array format
-        if (result && !Array.isArray(result)) {
-          return { designs: [result] };
+        // Handle single design response
+        if (result && result.design) {
+          return { designs: [result.design] };
         }
 
-        return result;
+        // Handle legacy array response
+        if (result && Array.isArray(result)) {
+          return { designs: result };
+        }
+
+        // Handle error case
+        return { designs: [] };
       } catch (error) {
         setUploadProgress(0);
         console.error('❌ Upload error:', error);
@@ -510,7 +525,7 @@ export default function AutomationPanelNew() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('designs', file);
       console.log(`✅ File validated and prepared: ${file.name} (${fileExtension.toUpperCase()})`);
 
       // Show immediate feedback
@@ -926,11 +941,33 @@ export default function AutomationPanelNew() {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-3 flex items-center gap-3">
           <Layout className="h-10 w-10 text-blue-600" />
-          Profesyonel Otomatik Dizilim Sistemi
+          🚀 MatBixx Profesyonel Otomatik Dizilim Sistemi
         </h1>
-        <p className="text-lg text-gray-600">
-          Vektörel dosyalarınızı yükleyin, akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
+        <p className="text-lg text-gray-600 mb-4">
+          Vektörel dosyalarınızı yükleyin, AI destekli akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
         </p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <Brain className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+            <div className="text-sm font-medium text-blue-800">AI Destekli Analiz</div>
+            <div className="text-xs text-blue-600">Dosya içeriği otomatik analiz</div>
+          </div>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+            <Target className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+            <div className="text-sm font-medium text-purple-800">Akıllı Yerleştirme</div>
+            <div className="text-xs text-purple-600">Maksimum verimlilik algoritması</div>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <Sparkles className="h-8 w-8 text-green-600 mx-auto mb-2" />
+            <div className="text-sm font-medium text-green-800">Tek Tuş Dizim</div>
+            <div className="text-xs text-green-600">Tam otomatik süreç</div>
+          </div>
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+            <FileText className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+            <div className="text-sm font-medium text-orange-800">Profesyonel PDF</div>
+            <div className="text-xs text-orange-600">Yüksek kalite çıktı</div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
