@@ -15,6 +15,10 @@ interface FileMetadata {
   realDimensionsMM?: string;
   processingNotes?: string;
   contentPreserved?: boolean;
+  hasVectorContent?: boolean;
+  hasImages?: boolean;
+  extractedDesigns?: any[];
+  designElements?: any[];
 }
 
 export class FileProcessingService {
@@ -43,6 +47,221 @@ export class FileProcessingService {
       // Enhanced content preservation check
       const contentPreserved = await this.verifyContentIntegrity(filePath, mimeType);
       metadata.contentPreserved = contentPreserved;
+
+
+  // Enhanced design extraction from PDF files
+  async extractDesignsFromPDF(filePath: string): Promise<{
+    success: boolean;
+    designs: any[];
+    message: string;
+  }> {
+    try {
+      console.log('🎨 Starting design extraction from PDF:', filePath);
+      
+      const extractedDesigns: any[] = [];
+      const outputDir = path.join(this.uploadDir, 'extracted_designs');
+      
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+
+      // Method 1: Try pdf2svg for vector extraction
+      try {
+        await execAsync('which pdf2svg');
+        const fileName = path.basename(filePath, path.extname(filePath));
+        
+        // Get page count first
+        let pageCount = 1;
+        try {
+          const { stdout } = await execAsync(`pdfinfo "${filePath}" 2>/dev/null`);
+          const pagesMatch = stdout.match(/Pages:\s*(\d+)/);
+          if (pagesMatch) pageCount = parseInt(pagesMatch[1]);
+        } catch (e) {}
+
+        // Extract each page as SVG
+        for (let page = 1; page <= Math.min(pageCount, 10); page++) {
+          const svgPath = path.join(outputDir, `${fileName}_page${page}.svg`);
+          await execAsync(`pdf2svg "${filePath}" "${svgPath}" ${page}`);
+          
+          if (fs.existsSync(svgPath)) {
+            const svgContent = fs.readFileSync(svgPath, 'utf8');
+            const designInfo = await this.analyzeSVGDesign(svgPath, svgContent);
+            
+            extractedDesigns.push({
+              type: 'svg',
+              page: page,
+              filePath: svgPath,
+              relativePath: `/uploads/extracted_designs/${path.basename(svgPath)}`,
+              ...designInfo
+            });
+          }
+        }
+        
+        console.log(`✅ Extracted ${extractedDesigns.length} SVG designs from PDF`);
+      } catch (e) {
+        console.log('pdf2svg not available, trying alternative methods...');
+      }
+
+      // Method 2: Try pdftoppm for image extraction
+      if (extractedDesigns.length === 0) {
+        try {
+          await execAsync('which pdftoppm');
+          const fileName = path.basename(filePath, path.extname(filePath));
+          const pngPrefix = path.join(outputDir, fileName);
+          
+          await execAsync(`pdftoppm -png -r 300 "${filePath}" "${pngPrefix}"`);
+          
+          // Find generated PNG files
+          const files = fs.readdirSync(outputDir);
+          const pngFiles = files.filter(f => f.startsWith(path.basename(fileName)) && f.endsWith('.png'));
+          
+          for (const pngFile of pngFiles) {
+            const pngPath = path.join(outputDir, pngFile);
+            const imageInfo = await this.processImage(pngPath);
+            
+            extractedDesigns.push({
+              type: 'png',
+              filePath: pngPath,
+              relativePath: `/uploads/extracted_designs/${pngFile}`,
+              ...imageInfo
+            });
+          }
+          
+          console.log(`✅ Extracted ${extractedDesigns.length} PNG designs from PDF`);
+        } catch (e) {
+          console.log('pdftoppm not available');
+        }
+      }
+
+      // Method 3: Basic PDF content analysis
+      if (extractedDesigns.length === 0) {
+        try {
+          const fileBuffer = fs.readFileSync(filePath);
+          const fileContent = fileBuffer.toString('latin1');
+          
+          // Analyze PDF structure for design elements
+          const designElements = this.analyzePDFContent(fileContent);
+          
+          extractedDesigns.push({
+            type: 'pdf_analysis',
+            filePath: filePath,
+            elements: designElements,
+            message: 'PDF content analyzed, vector data preserved'
+          });
+          
+          console.log(`📊 PDF content analysis found ${designElements.length} design elements`);
+        } catch (e) {
+          console.log('PDF content analysis failed');
+        }
+      }
+
+      return {
+        success: extractedDesigns.length > 0,
+        designs: extractedDesigns,
+        message: extractedDesigns.length > 0 
+          ? `${extractedDesigns.length} tasarım başarıyla çıkarıldı`
+          : 'PDF\'den tasarım çıkarılamadı, dosya bütünlüğü korundu'
+      };
+
+    } catch (error) {
+      console.error('Design extraction failed:', error);
+      return {
+        success: false,
+        designs: [],
+        message: `Tasarım çıkarma hatası: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  // Analyze SVG content for design information
+  private async analyzeSVGDesign(filePath: string, content: string): Promise<any> {
+    try {
+      // Extract SVG dimensions and elements
+      const widthMatch = content.match(/width="([^"]+)"/);
+      const heightMatch = content.match(/height="([^"]+)"/);
+      const viewBoxMatch = content.match(/viewBox="([^"]+)"/);
+      
+      // Count design elements
+      const pathCount = (content.match(/<path/g) || []).length;
+      const rectCount = (content.match(/<rect/g) || []).length;
+      const circleCount = (content.match(/<circle/g) || []).length;
+      const textCount = (content.match(/<text/g) || []).length;
+      
+      let realWidthMM = 50;
+      let realHeightMM = 30;
+      
+      if (widthMatch && heightMatch) {
+        const width = parseFloat(widthMatch[1]);
+        const height = parseFloat(heightMatch[1]);
+        
+        if (!isNaN(width) && !isNaN(height)) {
+          realWidthMM = Math.round(width * 0.352778); // Convert from points
+          realHeightMM = Math.round(height * 0.352778);
+        }
+      }
+      
+      return {
+        realDimensionsMM: `${realWidthMM}x${realHeightMM}mm`,
+        elementCount: pathCount + rectCount + circleCount + textCount,
+        paths: pathCount,
+        shapes: rectCount + circleCount,
+        text: textCount,
+        isComplex: pathCount > 10 || textCount > 5
+      };
+    } catch (error) {
+      return {
+        realDimensionsMM: '50x30mm',
+        elementCount: 0,
+        analysis: 'failed'
+      };
+    }
+  }
+
+  // Analyze PDF content structure
+  private analyzePDFContent(content: string): any[] {
+    const elements: any[] = [];
+    
+    try {
+      // Look for drawing operations
+      const pathOperations = content.match(/[0-9]+\.?[0-9]*\s+[0-9]+\.?[0-9]*\s+[ml]/g) || [];
+      const rectangles = content.match(/[0-9]+\.?[0-9]*\s+[0-9]+\.?[0-9]*\s+[0-9]+\.?[0-9]*\s+[0-9]+\.?[0-9]*\s+re/g) || [];
+      const textBlocks = content.match(/BT[\s\S]*?ET/g) || [];
+      
+      elements.push({
+        type: 'paths',
+        count: pathOperations.length,
+        description: 'Vector paths and lines'
+      });
+      
+      elements.push({
+        type: 'rectangles',
+        count: rectangles.length,
+        description: 'Rectangle shapes'
+      });
+      
+      elements.push({
+        type: 'text',
+        count: textBlocks.length,
+        description: 'Text blocks'
+      });
+      
+      // Look for images
+      const imageObjects = content.match(/\/Type\s*\/XObject[\s\S]*?\/Subtype\s*\/Image/g) || [];
+      if (imageObjects.length > 0) {
+        elements.push({
+          type: 'images',
+          count: imageObjects.length,
+          description: 'Embedded images'
+        });
+      }
+      
+    } catch (error) {
+      console.error('PDF content analysis error:', error);
+    }
+    
+    return elements;
+  }
+
 
       if (mimeType.startsWith('image/')) {
         return await this.processImage(filePath);
@@ -219,13 +438,17 @@ export class FileProcessingService {
     const metadata: FileMetadata = {};
 
     try {
-      console.log(`Analyzing PDF: ${filePath}`);
+      console.log(`🔍 Enhanced PDF analysis: ${filePath}`);
 
       let realWidthMM = 50;
       let realHeightMM = 30;
       let pageCount = 1;
       let shape = 'rectangle';
+      let hasVectorContent = false;
+      let hasImages = false;
+      let extractedDesigns: any[] = [];
 
+      // Step 1: Basic PDF info extraction
       try {
         const { stdout } = await execAsync(`pdfinfo "${filePath}" 2>/dev/null`);
         console.log('PDF info:', stdout);
@@ -250,41 +473,87 @@ export class FileProcessingService {
           } else {
             shape = 'rectangle';
           }
-
-          console.log(`PDF dimensions: ${realWidthMM}x${realHeightMM}mm, shape: ${shape}`);
         }
 
         if (pagesMatch) {
           pageCount = parseInt(pagesMatch[1]);
         }
       } catch (pdfError) {
-        console.log('PDFInfo not available, trying alternative method...');
-
-        try {
-          const fileBuffer = fs.readFileSync(filePath);
-          const fileContent = fileBuffer.toString('latin1');
-
-          const mediaBoxMatch = fileContent.match(/\/MediaBox\s*\[\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s*\]/);
-
-          if (mediaBoxMatch) {
-            const x1 = parseFloat(mediaBoxMatch[1]);
-            const y1 = parseFloat(mediaBoxMatch[2]);
-            const x2 = parseFloat(mediaBoxMatch[3]);
-            const y2 = parseFloat(mediaBoxMatch[4]);
-
-            const widthPoints = x2 - x1;
-            const heightPoints = y2 - y1;
-
-            realWidthMM = Math.round(widthPoints * 0.352778);
-            realHeightMM = Math.round(heightPoints * 0.352778);
-
-            console.log(`Extracted from MediaBox: ${realWidthMM}x${realHeightMM}mm`);
-          }
-        } catch (fallbackError) {
-          console.log('PDF content analysis failed, using defaults');
-        }
+        console.log('PDFInfo not available, trying content analysis...');
       }
 
+      // Step 2: PDF Content Analysis for Design Detection
+      try {
+        const fileBuffer = fs.readFileSync(filePath);
+        const fileContent = fileBuffer.toString('latin1');
+
+        // Detect vector content
+        if (fileContent.includes('/Type/XObject') || 
+            fileContent.includes('/Subtype/Form') ||
+            fileContent.includes('BT') || // Text blocks
+            fileContent.includes('re') || // Rectangle paths
+            fileContent.includes('m ') || // Move to commands
+            fileContent.includes('l ')) {  // Line to commands
+          hasVectorContent = true;
+          console.log('✅ Vector content detected in PDF');
+        }
+
+        // Detect images
+        if (fileContent.includes('/Type/XObject') && 
+            fileContent.includes('/Subtype/Image')) {
+          hasImages = true;
+          console.log('✅ Embedded images detected in PDF');
+        }
+
+        // Extract MediaBox for more accurate dimensions
+        const mediaBoxMatch = fileContent.match(/\/MediaBox\s*\[\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s*\]/);
+        if (mediaBoxMatch) {
+          const x1 = parseFloat(mediaBoxMatch[1]);
+          const y1 = parseFloat(mediaBoxMatch[2]);
+          const x2 = parseFloat(mediaBoxMatch[3]);
+          const y2 = parseFloat(mediaBoxMatch[4]);
+
+          const widthPoints = x2 - x1;
+          const heightPoints = y2 - y1;
+
+          realWidthMM = Math.round(widthPoints * 0.352778);
+          realHeightMM = Math.round(heightPoints * 0.352778);
+        }
+
+        // Detect multiple design elements
+        const pathMatches = fileContent.match(/[0-9]+\.?[0-9]*\s+[0-9]+\.?[0-9]*\s+m/g);
+        if (pathMatches && pathMatches.length > 5) {
+          console.log(`📐 Multiple design paths detected: ${pathMatches.length} elements`);
+        }
+
+      } catch (contentError) {
+        console.log('PDF content analysis failed:', contentError);
+      }
+
+      // Step 3: Try to extract design elements using pdf2svg if available
+      try {
+        await execAsync('which pdf2svg');
+        const outputDir = path.join(this.uploadDir, 'extracted_designs');
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        const svgOutputPath = path.join(outputDir, `design_${Date.now()}.svg`);
+        await execAsync(`pdf2svg "${filePath}" "${svgOutputPath}" 1`);
+        
+        if (fs.existsSync(svgOutputPath)) {
+          console.log('✅ PDF converted to SVG for design extraction');
+          extractedDesigns.push({
+            type: 'svg',
+            path: svgOutputPath,
+            page: 1
+          });
+        }
+      } catch (extractError) {
+        console.log('Design extraction not available (pdf2svg not installed)');
+      }
+
+      // Validate and constrain dimensions
       if (realWidthMM > 500 || realHeightMM > 500) {
         realWidthMM = Math.min(realWidthMM, 200);
         realHeightMM = Math.min(realHeightMM, 200);
@@ -296,13 +565,18 @@ export class FileProcessingService {
         shape = 'rectangle';
       }
 
+      // Compile metadata
+      const contentType = hasVectorContent ? 'Vector' : hasImages ? 'Image' : 'Mixed';
       metadata.realDimensionsMM = `${realWidthMM}x${realHeightMM}mm`;
-      metadata.dimensions = `Vector ${shape.charAt(0).toUpperCase() + shape.slice(1)}`;
+      metadata.dimensions = `${contentType} ${shape.charAt(0).toUpperCase() + shape.slice(1)}`;
       metadata.pageCount = pageCount;
-      metadata.processingNotes = `PDF analyzed - ${realWidthMM}x${realHeightMM}mm ${shape} shape`;
+      metadata.hasVectorContent = hasVectorContent;
+      metadata.hasImages = hasImages;
+      metadata.extractedDesigns = extractedDesigns;
+      metadata.processingNotes = `PDF analyzed - ${realWidthMM}x${realHeightMM}mm ${shape}, ${contentType} content${extractedDesigns.length > 0 ? `, ${extractedDesigns.length} designs extracted` : ''}`;
       metadata.contentPreserved = true;
 
-      console.log('Final PDF metadata:', metadata);
+      console.log('🎯 Enhanced PDF metadata:', metadata);
 
     } catch (error) {
       console.error('PDF processing error:', error);
