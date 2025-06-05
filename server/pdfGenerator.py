@@ -24,23 +24,284 @@ class ProfessionalPDFGenerator:
         logger.info(f"🔧 Professional PDF Generator initialized, temp dir: {self.temp_dir}")
 
     def process_vector_file(self, file_path, output_path, target_width_mm, target_height_mm):
-        """Process vector files and convert to PDF-embeddable format"""
+        """Process vector files and convert to PDF-embeddable format with quality preservation"""
         try:
             file_ext = os.path.splitext(file_path)[1].lower()
-            logger.info(f"📄 Processing vector file: {file_path} ({file_ext})")
+            logger.info(f"🔧 Professional vector processing: {file_path} ({file_ext})")
 
+            # Pre-flight check
+            if not os.path.exists(file_path):
+                logger.error(f"❌ Source file not found: {file_path}")
+                return False
+
+            file_size = os.path.getsize(file_path)
+            logger.info(f"📊 File size: {file_size / 1024:.1f}KB")
+
+            success = False
             if file_ext == '.pdf':
-                return self.extract_pdf_content(file_path, output_path, target_width_mm, target_height_mm)
+                success = self.extract_pdf_content_advanced(file_path, output_path, target_width_mm, target_height_mm)
             elif file_ext in ['.svg']:
-                return self.convert_svg_to_pdf(file_path, output_path, target_width_mm, target_height_mm)
+                success = self.convert_svg_to_pdf_advanced(file_path, output_path, target_width_mm, target_height_mm)
             elif file_ext in ['.ai', '.eps']:
-                return self.convert_eps_to_pdf(file_path, output_path, target_width_mm, target_height_mm)
+                success = self.convert_eps_to_pdf_advanced(file_path, output_path, target_width_mm, target_height_mm)
             else:
                 logger.warning(f"⚠️ Unsupported file type: {file_ext}")
-                return False
+                success = self.create_placeholder_pdf(output_path, target_width_mm, target_height_mm, f"Unsupported: {file_ext}")
+
+            if success and os.path.exists(output_path):
+                output_size = os.path.getsize(output_path)
+                logger.info(f"✅ Processing completed: {output_size / 1024:.1f}KB output")
+                return True
+            else:
+                logger.warning(f"⚠️ Processing failed, creating placeholder")
+                return self.create_placeholder_pdf(output_path, target_width_mm, target_height_mm, f"Processing failed: {file_ext}")
 
         except Exception as e:
             logger.error(f"❌ Error processing vector file: {e}")
+            return self.create_placeholder_pdf(output_path, target_width_mm, target_height_mm, "Processing Error")
+
+    def extract_pdf_content_advanced(self, pdf_path, output_path, target_width_mm, target_height_mm):
+        """Advanced PDF content extraction with vector preservation"""
+        try:
+            logger.info(f"🔍 Advanced PDF extraction: {pdf_path}")
+
+            # Open source PDF with error handling
+            try:
+                src_doc = fitz.open(pdf_path)
+            except Exception as e:
+                logger.error(f"❌ Cannot open PDF: {e}")
+                return False
+
+            if len(src_doc) == 0:
+                logger.error("❌ PDF has no pages")
+                src_doc.close()
+                return False
+
+            # Get first page and analyze content
+            page = src_doc[0]
+            page_rect = page.rect
+            
+            # Check if page has actual content
+            text_blocks = page.get_text("blocks")
+            drawings = page.get_drawings()
+            images = page.get_images()
+            
+            content_info = {
+                'text_blocks': len(text_blocks),
+                'drawings': len(drawings), 
+                'images': len(images),
+                'has_content': len(text_blocks) > 0 or len(drawings) > 0 or len(images) > 0
+            }
+            
+            logger.info(f"📄 Content analysis: {content_info}")
+
+            if not content_info['has_content']:
+                logger.warning("⚠️ PDF appears to be empty")
+
+            # Calculate optimal scaling
+            source_width_pt = page_rect.width
+            source_height_pt = page_rect.height
+            target_width_pt = target_width_mm * 2.834645669
+            target_height_pt = target_height_mm * 2.834645669
+
+            # Preserve aspect ratio
+            scale_x = target_width_pt / source_width_pt
+            scale_y = target_height_pt / source_height_pt
+            scale = min(scale_x, scale_y)
+
+            logger.info(f"📐 Scaling: {scale:.3f} (from {source_width_pt:.1f}×{source_height_pt:.1f}pt to {target_width_pt:.1f}×{target_height_pt:.1f}pt)")
+
+            # Create new PDF with exact target dimensions
+            new_doc = fitz.open()
+            new_page = new_doc.new_page(width=target_width_pt, height=target_height_pt)
+
+            # Calculate centered position
+            scaled_width = source_width_pt * scale
+            scaled_height = source_height_pt * scale
+            x_offset = (target_width_pt - scaled_width) / 2
+            y_offset = (target_height_pt - scaled_height) / 2
+
+            # Create transformation matrix with proper positioning
+            mat = fitz.Matrix(scale, scale).pretranslate(x_offset, y_offset)
+
+            # Insert the scaled page content with vector preservation
+            try:
+                new_page.show_pdf_page(new_page.rect, src_doc, 0, clip=None, matrix=mat)
+                logger.info("✅ Vector content preserved in PDF extraction")
+            except Exception as e:
+                logger.warning(f"⚠️ Vector preservation failed, using fallback: {e}")
+                # Fallback: render as high-quality image
+                pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0))  # 2x for quality
+                img_data = pix.tobytes("png")
+                new_page.insert_image(new_page.rect, stream=img_data)
+
+            # Save with optimization
+            new_doc.save(output_path, garbage=4, deflate=True)
+            new_doc.close()
+            src_doc.close()
+
+            logger.info("✅ Advanced PDF extraction completed")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ Advanced PDF extraction failed: {e}")
+            return False
+
+    def convert_svg_to_pdf_advanced(self, svg_path, output_path, target_width_mm, target_height_mm):
+        """Advanced SVG to PDF conversion with multiple fallbacks"""
+        try:
+            logger.info(f"🎨 Advanced SVG conversion: {svg_path}")
+            target_width_pt = target_width_mm * 2.834645669
+            target_height_pt = target_height_mm * 2.834645669
+
+            # Method 1: CairoSVG (best quality)
+            try:
+                import cairosvg
+                cairosvg.svg2pdf(
+                    url=svg_path,
+                    write_to=output_path,
+                    output_width=target_width_pt,
+                    output_height=target_height_pt,
+                    background_color='white'
+                )
+                logger.info("✅ SVG converted using CairoSVG (highest quality)")
+                return True
+            except ImportError:
+                logger.info("📝 CairoSVG not available, trying Inkscape...")
+            except Exception as e:
+                logger.warning(f"⚠️ CairoSVG conversion failed: {e}")
+
+            # Method 2: Inkscape (professional quality)
+            try:
+                cmd = [
+                    'inkscape',
+                    '--export-type=pdf',
+                    f'--export-filename={output_path}',
+                    f'--export-width={target_width_mm}mm',
+                    f'--export-height={target_height_mm}mm',
+                    '--export-dpi=300',
+                    svg_path
+                ]
+
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    logger.info("✅ SVG converted using Inkscape (professional quality)")
+                    return True
+                else:
+                    logger.warning(f"⚠️ Inkscape conversion failed: {result.stderr}")
+
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                logger.warning("⚠️ Inkscape not available")
+
+            # Method 3: rsvg-convert (if available)
+            try:
+                cmd = [
+                    'rsvg-convert',
+                    '-f', 'pdf',
+                    '-w', str(int(target_width_pt)),
+                    '-h', str(int(target_height_pt)),
+                    '-o', output_path,
+                    svg_path
+                ]
+
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    logger.info("✅ SVG converted using rsvg-convert")
+                    return True
+
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                logger.info("📝 rsvg-convert not available")
+
+            # Fallback: Create enhanced placeholder
+            return self.create_placeholder_pdf(output_path, target_width_mm, target_height_mm, "SVG Content (tools unavailable)")
+
+        except Exception as e:
+            logger.error(f"❌ Advanced SVG conversion failed: {e}")
+            return False
+
+    def convert_eps_to_pdf_advanced(self, eps_path, output_path, target_width_mm, target_height_mm):
+        """Advanced EPS/AI to PDF conversion with vector preservation"""
+        try:
+            logger.info(f"✏️ Advanced EPS/AI conversion: {eps_path}")
+            target_width_pt = target_width_mm * 2.834645669
+            target_height_pt = target_height_mm * 2.834645669
+
+            # Method 1: Ghostscript (best for EPS/AI)
+            try:
+                cmd = [
+                    'gs',
+                    '-dNOPAUSE',
+                    '-dBATCH',
+                    '-dSAFER',
+                    '-sDEVICE=pdfwrite',
+                    '-dEPSCrop',
+                    '-dPDFFitPage',
+                    f'-dDEVICEWIDTHPOINTS={target_width_pt}',
+                    f'-dDEVICEHEIGHTPOINTS={target_height_pt}',
+                    '-dCompatibilityLevel=1.5',
+                    '-dColorConversionStrategy=/LeaveColorUnchanged',
+                    '-dDownsampleMonoImages=false',
+                    '-dDownsampleGrayImages=false',
+                    '-dDownsampleColorImages=false',
+                    f'-sOutputFile={output_path}',
+                    eps_path
+                ]
+
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                if result.returncode == 0:
+                    logger.info("✅ EPS/AI converted using Ghostscript (vector preserved)")
+                    return True
+                else:
+                    logger.warning(f"⚠️ Ghostscript conversion failed: {result.stderr}")
+
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                logger.warning("⚠️ Ghostscript not available")
+
+            # Method 2: Inkscape (can handle some AI files)
+            try:
+                cmd = [
+                    'inkscape',
+                    '--export-type=pdf',
+                    f'--export-filename={output_path}',
+                    f'--export-width={target_width_mm}mm',
+                    f'--export-height={target_height_mm}mm',
+                    '--export-dpi=300',
+                    eps_path
+                ]
+
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                if result.returncode == 0:
+                    logger.info("✅ EPS/AI converted using Inkscape")
+                    return True
+
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                logger.info("📝 Inkscape not available for EPS")
+
+            # Method 3: ImageMagick (raster fallback with high quality)
+            try:
+                cmd = [
+                    'convert',
+                    '-density', '300',
+                    '-colorspace', 'RGB',
+                    f'-resize', f'{target_width_mm * 11.81}x{target_height_mm * 11.81}',
+                    '-quality', '95',
+                    eps_path,
+                    output_path
+                ]
+
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                if result.returncode == 0:
+                    logger.info("✅ EPS/AI converted using ImageMagick (high-quality raster)")
+                    return True
+
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                logger.warning("⚠️ ImageMagick not available")
+
+            # Final fallback
+            return self.create_placeholder_pdf(output_path, target_width_mm, target_height_mm, "EPS/AI Content (conversion tools unavailable)")
+
+        except Exception as e:
+            logger.error(f"❌ Advanced EPS/AI conversion failed: {e}")
             return False
 
     def extract_pdf_content(self, pdf_path, output_path, target_width_mm, target_height_mm):

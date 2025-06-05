@@ -497,6 +497,287 @@ export class FileProcessingService {
     }
   }
 
+  // Professional design content extraction and analysis
+  async extractRealDesignContent(filePath: string, mimeType: string): Promise<{
+    actualDimensions: { width: number; height: number };
+    contentBounds: { x: number; y: number; width: number; height: number };
+    hasText: boolean;
+    hasImages: boolean;
+    hasVectorPaths: boolean;
+    colorCount: number;
+    complexity: 'simple' | 'medium' | 'complex';
+    printQuality: 'low' | 'medium' | 'high';
+    recommendedProcessing: string;
+  }> {
+    try {
+      console.log(`🔍 Analyzing real design content: ${filePath}`);
+
+      if (mimeType === 'application/pdf') {
+        return await this.analyzePDFDesignContent(filePath);
+      } else if (mimeType === 'image/svg+xml') {
+        return await this.analyzeSVGDesignContent(filePath);
+      } else if (mimeType.includes('postscript') || mimeType.includes('eps')) {
+        return await this.analyzeEPSDesignContent(filePath);
+      } else {
+        return await this.analyzeImageDesignContent(filePath);
+      }
+    } catch (error) {
+      console.error('❌ Design content analysis failed:', error);
+      return {
+        actualDimensions: { width: 50, height: 30 },
+        contentBounds: { x: 0, y: 0, width: 50, height: 30 },
+        hasText: false,
+        hasImages: false,
+        hasVectorPaths: false,
+        colorCount: 1,
+        complexity: 'simple',
+        printQuality: 'low',
+        recommendedProcessing: 'Basic processing due to analysis error'
+      };
+    }
+  }
+
+  private async analyzePDFDesignContent(filePath: string) {
+    try {
+      // Use pdfinfo and pdftk for detailed analysis
+      const analysis = {
+        actualDimensions: { width: 50, height: 30 },
+        contentBounds: { x: 0, y: 0, width: 50, height: 30 },
+        hasText: false,
+        hasImages: false,
+        hasVectorPaths: false,
+        colorCount: 1,
+        complexity: 'simple' as const,
+        printQuality: 'medium' as const,
+        recommendedProcessing: 'Vector PDF processing'
+      };
+
+      // Try pdfinfo for detailed page analysis
+      try {
+        const { stdout: pdfInfo } = await execAsync(`pdfinfo "${filePath}"`);
+        console.log('📋 PDF Info:', pdfInfo);
+
+        // Extract page dimensions
+        const sizeMatch = pdfInfo.match(/Page size:\s*(\d+\.?\d*)\s*x\s*(\d+\.?\d*)\s*pts/);
+        if (sizeMatch) {
+          const widthPt = parseFloat(sizeMatch[1]);
+          const heightPt = parseFloat(sizeMatch[2]);
+          analysis.actualDimensions = {
+            width: Math.round(widthPt * 0.352778),
+            height: Math.round(heightPt * 0.352778)
+          };
+        }
+      } catch (e) {
+        console.log('📋 pdfinfo not available, using binary analysis');
+      }
+
+      // Analyze PDF content structure
+      const buffer = fs.readFileSync(filePath);
+      const content = buffer.toString('binary');
+
+      // Check for text content
+      analysis.hasText = content.includes('/Font') || content.includes('Tf') || content.includes('Tj');
+      
+      // Check for images
+      analysis.hasImages = content.includes('/Image') || content.includes('/XObject') || content.includes('JFIF');
+      
+      // Check for vector paths
+      analysis.hasVectorPaths = content.includes(' re ') || content.includes(' l ') || content.includes(' c ') || content.includes(' m ');
+
+      // Estimate complexity
+      const streamCount = (content.match(/stream/g) || []).length;
+      const objectCount = (content.match(/obj/g) || []).length;
+      
+      if (streamCount > 10 && objectCount > 20) {
+        analysis.complexity = 'complex';
+        analysis.printQuality = 'high';
+      } else if (streamCount > 3 && objectCount > 5) {
+        analysis.complexity = 'medium';
+        analysis.printQuality = 'medium';
+      }
+
+      // Estimate content bounds (simplified)
+      analysis.contentBounds = {
+        x: 0,
+        y: 0,
+        width: analysis.actualDimensions.width,
+        height: analysis.actualDimensions.height
+      };
+
+      console.log(`✅ PDF Analysis Complete:`, analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('PDF analysis error:', error);
+      throw error;
+    }
+  }
+
+  private async analyzeSVGDesignContent(filePath: string) {
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      
+      const analysis = {
+        actualDimensions: { width: 50, height: 30 },
+        contentBounds: { x: 0, y: 0, width: 50, height: 30 },
+        hasText: content.includes('<text') || content.includes('<tspan'),
+        hasImages: content.includes('<image') || content.includes('data:image'),
+        hasVectorPaths: content.includes('<path') || content.includes('<polygon') || content.includes('<circle') || content.includes('<rect'),
+        colorCount: (content.match(/fill="[^"]*"/g) || []).length,
+        complexity: 'medium' as const,
+        printQuality: 'high' as const,
+        recommendedProcessing: 'SVG to high-quality PDF conversion'
+      };
+
+      // Extract SVG dimensions
+      const viewBoxMatch = content.match(/viewBox="([^"]+)"/);
+      const widthMatch = content.match(/width="([^"]+)"/);
+      const heightMatch = content.match(/height="([^"]+)"/);
+
+      if (viewBoxMatch) {
+        const viewBox = viewBoxMatch[1].split(/\s+/).map(Number);
+        if (viewBox.length >= 4) {
+          analysis.actualDimensions = {
+            width: Math.round(viewBox[2] * 0.352778),
+            height: Math.round(viewBox[3] * 0.352778)
+          };
+        }
+      } else if (widthMatch && heightMatch) {
+        const width = parseFloat(widthMatch[1].replace(/[^0-9.]/g, ''));
+        const height = parseFloat(heightMatch[1].replace(/[^0-9.]/g, ''));
+        analysis.actualDimensions = {
+          width: Math.round(width * 0.352778),
+          height: Math.round(height * 0.352778)
+        };
+      }
+
+      // Complexity analysis
+      const pathCount = (content.match(/<path/g) || []).length;
+      const shapeCount = (content.match(/<(circle|rect|polygon|ellipse)/g) || []).length;
+      
+      if (pathCount > 10 || shapeCount > 15) {
+        analysis.complexity = 'complex';
+      } else if (pathCount > 3 || shapeCount > 5) {
+        analysis.complexity = 'medium';
+      } else {
+        analysis.complexity = 'simple';
+      }
+
+      analysis.contentBounds = {
+        x: 0,
+        y: 0,
+        width: analysis.actualDimensions.width,
+        height: analysis.actualDimensions.height
+      };
+
+      console.log(`✅ SVG Analysis Complete:`, analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('SVG analysis error:', error);
+      throw error;
+    }
+  }
+
+  private async analyzeEPSDesignContent(filePath: string) {
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const stats = fs.statSync(filePath);
+      
+      const analysis = {
+        actualDimensions: { width: 85, height: 55 },
+        contentBounds: { x: 0, y: 0, width: 85, height: 55 },
+        hasText: content.includes('show') || content.includes('Tf'),
+        hasImages: content.includes('colorimage') || content.includes('image'),
+        hasVectorPaths: content.includes('moveto') || content.includes('lineto') || content.includes('curveto'),
+        colorCount: (content.match(/setrgbcolor/g) || []).length,
+        complexity: 'medium' as const,
+        printQuality: 'high' as const,
+        recommendedProcessing: 'Ghostscript EPS processing with vector preservation'
+      };
+
+      // Extract BoundingBox
+      const boundingBoxMatch = content.match(/%%BoundingBox:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/);
+      if (boundingBoxMatch) {
+        const x1 = parseInt(boundingBoxMatch[1]);
+        const y1 = parseInt(boundingBoxMatch[2]);
+        const x2 = parseInt(boundingBoxMatch[3]);
+        const y2 = parseInt(boundingBoxMatch[4]);
+        
+        analysis.actualDimensions = {
+          width: Math.round((x2 - x1) * 0.352778),
+          height: Math.round((y2 - y1) * 0.352778)
+        };
+        analysis.contentBounds = {
+          x: Math.round(x1 * 0.352778),
+          y: Math.round(y1 * 0.352778),
+          width: analysis.actualDimensions.width,
+          height: analysis.actualDimensions.height
+        };
+      }
+
+      // Complexity based on file size and content
+      const fileSizeKB = stats.size / 1024;
+      if (fileSizeKB > 500) {
+        analysis.complexity = 'complex';
+      } else if (fileSizeKB > 100) {
+        analysis.complexity = 'medium';
+      } else {
+        analysis.complexity = 'simple';
+      }
+
+      console.log(`✅ EPS Analysis Complete:`, analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('EPS analysis error:', error);
+      throw error;
+    }
+  }
+
+  private async analyzeImageDesignContent(filePath: string) {
+    try {
+      const image = sharp(filePath);
+      const metadata = await image.metadata();
+      
+      const analysis = {
+        actualDimensions: {
+          width: Math.round((metadata.width || 200) / (metadata.density || 300) * 25.4),
+          height: Math.round((metadata.height || 200) / (metadata.density || 300) * 25.4)
+        },
+        contentBounds: { x: 0, y: 0, width: 0, height: 0 },
+        hasText: false, // Would need OCR to detect
+        hasImages: true,
+        hasVectorPaths: false,
+        colorCount: 0,
+        complexity: 'simple' as const,
+        printQuality: (metadata.density || 72) >= 300 ? 'high' as const : 'medium' as const,
+        recommendedProcessing: 'High-resolution raster processing'
+      };
+
+      analysis.contentBounds = {
+        x: 0,
+        y: 0,
+        width: analysis.actualDimensions.width,
+        height: analysis.actualDimensions.height
+      };
+
+      // Complexity based on size and channels
+      if ((metadata.width || 0) > 2000 && (metadata.height || 0) > 2000) {
+        analysis.complexity = 'complex';
+      } else if ((metadata.width || 0) > 1000 && (metadata.height || 0) > 1000) {
+        analysis.complexity = 'medium';
+      }
+
+      console.log(`✅ Image Analysis Complete:`, analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('Image analysis error:', error);
+      throw error;
+    }
+  }
+
   // Advanced content verification for vector files
   async verifyVectorContent(filePath: string, mimeType: string): Promise<{
     hasVectorContent: boolean;
