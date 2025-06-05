@@ -1175,108 +1175,86 @@ export default function AutomationPanelNew() {
             </CardContent>
           </Card>
 
-          {/* Tek Tuş Otomatik Dizim - Premium Feature */}
+          {/* AI Destekli Tek Tuş Profesyonel Dizim Sistemi */}
           <Card className="border-2 border-gradient-to-r from-purple-500 to-blue-600 bg-gradient-to-r from-purple-50 to-blue-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-purple-800">
-                <Sparkles className="h-6 w-6" />
-                Tek Tuş Profesyonel Dizim Sistemi
+                <Brain className="h-6 w-6" />
+                AI Destekli Profesyonel Dizim Sistemi
               </CardTitle>
               <p className="text-sm text-purple-600 mt-2">
-                Yapay zeka destekli tam otomatik dizim: dosya analizi + yerleştirme + PDF üretimi
+                🤖 Yapay zeka ile dosya analizi + akıllı yerleştirme + otomatik PDF üretimi
               </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-            <Button 
-              onClick={handleAIAutoLayout}
-              disabled={selectedDesigns.length === 0 || isProcessing}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  AI Analiz Ediyor...
-                </>
-              ) : (
-                <>
-                  <Brain className="h-5 w-5 mr-2" />
-                  🤖 AI Akıllı Dizim
-                </>
-              )}
-            </Button>
-
-            <Button 
-              onClick={handleOneClickLayout}
-              disabled={selectedDesigns.length === 0 || isProcessing}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Tek Tuş İşleniyor...
-                </>
-              ) : (
-                <>
-                  <Zap className="h-5 w-5 mr-2" />
-                  🎯 Tek Tuş Otomatik Dizim
-                </>
-              )}
-            </Button>
-
-                <div className="text-xs text-purple-600 bg-purple-50 p-3 rounded-lg">
-                  <div className="font-medium mb-1">Bu sistem otomatik olarak:</div>
-                  <div className="space-y-1">
-                    <div>• Dosya içeriğini analiz eder ve boyutları tespit eder</div>
-                    <div>• 3mm kesim payı ile optimal yerleştirme yapar</div>
-                    <div>• Profesyonel PDF çıktısını otomatik oluşturur</div>
-                    <div>• Maksimum verimlilik için rotation algoritması kullanır</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Geleneksel Otomatik Dizim */}
-          <Card className="border-2 border-green-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-800">
-                <Zap className="h-6 w-6" />
-                Geleneksel Otomatik Dizilim
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button
-                  onClick={handleAutoArrange}
-                  disabled={selectedDesigns.length === 0 || isArranging}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                <Button 
+                  onClick={handleAIAutoLayout}
+                  disabled={selectedDesigns.length === 0 || isProcessing}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg"
                   size="lg"
                 >
-                  {isArranging ? (
+                  {isProcessing ? (
                     <>
-                      <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                      Algoritma çalışıyor...
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      🤖 AI Analiz Ediyor ve Diziyor...
                     </>
                   ) : (
                     <>
-                      <Zap className="h-5 w-5 mr-2" />
-                      Manuel Ayarlı Dizilim
+                      <Brain className="h-5 w-5 mr-2" />
+                      🚀 AI Akıllı Otomatik Dizim
                     </>
                   )}
                 </Button>
 
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
+                  <div className="font-medium text-purple-800 mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    AI Sistem Özellikleri:
+                  </div>
+                  <div className="space-y-2 text-sm text-purple-700">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <span>Dosya içeriğini AI ile analiz eder (logo, metin, grafik türü tespiti)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>Öncelik sıralaması ve akıllı gruplama yapar</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <span>3mm kesim payı ile %85+ verimlilik sağlar</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>Profesyonel PDF çıktısını otomatik oluşturur ve indirir</span>
+                    </div>
+                  </div>
+                </div>
+
                 {arrangements.length > 0 && (
-                  <div className="space-y-4 border-t pt-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm bg-green-50 p-3 rounded-lg">
-                      <div>✅ Yerleştirilen: {arrangements.length}</div>
-                      <div>📊 Seçilen: {selectedDesigns.length}</div>
+                  <div className="space-y-4 border-t border-purple-200 pt-4">
+                    <div className="grid grid-cols-3 gap-3 text-sm">
+                      <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
+                        <div className="text-lg font-bold text-green-700">{arrangements.length}</div>
+                        <div className="text-green-600 text-xs">Yerleştirilen</div>
+                      </div>
+                      <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-200">
+                        <div className="text-lg font-bold text-blue-700">{selectedDesigns.length}</div>
+                        <div className="text-blue-600 text-xs">Seçilen</div>
+                      </div>
+                      <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
+                        <div className="text-lg font-bold text-purple-700">
+                          {arrangements.length > 0 ? Math.round((arrangements.length / selectedDesigns.length) * 100) : 0}%
+                        </div>
+                        <div className="text-purple-600 text-xs">Başarı</div>
+                      </div>
                     </div>
 
                     <Button
                       onClick={() => generatePDFMutation.mutate()}
                       disabled={generatePDFMutation.isPending}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
                       size="lg"
                     >
                       <Download className="h-5 w-5 mr-2" />
