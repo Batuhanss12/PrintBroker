@@ -1491,6 +1491,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fixed automatic layout generation endpoint
+  app.post('/api/generate-layout', isAuthenticated, async (req: any, res) => {
+    try {
+      console.log('🎯 Starting automatic layout generation');
+      
+      const { designIds, plotterSettings } = req.body;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
+
+      if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "At least one design ID is required" 
+        });
+      }
+
+      // Get user's design files
+      const files = await storage.getFilesByUser(userId);
+      const designs = files.filter(f => designIds.includes(f.id) && f.fileType === 'design');
+
+      if (designs.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "No valid designs found" 
+        });
+      }
+
+      console.log('📋 Processing designs:', designs.map(d => ({
+        id: d.id,
+        name: d.originalName,
+        dimensions: d.realDimensionsMM || d.dimensions
+      })));
+
+      // Use OneClick layout system for automatic arrangement
+      const layoutRequest = {
+        designIds,
+        sheetSettings: {
+          width: plotterSettings?.sheetWidth || 330,
+          height: plotterSettings?.sheetHeight || 480,
+          margin: plotterSettings?.margin || 10,
+          bleedMargin: plotterSettings?.bleedMargin || 3
+        },
+        cuttingSettings: {
+          enabled: true,
+          markLength: 5,
+          markWidth: 0.25
+        }
+      };
+
+      const layoutResult = await oneClickLayoutSystem.processOneClickLayout(designs, layoutRequest);
+
+      if (layoutResult.success) {
+        console.log(`✅ Layout generated: ${layoutResult.arrangements.length} designs arranged`);
+        
+        // Generate PDF with arrangements
+        const pdfPath = await generateLayoutPDF(layoutResult.arrangements, designs, layoutRequest.sheetSettings);
+        
+        res.json({
+          success: true,
+          arrangements: layoutResult.arrangements,
+          pdfPath,
+          efficiency: layoutResult.efficiency,
+          statistics: layoutResult.statistics
+        });
+      } else {
+        console.error('❌ Layout generation failed:', layoutResult.message);
+        res.status(500).json({
+          success: false,
+          message: layoutResult.message,
+          statistics: layoutResult.statistics
+        });
+      }
+
+    } catch (error) {
+      console.error('Layout generation error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Layout generation failed' 
+      });
+    }
+  });
+
   // Enhanced plotter design file upload with content preservation
   app.post('/api/automation/plotter/upload-designs', isAuthenticated, upload.single('designs'), async (req: any, res) => {
     try {
