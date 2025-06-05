@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { pythonAnalyzerService } from './pythonAnalyzerService';
 
 const app = express();
 app.use(express.json());
@@ -12,30 +13,6 @@ app.use((req, res, next) => {
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
-
-
-// Python Analyzer Sistem Kontrolü
-import { pythonAnalyzerService } from './pythonAnalyzerService';
-
-async function initializePythonServices() {
-  console.log('🐍 Python tabanlı analiz sistemi başlatılıyor...');
-  
-  try {
-    const environmentOK = await pythonAnalyzerService.testPythonEnvironment();
-    if (environmentOK) {
-      console.log('✅ Python analiz sistemi AKTIF - Tüm kütüphaneler hazır');
-      console.log('📦 Aktif Python kütüphaneleri: PyMuPDF, Pillow, OpenCV, ReportLab, CairoSVG');
-    } else {
-      console.log('⚠️ Python analiz sistemi KISITLI - Bazı kütüphaneler eksik');
-    }
-  } catch (error) {
-    console.error('❌ Python analiz sistemi başlatılamadı:', error);
-  }
-}
-
-// Python servislerini başlat
-initializePythonServices();
-
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
@@ -64,7 +41,26 @@ initializePythonServices();
   next();
 });
 
+// Python Analyzer Sistem Kontrolü
+async function initializePythonServices() {
+  console.log('🐍 Python tabanlı analiz sistemi başlatılıyor...');
+  
+  try {
+    const environmentOK = await pythonAnalyzerService.testPythonEnvironment();
+    if (environmentOK) {
+      console.log('✅ Python analiz sistemi AKTIF - Tüm kütüphaneler hazır');
+      console.log('📦 Aktif Python kütüphaneleri: PyMuPDF, Pillow, OpenCV, ReportLab, CairoSVG');
+    } else {
+      console.log('⚠️ Python analiz sistemi KISITLI - Bazı kütüphaneler eksik');
+    }
+  } catch (error) {
+    console.error('❌ Python analiz sistemi başlatılamadı:', error);
+  }
+}
+
 (async () => {
+  // Python servislerini başlat
+  await initializePythonServices();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
