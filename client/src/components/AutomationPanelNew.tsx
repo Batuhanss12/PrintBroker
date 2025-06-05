@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -230,7 +229,7 @@ export default function AutomationPanelNew() {
         title: "🎯 Dizilim Tamamlandı",
         description: `${data.totalArranged}/${data.totalRequested} tasarım yerleştirildi. Verimlilik: ${data.efficiency}`,
       });
-      
+
       // Auto-generate PDF after successful arrangement
       if (data.arrangements && data.arrangements.length > 0) {
         console.log('🔄 Auto-generating PDF after arrangement...');
@@ -253,7 +252,7 @@ export default function AutomationPanelNew() {
   const generatePDFMutation = useMutation({
     mutationFn: async () => {
       console.log('🔄 Starting PDF generation...');
-      
+
       const response = await fetch('/api/automation/plotter/generate-enhanced-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -288,11 +287,11 @@ export default function AutomationPanelNew() {
       }
 
       console.log('✅ PDF response received, creating download...');
-      
+
       // Get the blob
       const blob = await response.blob();
       console.log('📄 PDF blob size:', blob.size, 'bytes');
-      
+
       if (blob.size === 0) {
         throw new Error('PDF dosyası boş');
       }
@@ -301,23 +300,23 @@ export default function AutomationPanelNew() {
       const url = window.URL.createObjectURL(blob);
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
       const filename = `matbixx-layout-${timestamp}.pdf`;
-      
+
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
       a.download = filename;
-      
+
       document.body.appendChild(a);
       console.log('🚀 Triggering download:', filename);
       a.click();
-      
+
       // Cleanup
       setTimeout(() => {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         console.log('🧹 Download cleanup completed');
       }, 1000);
-      
+
       return { filename, size: blob.size };
     },
     onSuccess: (result: any) => {
@@ -460,9 +459,14 @@ export default function AutomationPanelNew() {
     return (
       <div className={`grid gap-4 ${previewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
         {validDesigns.map((design: Design) => {
+          // Extra safety check
+          if (!design || !design.id || !design.name) {
+            return null;
+          }
+
           const displayName = design.originalName || design.name || 'Adsız Dosya';
           const safeDimensions = design.realDimensionsMM || design.dimensions || 'Boyut bilinmiyor';
-          
+
           return (
             <div
               key={design.id}
@@ -912,7 +916,7 @@ export default function AutomationPanelNew() {
                   <span>🎯 Seçili Dosya:</span>
                   <span className="text-green-600">{selectedDesigns.length}</span>
                 </div>
-                {arrangements.length > 0 && (
+                {arrangements.length> 0 && (
                   <div className="flex justify-between items-center font-medium">
                     <span>✅ Yerleştirilen:</span>
                     <span className="text-purple-600">{arrangements.length}</span>
