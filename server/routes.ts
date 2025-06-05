@@ -6,6 +6,34 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+
+// Admin middleware
+const requireAdmin = async (req: any, res: any, next: any) => {
+  try {
+    // First check authentication
+    await new Promise((resolve, reject) => {
+      isAuthenticated(req, res, (err) => {
+        if (err) reject(err);
+        else resolve(true);
+      });
+    });
+
+    // Check admin role
+    const userId = req.user?.claims?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Authentication failed" });
+  }
+};
 import { fileProcessingService } from './fileProcessingService';
 import { ValidationService } from './validationService';
 import { insertQuoteSchema, insertPrinterQuoteSchema, insertRatingSchema, insertChatRoomSchema, insertChatMessageSchema } from "@shared/schema";
@@ -3182,6 +3210,128 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     } catch (error) {
       console.error('File download error:', error);
       res.status(500).json({ message: 'Download failed' });
+    }
+  });
+
+  // Contract API endpoints - Otomatik Sözleşme Oluşturma Sistemi
+  app.post('/api/contracts/generate', isAuthenticated, async (req, res) => {
+    try {
+      const { orderId, customerId, printerId } = req.body;
+      
+      if (!orderId || !customerId || !printerId) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      const { contractService } = await import('./contractService');
+      const contractId = await contractService.generateContract(orderId, customerId, printerId);
+      
+      res.json({ 
+        success: true, 
+        contractId,
+        message: 'Sözleşme başarıyla oluşturuldu' 
+      });
+    } catch (error: any) {
+      console.error('Contract generation error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || 'Sözleşme oluşturma başarısız' 
+      });
+    }
+  });
+
+  app.get('/api/contracts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { contractService } = await import('./contractService');
+      const contract = await contractService.getContractById(req.params.id);
+      
+      if (!contract) {
+        return res.status(404).json({ message: 'Sözleşme bulunamadı' });
+      }
+      
+      res.json(contract);
+    } catch (error: any) {
+      console.error('Get contract error:', error);
+      res.status(500).json({ message: 'Sözleşme getirme başarısız' });
+    }
+  });
+
+  app.get('/api/contracts/user/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { userType } = req.query;
+      
+      const { contractService } = await import('./contractService');
+      const contracts = await contractService.getContractsByUser(
+        userId, 
+        userType as 'customer' | 'printer'
+      );
+      
+      res.json(contracts);
+    } catch (error: any) {
+      console.error('Get user contracts error:', error);
+      res.status(500).json({ message: 'Kullanıcı sözleşmeleri getirme başarısız' });
+    }
+  });
+
+  app.post('/api/contracts/:id/sign', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { userId, signature } = req.body;
+      
+      if (!userId || !signature) {
+        return res.status(400).json({ message: 'Gerekli alanlar eksik' });
+      }
+
+      const { contractService } = await import('./contractService');
+      const contract = await contractService.signContract(id, userId, signature);
+      
+      res.json({ 
+        success: true, 
+        contract,
+        message: 'Sözleşme başarıyla imzalandı' 
+      });
+    } catch (error: any) {
+      console.error('Contract signing error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || 'Sözleşme imzalama başarısız' 
+      });
+    }
+  });
+
+  app.patch('/api/contracts/:id/status', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: 'Durum bilgisi gerekli' });
+      }
+
+      const { contractService } = await import('./contractService');
+      await contractService.updateContractStatus(id, status);
+      
+      res.json({ 
+        success: true, 
+        message: 'Sözleşme durumu başarıyla güncellendi' 
+      });
+    } catch (error: any) {
+      console.error('Contract status update error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || 'Sözleşme durumu güncelleme başarısız' 
+      });
+    }
+  });
+
+  // Admin için sözleşme listeleme endpoint'i
+  app.get('/api/admin/contracts', requireAdmin, async (req, res) => {
+    try {
+      const contracts = await storage.getAllContracts?.() || [];
+      res.json(contracts);
+    } catch (error: any) {
+      console.error('Admin contracts error:', error);
+      res.status(500).json({ message: 'Sözleşme listesi getirme başarısız' });
     }
   });
 
