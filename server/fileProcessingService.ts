@@ -230,8 +230,40 @@ export class FileProcessingService {
   }
 
   async generatePDFThumbnail(filePath: string, filename: string): Promise<string> {
-    console.log('ImageMagick not available for PDF thumbnail');
-    return '';
+    try {
+      const thumbnailPath = path.join(this.thumbnailDir, `thumb_${filename}.png`);
+      
+      // Python ile PDF thumbnail oluştur
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+      
+      const command = `python3 -c "
+import fitz
+import sys
+try:
+    doc = fitz.open('${filePath}')
+    page = doc[0]
+    pix = page.get_pixmap(matrix=fitz.Matrix(0.75, 0.75))
+    pix.save('${thumbnailPath}')
+    doc.close()
+    print('success')
+except Exception as e:
+    print(f'error: {e}')
+"`;
+      
+      const { stdout } = await execAsync(command, { timeout: 15000 });
+      
+      if (stdout.includes('success')) {
+        return thumbnailPath;
+      } else {
+        console.log('PDF thumbnail generation failed, creating placeholder');
+        return '';
+      }
+    } catch (error) {
+      console.error('PDF thumbnail error:', error);
+      return '';
+    }
   }
 
   async validateFile(filePath: string, mimeType: string): Promise<{ isValid: boolean; errors: string[] }> {

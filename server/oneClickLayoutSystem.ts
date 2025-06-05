@@ -69,26 +69,50 @@ export class OneClickLayoutSystem {
 
       // Convert designs to layout format with proper dimension extraction
       const layoutDesigns = designs.map(design => {
-        // Try to get dimensions from various sources
-        let width = 50; // default
-        let height = 30; // default
+        // Try to get dimensions from various sources in priority order
+        let width = 50; // default fallback
+        let height = 30; // default fallback
         
-        if (design.realDimensionsMM?.widthMM && design.realDimensionsMM?.heightMM) {
+        // Check smartDimensions first (most accurate)
+        if (design.smartDimensions?.width && design.smartDimensions?.height) {
+          width = design.smartDimensions.width;
+          height = design.smartDimensions.height;
+          console.log(`Using smartDimensions for ${design.id}: ${width}x${height}mm`);
+        }
+        // Check realDimensionsMM
+        else if (design.realDimensionsMM?.widthMM && design.realDimensionsMM?.heightMM) {
           width = design.realDimensionsMM.widthMM;
           height = design.realDimensionsMM.heightMM;
-        } else if (design.widthMM && design.heightMM) {
+          console.log(`Using realDimensionsMM for ${design.id}: ${width}x${height}mm`);
+        }
+        // Check direct MM fields
+        else if (design.widthMM && design.heightMM) {
           width = design.widthMM;
           height = design.heightMM;
-        } else if (design.width && design.height) {
+          console.log(`Using widthMM/heightMM for ${design.id}: ${width}x${height}mm`);
+        }
+        // Check generic width/height
+        else if (design.width && design.height) {
           width = design.width;
           height = design.height;
+          console.log(`Using width/height for ${design.id}: ${width}x${height}mm`);
         }
-
-        console.log(`Design ${design.id}: ${width}x${height}mm`);
+        // Parse from realDimensionsMM string format
+        else if (design.realDimensionsMM && typeof design.realDimensionsMM === 'string') {
+          const match = design.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)mm/);
+          if (match) {
+            width = parseFloat(match[1]);
+            height = parseFloat(match[2]);
+            console.log(`Parsed from string for ${design.id}: ${width}x${height}mm`);
+          }
+        }
+        else {
+          console.warn(`No dimensions found for design ${design.id}, using defaults: ${width}x${height}mm`);
+        }
 
         return {
           id: design.id,
-          name: design.name || `Design_${design.id}`,
+          name: design.name || design.originalName || `Design_${design.id}`,
           width,
           height,
           canRotate: true
