@@ -2964,5 +2964,124 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     }
   });
 
+  // PDF download endpoint for generated layouts
+  app.get('/api/download/:filename', async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      const filePath = path.join(process.cwd(), 'uploads', filename);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: 'File not found' });
+      }
+      
+      // Set proper headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-cache');
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+      
+      // Clean up file after download
+      fileStream.on('end', () => {
+        setTimeout(() => {
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`Cleaned up temporary file: ${filename}`);
+            }
+          } catch (cleanupError) {
+            console.warn('File cleanup warning:', cleanupError);
+          }
+        }, 5000); // 5 second delay
+      });
+      
+    } catch (error) {
+      console.error('File download error:', error);
+      res.status(500).json({ message: 'Download failed' });
+    }
+  });
+
   return httpServer;
+}
+
+// PDF Generation Function for Layout System
+async function generateLayoutPDF(arrangements: any[], designs: any[], sheetSettings: any): Promise<string> {
+  const path = await import('path');
+  const fs = await import('fs');
+  
+  try {
+    console.log('📄 Starting PDF generation with arrangements:', arrangements.length);
+    
+    const outputFilename = `layout_${Date.now()}.pdf`;
+    const outputPath = path.join(process.cwd(), 'uploads', outputFilename);
+    
+    // Prepare design files with paths
+    const designFilesWithPaths = designs.map(design => ({
+      ...design,
+      filePath: path.join(process.cwd(), 'uploads', design.filename)
+    }));
+    
+    // Python script input
+    const pythonInput = {
+      arrangements: arrangements.map(arr => ({
+        designId: arr.id || arr.designId,
+        x: arr.x,
+        y: arr.y,
+        width: arr.width,
+        height: arr.height,
+        rotation: arr.rotation || 0,
+        designName: arr.name || arr.designName || `Design_${arr.id || arr.designId}`
+      })),
+      designFiles: designFilesWithPaths,
+      outputPath,
+      sheetWidth: sheetSettings.width,
+      sheetHeight: sheetSettings.height,
+      qualitySettings: {
+        dpi: 300,
+        vectorPreservation: true,
+        compression: 'lossless'
+      },
+      cuttingMarks: {
+        enabled: true,
+        markLength: 5,
+        markWidth: 0.25
+      },
+      bleedSettings: {
+        enabled: true,
+        bleedMargin: sheetSettings.bleedMargin || 3
+      }
+    };
+    
+    console.log('🐍 Calling Python PDF generator...');
+    
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    const pythonScriptPath = path.join(process.cwd(), 'server', 'pdfGenerator.py');
+    const command = `python3 "${pythonScriptPath}" '${JSON.stringify(pythonInput)}'`;
+    
+    const { stdout, stderr } = await execAsync(command, { timeout: 60000 });
+    
+    if (stderr && !stderr.includes('WARNING')) {
+      console.error('Python PDF generation error:', stderr);
+    }
+    
+    console.log('Python PDF output:', stdout);
+    
+    // Check if PDF was created
+    if (fs.existsSync(outputPath)) {
+      const fileStats = fs.statSync(outputPath);
+      console.log(`✅ PDF generated successfully: ${(fileStats.size / 1024).toFixed(1)}KB`);
+      return outputFilename;
+    } else {
+      throw new Error('PDF file was not created');
+    }
+    
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }

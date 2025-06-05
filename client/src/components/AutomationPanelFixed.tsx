@@ -173,10 +173,10 @@ export default function AutomationPanelFixed() {
     }
   });
 
-  // One-click layout mutation
+  // Fixed automatic layout generation mutation
   const oneClickLayoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/one-click-layout', {
+      const response = await fetch('/api/generate-layout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,18 +186,27 @@ export default function AutomationPanelFixed() {
       });
 
       if (!response.ok) {
-        throw new Error('Layout generation failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Layout generation failed');
       }
 
       return response.json();
     },
     onSuccess: (data) => {
-      if (data.success && data.pdfPath) {
-        window.open(`/api/download/${data.pdfPath.split('/').pop()}`, '_blank');
+      if (data.success) {
+        if (data.pdfPath) {
+          window.open(`/api/download/${data.pdfPath}`, '_blank');
+        }
         toast({
           title: "Otomatik dizim tamamlandı",
-          description: `${data.statistics?.arrangedDesigns || 0} tasarım yerleştirildi`,
+          description: `${data.statistics?.arrangedDesigns || 0} tasarım yerleştirildi, verimlilik: ${data.efficiency}%`,
           variant: "default",
+        });
+      } else {
+        toast({
+          title: "Dizim uyarısı",
+          description: data.message || "Tasarımlar yerleştirilemedi",
+          variant: "destructive",
         });
       }
     },
