@@ -1313,7 +1313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       if (processingErrors.length > 0) {
-        response.errors = processingErrors;
+        (response as any).errors = processingErrors;
       }
 
       console.log('🎉 Upload completed:', {
@@ -1603,11 +1603,9 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
           const bleedMargin = 3 * mmToPoints; // 3mm bleed
           doc.strokeColor('#ff9999')
              .lineWidth(0.5)
-             .setLineDash([2, 2])
              .rect(xPt - bleedMargin, yPt - bleedMargin, 
                    widthPt + 2 * bleedMargin, heightPt + 2 * bleedMargin)
-             .stroke()
-             .setLineDash([]);
+             .stroke();
         }
 
         // Draw main design area

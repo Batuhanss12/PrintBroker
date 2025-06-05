@@ -74,12 +74,12 @@ export class FileProcessingService {
       }
 
       // Verify file header for known formats
-      const buffer = fs.readFileSync(filePath, { start: 0, end: 10 });
+      const buffer = fs.readFileSync(filePath);
 
       if (mimeType === 'application/pdf') {
         return buffer.toString('ascii', 0, 5) === '%PDF-';
       } else if (mimeType === 'image/svg+xml') {
-        const content = fs.readFileSync(filePath, 'utf8', { start: 0, end: 100 });
+        const content = buffer.toString('utf8', 0, 100);
         return content.includes('<svg') || content.includes('<?xml');
       }
 
