@@ -161,8 +161,8 @@ export default function AutomationPanelNew() {
 
   // Fetch designs query
   const { data: designs = [], isLoading: designsLoading, error: designsError, refetch } = useQuery({
-    queryKey: ['/api/automation/plotter/designs'],
-    queryFn: () => apiRequest('GET', '/api/automation/plotter/designs'),
+    queryKey: ['/api/files'],
+    queryFn: () => apiRequest('GET', '/api/files'),
     staleTime: 30000,
     retry: 2,
   });
@@ -178,7 +178,7 @@ export default function AutomationPanelNew() {
       }, 300);
 
       try {
-        const response = await fetch('/api/automation/plotter/upload-designs', {
+        const response = await fetch('/api/upload', {
           method: 'POST',
           credentials: 'include',
           body: formData,
@@ -196,6 +196,12 @@ export default function AutomationPanelNew() {
         setTimeout(() => setUploadProgress(0), 1500);
         
         console.log('✅ Upload successful:', result);
+        
+        // Convert single file response to designs array format
+        if (result && !Array.isArray(result)) {
+          return { designs: [result] };
+        }
+        
         return result;
       } catch (error) {
         clearInterval(progressInterval);
@@ -446,44 +452,34 @@ export default function AutomationPanelNew() {
     // Validate files
     const allowedTypes = ['application/pdf', 'image/svg+xml', 'application/postscript', 'application/illustrator', 'image/jpeg', 'image/png'];
     const maxSize = 50 * 1024 * 1024; // 50MB
-    const validFiles: File[] = [];
-    const errors: string[] = [];
 
-    Array.from(files).forEach(file => {
-      console.log(`📄 Validating file: ${file.name} (${file.type}, ${file.size} bytes)`);
-      
-      if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().match(/\.(pdf|svg|ai|eps|jpg|jpeg|png)$/)) {
-        errors.push(`${file.name}: Desteklenmeyen dosya türü`);
-        return;
-      }
-      
-      if (file.size > maxSize) {
-        errors.push(`${file.name}: Dosya boyutu çok büyük (max 50MB)`);
-        return;
-      }
-      
-      if (file.size === 0) {
-        errors.push(`${file.name}: Dosya boş`);
-        return;
-      }
-      
-      validFiles.push(file);
-    });
-
-    if (errors.length > 0) {
+    const file = files[0]; // Upload one file at a time
+    console.log(`📄 Validating file: ${file.name} (${file.type}, ${file.size} bytes)`);
+    
+    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().match(/\.(pdf|svg|ai|eps|jpg|jpeg|png)$/)) {
       toast({
-        title: "❌ Dosya Validasyon Hatası",
-        description: errors.join('\n'),
+        title: "❌ Dosya Hatası",
+        description: `${file.name}: Desteklenmeyen dosya türü. PDF, SVG, AI, EPS, JPG, PNG dosyaları desteklenir.`,
         variant: "destructive",
       });
       event.target.value = '';
       return;
     }
-
-    if (validFiles.length === 0) {
+    
+    if (file.size > maxSize) {
       toast({
-        title: "⚠️ Uyarı",
-        description: "Yüklenecek geçerli dosya bulunamadı",
+        title: "❌ Dosya Hatası",
+        description: `${file.name}: Dosya boyutu çok büyük (max 50MB)`,
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+    
+    if (file.size === 0) {
+      toast({
+        title: "❌ Dosya Hatası",
+        description: `${file.name}: Dosya boş`,
         variant: "destructive",
       });
       event.target.value = '';
@@ -492,18 +488,16 @@ export default function AutomationPanelNew() {
 
     try {
       const formData = new FormData();
-      validFiles.forEach(file => {
-        formData.append('designs', file);
-        console.log(`✅ Added to FormData: ${file.name}`);
-      });
+      formData.append('file', file);
+      console.log(`✅ Added file to FormData: ${file.name}`);
 
-      console.log('🚀 Starting upload mutation with', validFiles.length, 'files');
+      console.log('🚀 Starting upload mutation');
       uploadDesignsMutation.mutate(formData);
     } catch (error) {
       console.error('❌ Error preparing upload:', error);
       toast({
         title: "❌ Yükleme Hazırlık Hatası",
-        description: "Dosyalar yükleme için hazırlanamadı",
+        description: "Dosya yükleme için hazırlanamadı",
         variant: "destructive",
       });
     }
@@ -928,7 +922,6 @@ export default function AutomationPanelNew() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  multiple
                   accept=".pdf,.svg,.ai,.eps,.jpg,.jpeg,.png,application/pdf,image/svg+xml,application/postscript,application/illustrator,image/jpeg,image/png"
                   onChange={handleFileUpload}
                   className="hidden"
