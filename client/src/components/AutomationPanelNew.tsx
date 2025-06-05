@@ -113,6 +113,20 @@ export default function AutomationPanelNew() {
     horizontalSpacing: 3,
     verticalSpacing: 3,
   });
+  const [selectedDesign, setSelectedDesign] = useState<any>(null);
+  const [plotterSettings, setPlotterSettings] = useState({
+    pageSize: 'A4',
+    orientation: 'portrait',
+    marginMM: 5,
+    spacingX: 3,
+    spacingY: 3,
+    maxCopies: 1,
+    enableRotation: true,
+    autoOptimize: true
+  });
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // API functions
   const apiRequest = async (method: string, url: string, data?: any) => {
@@ -448,6 +462,40 @@ export default function AutomationPanelNew() {
       setUploadProgress(0);
     },
   });
+
+  const uploadFile = async (file: File) => {
+    try {
+      setUploadStatus('uploading');
+      setUploadMessage('Dosya yükleniyor...');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/analyze-design', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.design) {
+        setDesigns(prev => [...prev, result.design]);
+        setUploadStatus('success');
+        setUploadMessage(`${file.name} başarıyla yüklendi`);
+      } else {
+        throw new Error(result.message || 'Analiz başarısız');
+      }
+    } catch (error) {
+      setUploadStatus('error');
+      setUploadMessage(error instanceof Error ? error.message : 'Dosya yükleme hatası');
+      console.error('Upload error:', error);
+    }
+  };
 
   // Event handlers
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -941,8 +989,7 @@ export default function AutomationPanelNew() {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-3 flex items-center gap-3">
           <Layout className="h-10 w-10 text-blue-600" />
-          🚀 MatBixx Profesyonel Otomatik```python
- Dizilim Sistemi
+          🚀 MatBixx Profesyonel Otomatik Dizilim Sistemi
         </h1>
         <p className="text-lg text-gray-600 mb-4">
           Vektörel dosyalarınızı yükleyin, AI destekli akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
@@ -983,101 +1030,101 @@ export default function AutomationPanelNew() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              
-            
-              
-                
-                  
-                    
-                      
-                    
-                    
+
+
+
+
+
+
+
+
+
                       Vektörel Dosyalarınızı Yükleyin
-                    
-                    
+
+
                       PDF, SVG, AI, EPS, JPG, PNG formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
-                    
-                  
-  
-                  
-                    
-                      
-                        
+
+
+
+
+
+
+
                         🔄 Analiz Ediliyor...
-                      
+
                      : uploadProgress > 0 ? (
-                      
-                        
+
+
                         ✅ Yüklendi!
-                      
+
                      : (
-                      
-                        
+
+
                         📁 Dosya Seç ve Yükle
-                      
+
                     )}
-                  
-  
+
+
                   {uploadProgress > 0 && uploadProgress < 100 && (
-                    
-                      
-                      
-                      
-                        
+
+
+
+
+
                            ? '🔄 Dosya yükleniyor...' :
                            uploadProgress < 75 ? '🔍 İçerik analiz ediliyor...' :
                            '✨ Son işlemler tamamlanıyor...'}
-                        
-                        
+
+
                           {uploadProgress.toFixed(0)}%
-                        
-                      
-                    
+
+
+
                   )}
-  
+
                   {uploadProgress === 100 && (
-                    
-                      
-                        
-                          
+
+
+
+
                           ✅ Dosya başarıyla yüklendi ve analiz edildi!
-                        
-                      
-                    
+
+
+
                   )}
-  
+
                   {uploadDesignsMutation.isError && (
-                    
-                      
-                        
-                          
-                            
-                          
-                          
+
+
+
+
+
+
+
                             Yükleme Başarısız
-                          
-                          
+
+
                             Dosya formatını kontrol edin ve tekrar deneyin. Desteklenen formatlar: PDF, SVG, AI, EPS, JPG, PNG
-                          
-                        
-                      
-                    
+
+
+
+
                   )}
-  
-                  
-                    
-                      
+
+
+
+
                         ✅ Maksimum dosya boyutu: 50MB
                         ✅ İçerik analizi ve boyut tespiti
-                      
-                      
+
+
                         ✅ Otomatik önizleme oluşturma
                         ✅ Vektör kalitesi korunur
-                      
-                    
-                  
-                
-              
+
+
+
+
+
             </CardContent>
           </Card>
 
@@ -1085,245 +1132,245 @@ export default function AutomationPanelNew() {
           {designs.length > 0 && (
             <Card className="border-2 border-gradient-to-r from-purple-500 to-blue-600 bg-gradient-to-r from-purple-50 to-blue-50">
               <CardHeader>
-                
-                  
+
+
                   🚀 Tek Tuş Otomatik Dizim Sistemi
-                
-                
+
+
                   Yapay zeka destekli tam otomatik dizim: dosya analizi + yerleştirme + PDF üretimi
-                
+
               </CardHeader>
               <CardContent>
-                
-                  
-                    
-                      
-                        
-                          
+
+
+
+
+
+
                           🤖 AI analiz ediyor ve diziyor...
-                        
+
                        : (
-                        
-                          
+
+
                           🚀 Tek Tuş Otomatik Dizim ({selectedDesigns.length} dosya)
-                        
+
                       )}
-                    
-  
-                  
-                    
+
+
+
+
                       Bu sistem otomatik olarak:
-                    
-                    
+
+
                       • Dosya içeriğini analiz eder ve boyutları tespit eder
                       • 3mm kesim payı ile optimal yerleştirme yapar
                       • Profesyonel PDF çıktısını otomatik oluşturur
                       • Maksimum verimlilik için rotation algoritması kullanır
-                    
-                  
-  
+
+
+
                   {arrangements.length > 0 && (
-                    
-                      
-                        
-                          
-                            
-                              
+
+
+
+
+
+
                                 {arrangements.length} Yerleştirilen
-                              
-                            
-                            
-                              
+
+
+
+
                                 {selectedDesigns.length} Seçilen
-                              
-                            
-                            
-                              
+
+
+
+
                                 {arrangements.length > 0 ? Math.round((arrangements.length / selectedDesigns.length) * 100) : 0}% Başarı
-                              
-                            
-                          
-                        
-  
-                        
-                          
+
+
+
+
+
+
+
                           {generatePDFMutation.isPending ? "📄 Profesyonel PDF Oluşturuluyor..." : "📥 Profesyonel PDF İndir"}
-                        
-                      
-                    
+
+
+
                   )}
-                
+
               </CardContent>
             </Card>
           )}
 
           {/* Design Management */}
-          
-            
-              
-                
-                  
-                    
-                      
+
+
+
+
+
+
+
                       Tasarım Dosyaları ({designs.length})
-                    
-                    
-                      
-                        
+
+
+
+
                           {selectedDesigns.length === designs.length ? "❌ Hiçbirini Seçme" : "✅ Tümünü Seç"}
-                        
-                        
-                          
-                        
-                        
-                          
-                        
-                      
-                    
-                  
-                
-              
-              
+
+
+
+
+
+
+
+
+
+
+
+
+
                 {designsError ? (
-                  
+
                     Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
-                  
+
                  : (
                   <>
                     {selectedDesigns.length > 0 && (
-                      
-                        
-                          
-                            
-                          
-                          
+
+
+
+
+
+
                             {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
-                          
-                        
-                      
+
+
+
                     )}
-                    
+
                   </>
                 )}
-              
-            
-          
+
+
+
 
         {/* Settings Panel */}
-        
-          
-            
-              
-                
+
+
+
+
+
                   Plotter Ayarları
-                
-              
-            
-            
-              
-                
-                  
-                    
+
+
+
+
+
+
+
+
                       Sayfa Genişlik (mm)
-                    
-                    
-                  
-                  
-                    
+
+
+
+
+
                       Sayfa Yükseklik (mm)
-                    
-                    
-                  
-                
-                
-                  
-                    
+
+
+
+
+
+
+
                       Üst Margin (mm)
-                    
-                    
-                  
-                  
-                    
+
+
+
+
+
                       Alt Margin (mm)
-                    
-                    
-                  
-                
-                
-                   
-                    
+
+
+
+
+
+
+
                       Yatay Aralık (mm)
-                    
-                    
-                  
-                  
-                    
+
+
+
+
+
                       Dikey Aralık (mm)
-                    
-                    
-                  
-                
-              
-            
-          
+
+
+
+
+
+
+
 
           {/* System Status */}
-          
-            
-              
-                
+
+
+
+
                   Sistem Durumu
-                
-              
-            
-            
-              
-                
-                  
-                    
+
+
+
+
+
+
+
+
                       Dosya Analizi:
-                      
+
                         ✅ Aktif
-                      
-                    
-  
-                    
+
+
+
+
                       PDF Üretimi:
-                      
+
                         ✅ Hazır
-                      
-                    
-                    
-                      
-                    
-                    
+
+
+
+
+
+
                       Yüklenen Dosya:
-                      
+
                         {designs.length}
-                      
-                    
-                    
+
+
+
                       Seçili Dosya:
-                      
+
                         {selectedDesigns.length}
-                      
-                    
+
+
                     {arrangements.length > 0 && (
-                      
-                        
+
+
                           Yerleştirilen:
-                          
+
                             {arrangements.length}
-                          
-                        
+
+
                     )}
-                  
-                
-              
-            
-          
-        
-      
-    
+
+
+
+
+
+
+
+
   );
 }

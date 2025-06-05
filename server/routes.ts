@@ -1754,6 +1754,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+// Python Microservice Integration
+const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
+
+// Enhanced PDF Analysis with Python Service
+app.post('/api/python/analyze-pdf', isAuthenticated, async (req: any, res) => {
+  try {
+    console.log('🐍 Python PDF analysis request received');
+    
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({ success: false, message: 'Dosya gerekli' });
+    }
+
+    const file = req.files.file as any;
+    
+    // Python servisine dosyayı gönder
+    const formData = new FormData();
+    const fileBuffer = Buffer.from(file.data);
+    const blob = new Blob([fileBuffer], { type: file.mimetype });
+    formData.append('file', blob, file.name);
+
+    const response = await fetch(`${PYTHON_SERVICE_URL}/api/analyze-pdf`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`Python service error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    res.json({
+      success: true,
+      analysis: result,
+      message: 'Python analizi tamamlandı'
+    });
+
+  } catch (error) {
+    console.error('❌ Python analysis error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Python analiz hatası',
+      error: error instanceof Error ? error.message : 'Bilinmeyen hata'
+    });
+  }
+});
+
+// Enhanced Arrangement with Python Service
+app.post('/api/python/arrange-designs', isAuthenticated, async (req: any, res) => {
+  try {
+    console.log('🐍 Python arrangement request received');
+    
+    const response = await fetch(`${PYTHON_SERVICE_URL}/api/arrange-designs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Python service error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    res.json({
+      success: true,
+      arrangement: result,
+      message: 'Python dizilimi tamamlandı'
+    });
+
+  } catch (error) {
+    console.error('❌ Python arrangement error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Python dizilim hatası',
+      error: error instanceof Error ? error.message : 'Bilinmeyen hata'
+    });
+  }
+});
+
 // Enhanced PDF Generation Endpoint with Quality Controls
 app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async (req: any, res) => {
   try {
