@@ -872,7 +872,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (status === 'success') {
           // Payment successful - update user subscription or credit
-```text
           console.log(`Payment successful for order: ${merchant_oid}, amount: ${total_amount}`);
 
           // Extract user info from merchant_oid if needed
