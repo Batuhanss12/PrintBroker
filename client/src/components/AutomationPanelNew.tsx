@@ -1,3 +1,7 @@
+` tags. I will pay close attention to preserving the original structure, indentation, and functionality, and avoiding any forbidden words or placeholders.
+
+```
+<replit_final_file>
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -78,50 +82,17 @@ interface Arrangement {
   isFullPage?: boolean;
 }
 
-interface ArrangementResponse {
+interface ArrangementResult {
   arrangements: Arrangement[];
   totalArranged: number;
   totalRequested: number;
   efficiency: string;
-  sheetDimensions: { width: number; height: number };
-  wasteArea: number;
-}
-
-// Enhanced type definitions
-interface ArrangementItem {
-  designId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  withMargins: {
-    width: number;
-    height: number;
-  };
-}
-
-interface ArrangementResult {
-  arrangements: ArrangementItem[];
-  totalArranged: number;
-  totalRequested: number;
-  efficiency: string;
-  usedArea: {
-    width: number;
-    height: number;
-  };
   pdfPath?: string;
-  aiRecommendations?: string[];
-  statistics: {
+  statistics?: {
     arrangedDesigns: number;
     rotatedItems: number;
     wastePercentage: number;
-  }
-}
-
-interface FileUploadResponse {
-  success: boolean;
-  message: string;
-  file?: Design;
+  };
 }
 
 export default function AutomationPanelNew() {
@@ -134,7 +105,6 @@ export default function AutomationPanelNew() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [arrangements, setArrangements] = useState<Arrangement[]>([]);
   const [isArranging, setIsArranging] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'list' | 'grid'>('grid');
   const [plotterSettingsState, setPlotterSettings] = useState<PlotterSettings>({
     sheetWidth: 330,
     sheetHeight: 480,
@@ -173,47 +143,13 @@ export default function AutomationPanelNew() {
     return response.json();
   };
 
-  // File validation function
-  const validateFile = (file: File): { isValid: boolean; error?: string } => {
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    const allowedTypes = [
-      'application/pdf',
-      'image/svg+xml',
-      'application/postscript',
-      'application/eps',
-      'image/eps'
-    ];
-
-    const allowedExtensions = ['.pdf', '.svg', '.ai', '.eps'];
-    const fileExtension = file.name.toLowerCase().split('.').pop();
-
-    if (file.size > maxSize) {
-      return { isValid: false, error: 'Dosya boyutu 50MB\'dan büyük olamaz' };
-    }
-
-    if (file.size === 0) {
-      return { isValid: false, error: 'Dosya boş olamaz' };
-    }
-
-    const isValidType = allowedTypes.includes(file.type) || 
-                       allowedExtensions.includes(`.${fileExtension}`);
-
-    if (!isValidType) {
-      return { isValid: false, error: 'Sadece vektörel dosyalar (PDF, SVG, AI, EPS) kabul edilir' };
-    }
-
-    return { isValid: true };
-  };
-
   // Enhanced error handler
   const handleError = useCallback((error: unknown, fallbackMessage: string): void => {
     console.error('Operation failed:', error);
-
     let errorMessage = fallbackMessage;
     if (error instanceof Error) {
       errorMessage = error.message;
     }
-
     toast({
       title: "Hata",
       description: errorMessage,
@@ -233,8 +169,6 @@ export default function AutomationPanelNew() {
   const uploadDesignsMutation = useMutation({
     mutationFn: async (formData: FormData): Promise<{ designs: Design[] }> => {
       setUploadProgress(0);
-
-      // Progress simulation
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 15, 90));
       }, 300);
@@ -243,7 +177,6 @@ export default function AutomationPanelNew() {
         const result = await apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
         clearInterval(progressInterval);
         setUploadProgress(100);
-
         setTimeout(() => setUploadProgress(0), 1500);
         return result;
       } catch (error) {
@@ -256,7 +189,6 @@ export default function AutomationPanelNew() {
       if (data.designs && data.designs.length > 0) {
         const newDesignIds = data.designs.map(d => d.id);
         setSelectedDesigns(prev => [...prev, ...newDesignIds]);
-
         toast({
           title: "✅ Yükleme Başarılı",
           description: `${data.designs.length} dosya başarıyla yüklendi ve analiz edildi.`,
@@ -273,43 +205,10 @@ export default function AutomationPanelNew() {
     },
   });
 
-  // Auto arrange mutation
-  const autoArrangeMutation = useMutation({
-    mutationFn: async ({ designIds, plotterSettings }: { designIds: string[]; plotterSettings: PlotterSettings }): Promise<ArrangementResponse> => {
-      setIsArranging(true);
-      return apiRequest('POST', '/api/automation/plotter/auto-arrange', { designIds, plotterSettings });
-    },
-    onSuccess: (data) => {
-      setArrangements(data.arrangements);
-      setIsArranging(false);
-      toast({
-        title: "🎯 Dizilim Tamamlandı",
-        description: `${data.totalArranged}/${data.totalRequested} tasarım yerleştirildi. Verimlilik: ${data.efficiency}`,
-      });
-
-      // Auto-generate PDF after successful arrangement
-      if (data.arrangements && data.arrangements.length > 0) {
-        console.log('🔄 Auto-generating PDF after arrangement...');
-        setTimeout(() => {
-          generatePDFMutation.mutate();
-        }, 1500);
-      }
-    },
-    onError: (error: any) => {
-      setIsArranging(false);
-      toast({
-        title: "❌ Dizilim Hatası",
-        description: error.message || "Otomatik dizilim başarısız",
-        variant: "destructive",
-      });
-    },
-  });
-
   // Generate PDF mutation
   const generatePDFMutation = useMutation({
     mutationFn: async () => {
       console.log('🔄 Starting PDF generation...');
-
       const response = await fetch('/api/automation/plotter/generate-enhanced-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -414,106 +313,7 @@ export default function AutomationPanelNew() {
     },
   });
 
-  // File upload mutation
-  const uploadMutation = useMutation({
-    mutationFn: async (files: FileList): Promise<FileUploadResponse[]> => {
-      const results: FileUploadResponse[] = [];
-      setUploadProgress(0);
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-
-        // File validation
-        if (file.size > 50 * 1024 * 1024) { // 50MB
-          throw new Error(`${file.name} dosyası çok büyük (maksimum 50MB)`);
-        }
-
-        const formData = new FormData();
-        formData.append('designs', file);
-
-        try {
-          const result = await apiRequest<FileUploadResponse>('POST', '/api/automation/plotter/upload-designs', formData);
-          results.push(result);
-
-          // Update progress
-          setUploadProgress(((i + 1) / files.length) * 100);
-        } catch (error) {
-          console.error(`File upload failed for ${file.name}:`, error);
-          throw error;
-        }
-      }
-
-      return results;
-    },
-    onSuccess: (results) => {
-      const successCount = results.filter(r => r.success).length;
-      toast({
-        title: "Yükleme Başarılı",
-        description: `${successCount} dosya başarıyla yüklendi ve analiz edildi.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['automation-designs'] });
-      setUploadProgress(0);
-    },
-    onError: (error: unknown) => {
-      handleError(error, "Dosya yükleme başarısız");
-      setUploadProgress(0);
-    },
-  });
-
-  // Python Profesyonel Dizim mutation
-  const pythonLayoutMutation = useMutation({
-    mutationFn: async (): Promise<any> => {
-      if (!designs || designs.length === 0) {
-        throw new Error("Dizim için en az bir tasarım gerekli");
-      }
-
-      setIsArranging(true);
-      const designIds = designs.map((d: Design) => d.id);
-
-      const result = await apiRequest('POST', '/api/automation/plotter/python-layout', {
-        designIds,
-        pageWidth: plotterSettingsState.sheetWidth,
-        pageHeight: plotterSettingsState.sheetHeight,
-        cuttingSpace: 5
-      });
-
-      return result;
-    },
-    onSuccess: (data: any) => {
-      console.log('🐍 Python dizim tamamlandı:', data);
-      setIsArranging(false);
-
-      if (data.success) {
-        toast({
-          title: "🐍 Python Dizim Başarılı",
-          description: `${data.designs_placed}/${data.total_designs} tasarım yerleştirildi (${data.efficiency_percent}% verimlilik)`,
-        });
-
-        // PDF indirme
-        if (data.downloadUrl) {
-          const link = document.createElement('a');
-          link.href = data.downloadUrl;
-          link.download = `python-layout-${new Date().toISOString().split('T')[0]}.pdf`;
-          link.click();
-
-          toast({
-            title: "📄 Profesyonel PDF İndirildi",
-            description: "Vektörel kalitede PDF başarıyla oluşturuldu",
-          });
-        }
-      } else {
-        throw new Error(data.error || "Python dizim başarısız");
-      }
-    },
-    onError: (error: unknown) => {
-      setIsArranging(false);
-      console.error('🐍 Python dizim hatası:', error);
-      handleError(error, "Python profesyonel dizim başarısız. Kütüphaneler eksik olabilir.");
-    },
-  });
-
-  // Tek tuş otomatik dizim mutation
-  const [oneClickResult, setOneClickResult] = useState<ArrangementResult | null>(null);
+  // One-click layout mutation
   const oneClickLayoutMutation = useMutation({
     mutationFn: async (): Promise<ArrangementResult> => {
       if (!designs || designs.length === 0) {
@@ -544,17 +344,14 @@ export default function AutomationPanelNew() {
       console.log('🎯 Tek tuş dizim tamamlandı:', data);
       setArrangements(data.arrangements);
       setIsArranging(false);
-      setOneClickResult(data);
 
       toast({
         title: "Tek Tuş Dizim Tamamlandı",
         description: `${data.totalArranged}/${data.totalRequested} tasarım profesyonel olarak dizildi (${data.efficiency} verimlilik)`,
       });
 
-      // PDF otomatik olarak oluşturuldu, indirme linkini göster
       if (data.pdfPath) {
         console.log('✅ PDF otomatik oluşturuldu, indiriliyor...');
-        // PDF indirme işlemi
         const link = document.createElement('a');
         link.href = `/uploads/${data.pdfPath.split('/').pop()}`;
         link.download = `matbixx-tek-tus-dizim-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -572,73 +369,39 @@ export default function AutomationPanelNew() {
     },
   });
 
-  // Auto-arrange mutation (eski sistem)
-  const autoArrangeMutationNew = useMutation({
-    mutationFn: async (): Promise<ArrangementResult> => {
-      if (!designs || designs.length === 0) {
-        throw new Error("Dizim için en az bir tasarım gerekli");
+  // File upload mutation
+  const uploadMutation = useMutation({
+    mutationFn: async (files: FileList): Promise<any> => {
+      const results: any = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        const formData = new FormData();
+        formData.append('designs', file);
+
+        try {
+          const result = await apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
+          results.push(result);
+        } catch (error) {
+          console.error(`File upload failed for ${file.name}:`, error);
+          throw error;
+        }
       }
 
-      setIsArranging(true);
-      const designIds = designs.map((d: Design) => d.id);
-
-      const result = await apiRequest('POST', '/api/automation/plotter/auto-arrange', {
-        designIds,
-        plotterSettings: plotterSettingsState
-      });
-
-      return result;
+      return results;
     },
-    onSuccess: (data: ArrangementResult) => {
-      console.log('Arrangement completed:', data);
-      setArrangements(data.arrangements);
-      setIsArranging(false);
-
+    onSuccess: (results) => {
       toast({
-        title: "Dizim Tamamlandı",
-        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik)`,
+        title: "Yükleme Başarılı",
+        description: `Dosyalar başarıyla yüklendi ve analiz edildi.`,
       });
-
-      // Auto-generate PDF
-      if (data.arrangements && data.arrangements.length > 0) {
-        setTimeout(() => {
-          generatePDFMutation.mutate({ 
-            plotterSettings: plotterSettingsState, 
-            arrangements: data.arrangements
-          });
-        }, 1000);
-      }
+      queryClient.invalidateQueries({ queryKey: ['automation-designs'] });
+      setUploadProgress(0);
     },
     onError: (error: unknown) => {
-      setIsArranging(false);
-      handleError(error, "Otomatik dizim başarısız");
-    },
-  });
-
-  // PDF generation mutation
-    const generatePdfMutationNew = useMutation({
-    mutationFn: async (data: { plotterSettings: PlotterSettings; arrangements: ArrangementItem[] }) => {
-      //setIsPdfGenerating(true); //TODO: check isPdfGenerating
-      return apiRequest('POST', '/api/automation/plotter/generate-pdf', data);
-    },
-    onSuccess: (response: { pdfUrl: string }) => {
-      //setIsPdfGenerating(false);  //TODO: check isPdfGenerating
-      toast({
-        title: "PDF Hazır",
-        description: "Baskı dosyanız indirilmeye başlıyor...",
-      });
-
-      // Auto-download PDF
-      const link = document.createElement('a');
-      link.href = response.pdfUrl;
-      link.download = `dizim-${new Date().toISOString().slice(0, 10)}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    },
-    onError: (error: unknown) => {
-      //setIsPdfGenerating(false); //TODO: check isPdfGenerating
-      handleError(error, "PDF oluşturma başarısız");
+      handleError(error, "Dosya yükleme başarısız");
+      setUploadProgress(0);
     },
   });
 
@@ -647,38 +410,13 @@ export default function AutomationPanelNew() {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    // Validate files
-    const validFiles: File[] = [];
-    const errors: string[] = [];
-
+    const formData = new FormData();
     Array.from(files).forEach(file => {
-      const validation = validateFile(file);
-      if (validation.isValid) {
-        validFiles.push(file);
-      } else {
-        errors.push(`${file.name}: ${validation.error}`);
-      }
+      formData.append('designs', file);
     });
-
-    if (errors.length > 0) {
-      toast({
-        title: "⚠️ Dosya Doğrulama Hatası",
-        description: errors.join(', '),
-        variant: "destructive",
-      });
-    }
-
-    if (validFiles.length > 0) {
-      const formData = new FormData();
-      validFiles.forEach(file => {
-        formData.append('designs', file);
-      });
-      uploadDesignsMutation.mutate(formData);
-    }
-
-    // Reset input
+    uploadDesignsMutation.mutate(formData);
     event.target.value = '';
-  }, [uploadDesignsMutation, toast]);
+  }, [uploadDesignsMutation]);
 
   const toggleDesignSelection = (designId: string) => {
     setSelectedDesigns(prev => 
@@ -688,22 +426,6 @@ export default function AutomationPanelNew() {
     );
   };
 
-  const handleAutoArrange = () => {
-    if (selectedDesigns.length === 0) {
-      toast({
-        title: "⚠️ Uyarı",
-        description: "Lütfen en az bir tasarım seçin.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    autoArrangeMutation.mutate({
-      designIds: selectedDesigns,
-      plotterSettings: plotterSettingsState
-    });
-  };
-
   const selectAllDesigns = () => {
     if (selectedDesigns.length === designs.length) {
       setSelectedDesigns([]);
@@ -711,6 +433,13 @@ export default function AutomationPanelNew() {
       setSelectedDesigns(designs.map((d: Design) => d.id));
     }
   };
+
+  // Auto-select all designs when they load
+  useEffect(() => {
+    if (designs && designs.length > 0) {
+      setSelectedDesigns(designs.map((d: Design) => d.id));
+    }
+  }, [designs]);
 
   // Design List Component
   const DesignList = ({ designs }: { designs: Design[] }) => {
@@ -724,7 +453,6 @@ export default function AutomationPanelNew() {
       );
     }
 
-    // Ensure all designs have required properties
     const validDesigns = designs.filter(design => 
       design && 
       typeof design === 'object' && 
@@ -757,9 +485,8 @@ export default function AutomationPanelNew() {
         };
 
     return (
-      <div className={`grid gap-4 ${previewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {validDesigns.map((design: Design) => {
-          // Extra safety check
           if (!design || !design.id || !design.name) {
             return null;
           }
@@ -883,81 +610,81 @@ export default function AutomationPanelNew() {
     );
   };
 
-    // Design preview component
-    const DesignListNew = () => {
-      if (designsLoading) {
-        return (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-sm text-gray-500">Tasarımlar yükleniyor...</p>
-          </div>
-        );
-      }
-
-      if (!designs || designs.length === 0) {
-        return (
-          <div className="text-center py-8 text-gray-500">
-            <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>Henüz tasarım yüklenmemiş</p>
-            <p className="text-xs mt-1">PDF, SVG, EPS dosyalarınızı yükleyin</p>
-          </div>
-        );
-      }
-
+  // Design preview component
+  const DesignListNew = () => {
+    if (designsLoading) {
       return (
-        <div className="space-y-3">
-          {designs.map((design: Design) => {
-            const dimensions = design.realDimensionsMM || design.dimensions || 'Boyut analiz ediliyor...';
-            const status = design.processingStatus || 'processed';
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-500">Tasarımlar yükleniyor...</p>
+        </div>
+      );
+    }
 
-            return (
-              <div 
-                key={design.id} 
-                className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <FileText className="w-10 h-10 text-blue-600" />
-                    {status === 'processing' && (
-                      <Clock className="w-4 h-4 text-yellow-600 absolute -top-1 -right-1" />
-                    )}
-                    {status === 'processed' && (
-                      <CheckCircle className="w-4 h-4 text-green-600 absolute -top-1 -right-1" />
-                    )}
-                    {status === 'error' && (
-                      <AlertCircle className="w-4 h-4 text-red-600 absolute -top-1 -right-1" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate max-w-[200px]" title={design.name}>
-                      {design.name}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {dimensions}
-                    </p>
-                    {design.processingNotes && (
-                      <p className="text-xs text-blue-600 mt-1">
-                        {design.processingNotes}
-                      </p>
-                    )}
-                  </div>
+    if (!designs || designs.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <p>Henüz tasarım yüklenmemiş</p>
+          <p className="text-xs mt-1">PDF, SVG, EPS dosyalarınızı yükleyin</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {designs.map((design: Design) => {
+          const dimensions = design.realDimensionsMM || design.dimensions || 'Boyut analiz ediliyor...';
+          const status = design.processingStatus || 'processed';
+
+          return (
+            <div 
+              key={design.id} 
+              className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <FileText className="w-10 h-10 text-blue-600" />
+                  {status === 'processing' && (
+                    <Clock className="w-4 h-4 text-yellow-600 absolute -top-1 -right-1" />
+                  )}
+                  {status === 'processed' && (
+                    <CheckCircle className="w-4 h-4 text-green-600 absolute -top-1 -right-1" />
+                  )}
+                  {status === 'error' && (
+                    <AlertCircle className="w-4 h-4 text-red-600 absolute -top-1 -right-1" />
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {design.fileType || 'PDF'}
-                  </Badge>
-                  {design.fileSize && (
-                    <Badge variant="outline" className="text-xs">
-                      {design.fileSize}
-                    </Badge>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate max-w-[200px]" title={design.name}>
+                    {design.name}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {dimensions}
+                  </p>
+                  {design.processingNotes && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      {design.processingNotes}
+                    </p>
                   )}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      );
-    };
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  {design.fileType || 'PDF'}
+                </Badge>
+                {design.fileSize && (
+                  <Badge variant="outline" className="text-xs">
+                    {design.fileSize}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [layoutResult, setLayoutResult] = useState<any>(null);
@@ -1232,183 +959,204 @@ export default function AutomationPanelNew() {
               </CardContent>
             </Card>
           )}
-                      
-                    
-                  
-                
-              
-            
-          
 
           {/* Design Management */}
-          
-            
-              
-                
-                  
-                    Tasarım Dosyaları ({designs.length})
-                  
-                
-                
-                  
-                    
-                      {previewMode === 'grid' ?  : }
-                    
-                    
-                      {selectedDesigns.length === designs.length ? "❌ Hiçbirini Seçme" : "✅ Tümünü Seç"}
-                    
-                    
-                      
-                        
-                      
-                    
-                    
-                      
-                    
-                  
-                
-              
-            
-            
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <FileImage className="h-5 w-5" />
+                  Tasarım Dosyaları ({designs.length})
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={selectAllDesigns}
+                    disabled={designs.length === 0}
+                  >
+                    {selectedDesigns.length === designs.length ? "❌ Hiçbirini Seçme" : "✅ Tümünü Seç"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetch()}
+                    disabled={designsLoading}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${designsLoading ? 'animate-spin' : ''}`} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => clearDesignsMutation.mutate()}
+                    disabled={clearDesignsMutation.isPending || designs.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               {designsError ? (
                 <div className="text-red-600">Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.</div>
               ) : (
                 <>
                   {selectedDesigns.length > 0 && (
-                    <div className="text-green-600">{selectedDesigns.length} tasarım seçildi ve dizilim için hazır</div>
+                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-blue-600" />
+                        <p className="text-sm text-blue-800 font-medium">
+                          {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
+                        </p>
+                      </div>
+                    </div>
                   )}
+                  <DesignList designs={designs} />
                 </>
               )}
-            
-          
-
-          
-              
-            
-          
-        
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Settings Panel */}
-        
-          
-            
-              
-                
-                 Plotter Ayarları
-                
-              
-            
-            
-              
-                
-                  
-                     Sayfa Genişlik (mm)
-                    
-                    
-                  
-                  
-                     Sayfa Yükseklik (mm)
-                    
-                    
-                  
-                
-
-                
-                  
-                     Üst Margin (mm)
-                    
-                    
-                  
-                  
-                     Alt Margin (mm)
-                    
-                    
-                  
-                
-
-                
-                  
-                     Yatay Aralık (mm)
-                    
-                    
-                  
-                  
-                     Dikey Aralık (mm)
-                    
-                    
-                  
-                
-              
-            
-          
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Plotter Ayarları
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="sheetWidth" className="text-xs font-medium">Sayfa Genişlik (mm)</Label>
+                  <Input
+                    id="sheetWidth"
+                    type="number"
+                    value={plotterSettingsState.sheetWidth}
+                    onChange={(e) => setPlotterSettings(prev => ({
+                      ...prev,
+                      sheetWidth: Number(e.target.value)
+                    }))}
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sheetHeight" className="text-xs font-medium">Sayfa Yükseklik (mm)</Label>
+                  <Input
+                    id="sheetHeight"
+                    type="number"
+                    value={plotterSettingsState.sheetHeight}
+                    onChange={(e) => setPlotterSettings(prev => ({
+                      ...prev,
+                      sheetHeight: Number(e.target.value)
+                    }))}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="marginTop" className="text-xs font-medium">Üst Margin (mm)</Label>
+                  <Input
+                    id="marginTop"
+                    type="number"
+                    value={plotterSettingsState.marginTop}
+                    onChange={(e) => setPlotterSettings(prev => ({
+                      ...prev,
+                      marginTop: Number(e.target.value)
+                    }))}
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="marginBottom" className="text-xs font-medium">Alt Margin (mm)</Label>
+                  <Input
+                    id="marginBottom"
+                    type="number"
+                    value={plotterSettingsState.marginBottom}
+                    onChange={(e) => setPlotterSettings(prev => ({
+                      ...prev,
+                      marginBottom: Number(e.target.value)
+                    }))}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                 <div>
+                  <Label htmlFor="horizontalSpacing" className="text-xs font-medium">Yatay Aralık (mm)</Label>
+                  <Input
+                    id="horizontalSpacing"
+                    type="number"
+                    value={plotterSettingsState.horizontalSpacing}
+                    onChange={(e) => setPlotterSettings(prev => ({
+                      ...prev,
+                      horizontalSpacing: Number(e.target.value)
+                    }))}
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="verticalSpacing" className="text-xs font-medium">Dikey Aralık (mm)</Label>
+                  <Input
+                    id="verticalSpacing"
+                    type="number"
+                    value={plotterSettingsState.verticalSpacing}
+                    onChange={(e) => setPlotterSettings(prev => ({
+                      ...prev,
+                      verticalSpacing: Number(e.target.value)
+                    }))}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* System Status */}
-          
-            
-              
-                
-                 Sistem Durumu
-                
-              
-            
-            
-              
-                
-                  
-                     Dosya Analizi:
-                    
-                    
-                      ✅ Aktif
-                    
-                  
-                  
-                     İçerik Koruma:
-                    
-                    
-                      ✅ Aktif
-                    
-                  
-                  
-                     PDF Üretimi:
-                    
-                    
-                      ✅ Hazır
-                    
-                  
-                  
-                     Akıllı Algoritma:
-                    
-                    
-                      ✅ Optimized
-                    
-                  
-                  
-                     Yüklenen Dosya:
-                    
-                    {designs.length}
-                  
-                  
-                     Seçili Dosya:
-                    
-                    {selectedDesigns.length}
-                  
-                  {arrangements.length> 0 && (
-                    
-                      
-                         Yerleştirilen:
-                        
-                        {arrangements.length}
-                      
-                    
-                  )}
-                
-              
-            
-          
-        
-      
-    
-  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                Sistem Durumu
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span>Dosya Analizi:</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    ✅ Aktif
+                  </Badge>
+                </div>
+               
+                <div className="flex justify-between items-center">
+                  <span>PDF Üretimi:</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    ✅ Hazır
+                  </Badge>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center font-medium">
+                  <span>Yüklenen Dosya:</span>
+                  <span className="text-blue-600">{designs.length}</span>
+                </div>
+                <div className="flex justify-between items-center font-medium">
+                  <span>Seçili Dosya:</span>
+                  <span className="text-green-600">{selectedDesigns.length}</span>
+                </div>
+                {arrangements.length > 0 && (
+                  <div className="flex justify-between items-center font-medium">
+                    <span>Yerleştirilen:</span>
+                    <span className="text-purple-600">{arrangements.length}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
