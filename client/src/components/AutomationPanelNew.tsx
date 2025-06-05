@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -8,7 +9,6 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Separator } from './ui/separator';
 import { Alert, AlertDescription } from './ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { 
   Upload, 
   Settings, 
@@ -23,13 +23,16 @@ import {
   FileText,
   Image as ImageIcon,
   Maximize2,
-  Info
+  Info,
+  Layout,
+  Target
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
 interface Design {
   id: string;
   name: string;
+  originalName: string;
   filename: string;
   dimensions: string;
   realDimensionsMM: string;
@@ -67,10 +70,9 @@ interface Arrangement {
   y: number;
   width: number;
   height: number;
-  withMargins?: {
-    width: number;
-    height: number;
-  };
+  rotation?: number;
+  designName?: string;
+  isFullPage?: boolean;
 }
 
 interface ArrangementResponse {
@@ -78,10 +80,8 @@ interface ArrangementResponse {
   totalArranged: number;
   totalRequested: number;
   efficiency: string;
-  usedArea: {
-    width: number;
-    height: number;
-  };
+  sheetDimensions: { width: number; height: number };
+  wasteArea: number;
 }
 
 export default function AutomationPanelNew() {
@@ -104,8 +104,8 @@ export default function AutomationPanelNew() {
     marginRight: 10,
     labelWidth: 50,
     labelHeight: 30,
-    horizontalSpacing: 2,
-    verticalSpacing: 2,
+    horizontalSpacing: 3,
+    verticalSpacing: 3,
   });
 
   // API functions
@@ -178,17 +178,17 @@ export default function AutomationPanelNew() {
     mutationFn: async (formData: FormData): Promise<{ designs: Design[] }> => {
       setUploadProgress(0);
 
-      // Simulate upload progress
+      // Progress simulation
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
+        setUploadProgress(prev => Math.min(prev + 15, 90));
+      }, 300);
 
       try {
         const result = await apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
         clearInterval(progressInterval);
         setUploadProgress(100);
 
-        setTimeout(() => setUploadProgress(0), 1000);
+        setTimeout(() => setUploadProgress(0), 1500);
         return result;
       } catch (error) {
         clearInterval(progressInterval);
@@ -202,15 +202,15 @@ export default function AutomationPanelNew() {
         setSelectedDesigns(prev => [...prev, ...newDesignIds]);
 
         toast({
-          title: "Başarılı",
-          description: `${data.designs.length} dosya yüklendi ve içeriği korundu.`,
+          title: "✅ Yükleme Başarılı",
+          description: `${data.designs.length} dosya başarıyla yüklendi ve analiz edildi.`,
         });
       }
       queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Yükleme Hatası",
+        title: "❌ Yükleme Hatası",
         description: error.message || "Dosyalar yüklenemedi",
         variant: "destructive",
       });
@@ -227,14 +227,14 @@ export default function AutomationPanelNew() {
       setArrangements(data.arrangements);
       setIsArranging(false);
       toast({
-        title: "Dizilim Tamamlandı",
-        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi. Verimlilik: ${data.efficiency}`,
+        title: "🎯 Dizilim Tamamlandı",
+        description: `${data.totalArranged}/${data.totalRequested} tasarım yerleştirildi. Verimlilik: ${data.efficiency}`,
       });
     },
     onError: (error: any) => {
       setIsArranging(false);
       toast({
-        title: "Dizilim Hatası",
+        title: "❌ Dizilim Hatası",
         description: error.message || "Otomatik dizilim başarısız",
         variant: "destructive",
       });
@@ -279,7 +279,7 @@ export default function AutomationPanelNew() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `matbixx-layout-${Date.now()}.pdf`;
+      a.download = `matbixx-professional-layout-${Date.now()}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -287,13 +287,13 @@ export default function AutomationPanelNew() {
     },
     onSuccess: () => {
       toast({
-        title: "PDF İndirildi",
-        description: "Professional layout PDF'i başarıyla oluşturuldu.",
+        title: "📄 PDF İndirildi",
+        description: "Profesyonel layout PDF'i başarıyla oluşturuldu ve indirildi.",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "PDF Hatası",
+        title: "❌ PDF Hatası",
         description: error.message || "PDF oluşturulamadı",
         variant: "destructive",
       });
@@ -308,13 +308,13 @@ export default function AutomationPanelNew() {
       setArrangements([]);
       queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
       toast({
-        title: "Temizlendi",
+        title: "🗑️ Temizlendi",
         description: "Tüm tasarım dosyaları temizlendi.",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Temizleme Hatası",
+        title: "❌ Temizleme Hatası",
         description: error.message || "Dosyalar temizlenemedi",
         variant: "destructive",
       });
@@ -341,7 +341,7 @@ export default function AutomationPanelNew() {
 
     if (errors.length > 0) {
       toast({
-        title: "Dosya Doğrulama Hatası",
+        title: "⚠️ Dosya Doğrulama Hatası",
         description: errors.join(', '),
         variant: "destructive",
       });
@@ -370,7 +370,7 @@ export default function AutomationPanelNew() {
   const handleAutoArrange = () => {
     if (selectedDesigns.length === 0) {
       toast({
-        title: "Uyarı",
+        title: "⚠️ Uyarı",
         description: "Lütfen en az bir tasarım seçin.",
         variant: "destructive",
       });
@@ -395,142 +395,168 @@ export default function AutomationPanelNew() {
   const DesignList = ({ designs }: { designs: Design[] }) => {
     if (!designs || designs.length === 0) {
       return (
-        <div className="text-center py-8 text-gray-500">
-          <FileImage className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-          <p>Henüz tasarım dosyası yüklenmedi</p>
-          <p className="text-sm">Vektörel dosyalarınızı yükleyin</p>
+        <div className="text-center py-12 text-gray-500">
+          <FileImage className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+          <h3 className="text-lg font-medium mb-2">Henüz tasarım dosyası yüklenmedi</h3>
+          <p className="text-sm">PDF, SVG, AI, EPS formatlarında vektörel dosyalarınızı yükleyin</p>
         </div>
       );
     }
 
-    // Filter out invalid designs
+    // Ensure all designs have required properties
     const validDesigns = designs.filter(design => 
       design && 
       typeof design === 'object' && 
       design.id && 
-      design.name
+      (design.name || design.originalName)
     );
 
-    return (
-      <div className={`grid gap-3 ${previewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
-        {validDesigns.map((design: Design) => (
-          <div
-            key={design.id}
-            className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
-              selectedDesigns.includes(design.id)
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-            onClick={() => toggleDesignSelection(design.id)}
-          >
-            {/* Selection indicator */}
-            {selectedDesigns.includes(design.id) && (
-              <div className="absolute top-2 right-2 z-10">
-                <CheckCircle className="h-5 w-5 text-blue-500 bg-white rounded-full" />
-              </div>
-            )}
+    if (validDesigns.length === 0) {
+      return (
+        <div className="text-center py-8 text-orange-500">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4" />
+          <p>Geçerli tasarım dosyası bulunamadı</p>
+        </div>
+      );
+    }
 
-            {/* File preview */}
-            <div className="aspect-square mb-2 bg-gray-50 rounded border overflow-hidden">
-              {design.mimeType === 'application/pdf' ? (
-                <div className="w-full h-full flex items-center justify-center bg-red-50 relative">
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">📄</div>
-                    <span className="text-xs text-red-600 font-medium">PDF VEKTÖR</span>
-                  </div>
-                  {design.realDimensionsMM && (
-                    <div className="absolute bottom-0 left-0 right-0 text-xs bg-black bg-opacity-75 text-white p-1 text-center">
-                      {design.realDimensionsMM}
-                    </div>
-                  )}
-                </div>
-              ) : design.thumbnailPath ? (
-                <img
-                  src={design.thumbnailPath}
-                  alt={design.name}
-                  className="w-full h-full object-contain"
-                  style={{ imageRendering: 'crisp-edges' }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-purple-50">
-                  <div className="text-center">
-                    <div className="text-lg">🎨</div>
-                    <span className="text-xs text-purple-600">
-                      {design.name && typeof design.name === 'string' && design.name.includes('.') ? design.name.split('.').pop()?.toUpperCase() : 'DESIGN'}
-                    </span>
-                  </div>
+    return (
+      <div className={`grid gap-4 ${previewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
+        {validDesigns.map((design: Design) => {
+          const displayName = design.originalName || design.name || 'Adsız Dosya';
+          const safeDimensions = design.realDimensionsMM || design.dimensions || 'Boyut bilinmiyor';
+          
+          return (
+            <div
+              key={design.id}
+              className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                selectedDesigns.includes(design.id)
+                  ? 'border-blue-500 bg-blue-50 shadow-md'
+                  : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
+              onClick={() => toggleDesignSelection(design.id)}
+            >
+              {/* Selection indicator */}
+              {selectedDesigns.includes(design.id) && (
+                <div className="absolute top-3 right-3 z-10">
+                  <CheckCircle className="h-6 w-6 text-blue-500 bg-white rounded-full shadow-sm" />
                 </div>
               )}
-            </div>
 
-            {/* File info */}
-            <div className="space-y-1">
-              <h4 className="font-medium text-sm truncate" title={design.name || 'Adsız dosya'}>
-                {design.name || 'Adsız dosya'}
-              </h4>
-
-              <div className="text-xs text-gray-600 space-y-1">
-                <div className="flex justify-between">
-                  <span>Boyut:</span>
-                  <span className="font-medium text-blue-600">
-                    {design.realDimensionsMM || design.dimensions}
-                  </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Dosya:</span>
-                  <span>{design.fileSize}</span>
-                </div>
-
-                {design.processingStatus && (
-                  <div className="flex justify-between items-center">
-                    <span>Durum:</span>
-                    <Badge variant={design.processingStatus === 'success' ? 'default' : 'destructive'} className="text-xs">
-                      {design.processingStatus === 'success' ? 'Hazır' : 'Hata'}
-                    </Badge>
+              {/* File preview */}
+              <div className="aspect-square mb-3 bg-gray-50 rounded-lg border overflow-hidden">
+                {design.mimeType === 'application/pdf' ? (
+                  <div className="w-full h-full flex items-center justify-center bg-red-50 relative">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">📄</div>
+                      <span className="text-xs text-red-600 font-semibold">PDF VEKTÖR</span>
+                    </div>
+                    {safeDimensions && (
+                      <div className="absolute bottom-0 left-0 right-0 text-xs bg-red-600 bg-opacity-90 text-white p-1 text-center font-medium">
+                        {safeDimensions}
+                      </div>
+                    )}
+                  </div>
+                ) : design.thumbnailPath ? (
+                  <img
+                    src={design.thumbnailPath}
+                    alt={displayName}
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'crisp-edges' }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-purple-50">
+                    <div className="text-center">
+                      <div className="text-2xl mb-2">🎨</div>
+                      <span className="text-xs text-purple-600 font-medium">
+                        {design.mimeType?.includes('svg') ? 'SVG' : 
+                         design.mimeType?.includes('eps') ? 'EPS' : 'VEKTÖR'}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Content preservation indicator */}
-            {design.contentPreserved && (
-              <div className="absolute top-2 left-2">
-                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                  İçerik Korundu
-                </Badge>
+              {/* File info */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm truncate" title={displayName}>
+                  {displayName}
+                </h4>
+
+                <div className="text-xs text-gray-600 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span>Boyut:</span>
+                    <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200">
+                      {safeDimensions}
+                    </Badge>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Dosya:</span>
+                    <span className="font-medium">{design.fileSize || 'Bilinmiyor'}</span>
+                  </div>
+
+                  {design.colorProfile && (
+                    <div className="flex justify-between">
+                      <span>Renk:</span>
+                      <span className="font-medium">{design.colorProfile}</span>
+                    </div>
+                  )}
+
+                  {design.processingStatus && (
+                    <div className="flex justify-between items-center">
+                      <span>Durum:</span>
+                      <Badge 
+                        variant={design.processingStatus === 'success' ? 'default' : 'destructive'} 
+                        className="text-xs"
+                      >
+                        {design.processingStatus === 'success' ? '✅ Hazır' : '❌ Hata'}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Content preservation indicator */}
+              {design.contentPreserved && (
+                <div className="absolute top-3 left-3">
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    ✅ İçerik Korundu
+                  </Badge>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Otomatik Dizilim Sistemi
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3 flex items-center gap-3">
+          <Layout className="h-10 w-10 text-blue-600" />
+          Profesyonel Otomatik Dizilim Sistemi
         </h1>
-        <p className="text-gray-600">
-          Vektörel dosyalarınızı yükleyin ve otomatik dizilim ile PDF oluşturun
+        <p className="text-lg text-gray-600">
+          Vektörel dosyalarınızı yükleyin, akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
         </p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="xl:col-span-2 space-y-6">
           {/* File Upload Section */}
-          <Card>
+          <Card className="border-2 border-dashed border-blue-200 bg-blue-50/30">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Dosya Yükleme ve İçerik Koruma
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <Upload className="h-6 w-6" />
+                Profesyonel Dosya Yükleme Sistemi
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+              <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-white">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -540,36 +566,43 @@ export default function AutomationPanelNew() {
                   className="hidden"
                 />
 
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Vektörel Dosyalarınızı Yükleyin
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği korunur.
-                </p>
+                <div className="mb-4">
+                  <Upload className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Vektörel Dosyalarınızı Yükleyin
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
+                  </p>
+                </div>
 
                 <Button 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadDesignsMutation.isPending}
-                  className="mb-4"
+                  size="lg"
+                  className="mb-6"
                 >
-                  {uploadDesignsMutation.isPending ? "Yükleniyor..." : "Dosya Seç"}
+                  {uploadDesignsMutation.isPending ? "🔄 Analiz Ediliyor..." : "📁 Dosya Seç ve Yükle"}
                 </Button>
 
                 {uploadProgress > 0 && (
-                  <div className="mt-4">
-                    <Progress value={uploadProgress} className="w-full" />
-                    <p className="text-sm text-gray-600 mt-2">
-                      Yükleniyor: %{uploadProgress.toFixed(0)}
+                  <div className="mb-4">
+                    <Progress value={uploadProgress} className="w-full h-3 mb-2" />
+                    <p className="text-sm text-blue-600 font-medium">
+                      📊 Yükleniyor ve analiz ediliyor: %{uploadProgress.toFixed(0)}
                     </p>
                   </div>
                 )}
 
-                <div className="text-xs text-gray-500 mt-4 space-y-1">
-                  <div>✓ Maksimum dosya boyutu: 50MB</div>
-                  <div>✓ İçerik analizi ve boyut tespiti</div>
-                  <div>✓ Otomatik önizleme oluşturma</div>
-                  <div>✓ Vektör kalitesi korunur</div>
+                <div className="grid grid-cols-2 gap-4 text-xs text-gray-500 border-t pt-4">
+                  <div className="space-y-1">
+                    <div>✅ Maksimum dosya boyutu: 50MB</div>
+                    <div>✅ İçerik analizi ve boyut tespiti</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div>✅ Otomatik önizleme oluşturma</div>
+                    <div>✅ Vektör kalitesi korunur</div>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -598,7 +631,7 @@ export default function AutomationPanelNew() {
                     onClick={selectAllDesigns}
                     disabled={designs.length === 0}
                   >
-                    {selectedDesigns.length === designs.length ? "Hiçbirini Seçme" : "Tümünü Seç"}
+                    {selectedDesigns.length === designs.length ? "❌ Hiçbirini Seçme" : "✅ Tümünü Seç"}
                   </Button>
 
                   <Button
@@ -632,10 +665,13 @@ export default function AutomationPanelNew() {
               ) : (
                 <>
                   {selectedDesigns.length > 0 && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        {selectedDesigns.length} tasarım seçildi
-                      </p>
+                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-blue-600" />
+                        <p className="text-sm text-blue-800 font-medium">
+                          {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -646,11 +682,11 @@ export default function AutomationPanelNew() {
           </Card>
 
           {/* Auto Arrangement */}
-          <Card>
+          <Card className="border-2 border-green-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Otomatik Dizilim
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <Zap className="h-6 w-6" />
+                Akıllı Otomatik Dizilim
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -658,38 +694,37 @@ export default function AutomationPanelNew() {
                 <Button
                   onClick={handleAutoArrange}
                   disabled={selectedDesigns.length === 0 || isArranging}
-                  className="w-full"
+                  className="w-full bg-green-600 hover:bg-green-700"
                   size="lg"
                 >
                   {isArranging ? (
                     <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Diziliyor...
+                      <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                      🤖 Akıllı algoritma çalışıyor...
                     </>
                   ) : (
                     <>
-                      <Zap className="h-4 w-4 mr-2" />
-                      Otomatik Dizilim Başlat
+                      <Zap className="h-5 w-5 mr-2" />
+                      🎯 Otomatik Dizilim Başlat
                     </>
                   )}
                 </Button>
 
                 {arrangements.length > 0 && (
-                  <div className="space-y-3">
-                    <Separator />
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>Dizilen: {arrangements.length}</div>
-                      <div>Seçilen: {selectedDesigns.length}</div>
+                  <div className="space-y-4 border-t pt-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-green-50 p-3 rounded-lg">
+                      <div>✅ Yerleştirilen: {arrangements.length}</div>
+                      <div>📊 Seçilen: {selectedDesigns.length}</div>
                     </div>
 
                     <Button
                       onClick={() => generatePDFMutation.mutate()}
                       disabled={generatePDFMutation.isPending}
-                      className="w-full"
-                      variant="outline"
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      size="lg"
                     >
-                      <Download className="h-4 w-4 mr-2" />
-                      {generatePDFMutation.isPending ? "PDF Oluşturuluyor..." : "Professional PDF İndir"}
+                      <Download className="h-5 w-5 mr-2" />
+                      {generatePDFMutation.isPending ? "📄 Profesyonel PDF Oluşturuluyor..." : "📥 Profesyonel PDF İndir"}
                     </Button>
                   </div>
                 )}
@@ -710,7 +745,7 @@ export default function AutomationPanelNew() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="sheetWidth" className="text-xs">Sayfa Genişlik (mm)</Label>
+                  <Label htmlFor="sheetWidth" className="text-xs font-medium">Sayfa Genişlik (mm)</Label>
                   <Input
                     id="sheetWidth"
                     type="number"
@@ -723,7 +758,7 @@ export default function AutomationPanelNew() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="sheetHeight" className="text-xs">Sayfa Yükseklik (mm)</Label>
+                  <Label htmlFor="sheetHeight" className="text-xs font-medium">Sayfa Yükseklik (mm)</Label>
                   <Input
                     id="sheetHeight"
                     type="number"
@@ -739,7 +774,7 @@ export default function AutomationPanelNew() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="marginTop" className="text-xs">Üst Margin (mm)</Label>
+                  <Label htmlFor="marginTop" className="text-xs font-medium">Üst Margin (mm)</Label>
                   <Input
                     id="marginTop"
                     type="number"
@@ -752,7 +787,7 @@ export default function AutomationPanelNew() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="marginBottom" className="text-xs">Alt Margin (mm)</Label>
+                  <Label htmlFor="marginBottom" className="text-xs font-medium">Alt Margin (mm)</Label>
                   <Input
                     id="marginBottom"
                     type="number"
@@ -768,7 +803,7 @@ export default function AutomationPanelNew() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="horizontalSpacing" className="text-xs">Yatay Aralık (mm)</Label>
+                  <Label htmlFor="horizontalSpacing" className="text-xs font-medium">Yatay Aralık (mm)</Label>
                   <Input
                     id="horizontalSpacing"
                     type="number"
@@ -781,7 +816,7 @@ export default function AutomationPanelNew() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="verticalSpacing" className="text-xs">Dikey Aralık (mm)</Label>
+                  <Label htmlFor="verticalSpacing" className="text-xs font-medium">Dikey Aralık (mm)</Label>
                   <Input
                     id="verticalSpacing"
                     type="number"
@@ -806,33 +841,46 @@ export default function AutomationPanelNew() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Dosya Analizi:</span>
-                  <Badge variant="outline" className="text-green-600">
-                    Aktif
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span>📊 Dosya Analizi:</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    ✅ Aktif
                   </Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span>İçerik Koruma:</span>
-                  <Badge variant="outline" className="text-green-600">
-                    Aktif
+                <div className="flex justify-between items-center">
+                  <span>🔒 İçerik Koruma:</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    ✅ Aktif
                   </Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span>PDF Üretimi:</span>
-                  <Badge variant="outline" className="text-green-600">
-                    Hazır
+                <div className="flex justify-between items-center">
+                  <span>📄 PDF Üretimi:</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    ✅ Hazır
                   </Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span>Yüklenen Dosya:</span>
-                  <span className="font-medium">{designs.length}</span>
+                <div className="flex justify-between items-center">
+                  <span>🤖 Akıllı Algoritma:</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    ✅ Optimized
+                  </Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span>Seçili Dosya:</span>
-                  <span className="font-medium">{selectedDesigns.length}</span>
+                <Separator />
+                <div className="flex justify-between items-center font-medium">
+                  <span>📁 Yüklenen Dosya:</span>
+                  <span className="text-blue-600">{designs.length}</span>
                 </div>
+                <div className="flex justify-between items-center font-medium">
+                  <span>🎯 Seçili Dosya:</span>
+                  <span className="text-green-600">{selectedDesigns.length}</span>
+                </div>
+                {arrangements.length > 0 && (
+                  <div className="flex justify-between items-center font-medium">
+                    <span>✅ Yerleştirilen:</span>
+                    <span className="text-purple-600">{arrangements.length}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
