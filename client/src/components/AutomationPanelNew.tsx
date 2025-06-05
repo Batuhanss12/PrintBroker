@@ -27,7 +27,8 @@ import {
   Target,
   Sparkles,
   Clock,
-  Brain
+  Brain,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
@@ -908,16 +909,16 @@ export default function AutomationPanelNew() {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [layoutResult, setLayoutResult] = useState<any>(null);
-  const [settings, setSettings] = useState({
-    sheetWidth: 330,
-    sheetHeight: 480,
-    margin: 10,
-    bleedMargin: 3,
-    cuttingMarks: true
-  });
 
   const handleAIAutoLayout = async () => {
-    if (selectedDesigns.length === 0) return;
+    if (selectedDesigns.length === 0) {
+      toast({
+        title: "⚠️ Uyarı",
+        description: "Lütfen en az bir tasarım seçin.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsProcessing(true);
     setLayoutResult(null);
@@ -925,49 +926,37 @@ export default function AutomationPanelNew() {
     try {
       console.log('🤖 AI akıllı dizim başlatılıyor...');
 
-      const response = await fetch('/api/ai-auto-layout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          designIds: selectedDesigns
-        })
+      const response = await apiRequest('POST', '/api/automation/plotter/auto-arrange', {
+        designIds: selectedDesigns,
+        plotterSettings: plotterSettingsState
       });
 
-      const result = await response.json();
+      if (response && response.arrangements) {
+        console.log('🤖 AI akıllı dizim tamamlandı:', response);
 
-      if (result.success) {
-        console.log('🤖 AI akıllı dizim tamamlandı:', result);
-
-        // AI önerilerini göster
-        if (result.aiInsights && result.aiInsights.length > 0) {
-          toast({
-            title: "🤖 AI Analizi Tamamlandı",
-            description: result.aiInsights.join(' • '),
-            duration: 5000
-          });
-        }
-
+        setArrangements(response.arrangements);
         setLayoutResult({
-          ...result,
-          efficiency: result.statistics.efficiency
+          ...response,
+          efficiency: response.efficiency
         });
 
-        // PDF zaten oluşturulmuş, sadece download linkini göster
-        if (result.pdfPath) {
-          console.log('✅ AI PDF hazır:', result.pdfPath);
-        }
-      } else {
         toast({
-          title: "AI Analizi Başarısız",
-          description: result.message || "AI destekli dizim başarısız",
-          variant: "destructive"
+          title: "🤖 Dizim Tamamlandı",
+          description: `${response.totalArranged}/${selectedDesigns.length} tasarım yerleştirildi. Verimlilik: ${response.efficiency}%`,
         });
+
+        // Auto-generate PDF after successful arrangement
+        setTimeout(() => {
+          generatePDFMutation.mutate();
+        }, 1500);
+      } else {
+        throw new Error("Geçersiz API yanıtı");
       }
     } catch (error) {
       console.error('AI dizim hatası:', error);
       toast({
         title: "Hata",
-        description: "AI dizim işlemi başarısız oldu",
+        description: error instanceof Error ? error.message : "AI dizim işlemi başarısız oldu",
         variant: "destructive"
       });
     } finally {
@@ -976,7 +965,14 @@ export default function AutomationPanelNew() {
   };
 
   const handleOneClickLayout = async () => {
-    if (selectedDesigns.length === 0) return;
+    if (selectedDesigns.length === 0) {
+      toast({
+        title: "⚠️ Uyarı",
+        description: "Lütfen en az bir tasarım seçin.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsProcessing(true);
     setLayoutResult(null);
@@ -984,48 +980,45 @@ export default function AutomationPanelNew() {
     try {
       console.log('🎯 Tek tuş dizim başlatılıyor...');
 
-      const response = await fetch('/api/one-click-layout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          designIds: selectedDesigns,
-          sheetSettings: {
-            width: settings.sheetWidth,
-            height: settings.sheetHeight,
-            margin: settings.margin,
-            bleedMargin: settings.bleedMargin
-          },
-          cuttingSettings: {
-            enabled: settings.cuttingMarks,
-            markLength: 5,
-            markWidth: 0.5
-          }
-        })
+      const response = await apiRequest('POST', '/api/automation/plotter/one-click-layout', {
+        designIds: selectedDesigns,
+        sheetSettings: {
+          width: plotterSettingsState.sheetWidth,
+          height: plotterSettingsState.sheetHeight,
+          margin: plotterSettingsState.marginTop,
+          bleedMargin: 3
+        },
+        cuttingSettings: {
+          enabled: true,
+          markLength: 5,
+          markWidth: 0.25
+        }
       });
 
-      const result = await response.json();
+      if (response && response.success) {
+        console.log('🎯 Tek tuş dizim tamamlandı:', response);
+        setArrangements(response.arrangements);
+        setLayoutResult(response);
 
-      if (result.success) {
-        console.log('🎯 Tek tuş dizim tamamlandı:', result);
-        setLayoutResult(result);
+        toast({
+          title: "🎯 Tek Tuş Dizim Tamamlandı",
+          description: response.message || `${response.arrangements.length} tasarım profesyonel olarak dizildi`,
+        });
 
         // Auto-generate PDF
-        if (result.arrangements && result.arrangements.length > 0) {
-          console.log('🔄 Auto-generating PDF after arrangement...');
-          await handleGeneratePDF();
+        if (response.arrangements && response.arrangements.length > 0) {
+          setTimeout(() => {
+            generatePDFMutation.mutate();
+          }, 1500);
         }
       } else {
-        toast({
-          title: "Dizim Başarısız",
-          description: result.message || "Otomatik dizim sırasında hata oluştu",
-          variant: "destructive"
-        });
+        throw new Error(response?.message || "Tek tuş dizim başarısız");
       }
     } catch (error) {
       console.error('Tek tuş dizim hatası:', error);
       toast({
         title: "Hata",
-        description: "Dizim işlemi başarısız oldu",
+        description: error instanceof Error ? error.message : "Dizim işlemi başarısız oldu",
         variant: "destructive"
       });
     } finally {
@@ -1217,17 +1210,16 @@ export default function AutomationPanelNew() {
               onClick={handleOneClickLayout}
               disabled={selectedDesigns.length === 0 || isProcessing}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              variant="outline"
             >
               {isProcessing ? (
                 <>
-                  <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                  İşleniyor...
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Tek Tuş İşleniyor...
                 </>
               ) : (
                 <>
                   <Zap className="h-5 w-5 mr-2" />
-                  Manuel Ayarlı Dizilim
+                  🎯 Tek Tuş Otomatik Dizim
                 </>
               )}
             </Button>
