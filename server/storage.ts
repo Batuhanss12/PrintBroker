@@ -308,6 +308,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(files.createdAt));
   }
 
+  async getFileById(id: string): Promise<File | undefined> {
+    const [file] = await db.select().from(files).where(eq(files.id, id));
+    return file;
+  }
+
   async deleteFilesByUserAndType(userId: string, fileType: string): Promise<number> {
     const result = await db
       .delete(files)

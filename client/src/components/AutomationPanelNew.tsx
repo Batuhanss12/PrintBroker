@@ -24,7 +24,9 @@ import {
   Maximize2,
   Info,
   Layout,
-  Target
+  Target,
+  Sparkles,
+  Clock
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
@@ -304,7 +306,7 @@ export default function AutomationPanelNew() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          plotterSettings,
+          plotterSettings: plotterSettingsState,
           arrangements,
           qualitySettings: {
             dpi: 300,
@@ -1044,12 +1046,57 @@ export default function AutomationPanelNew() {
             </CardContent>
           </Card>
 
-          {/* Auto Arrangement */}
+          {/* Tek Tuş Otomatik Dizim - Premium Feature */}
+          <Card className="border-2 border-gradient-to-r from-purple-500 to-blue-600 bg-gradient-to-r from-purple-50 to-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-800">
+                <Sparkles className="h-6 w-6" />
+                Tek Tuş Profesyonel Dizim Sistemi
+              </CardTitle>
+              <p className="text-sm text-purple-600 mt-2">
+                Yapay zeka destekli tam otomatik dizim: dosya analizi + yerleştirme + PDF üretimi
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Button
+                  onClick={() => oneClickLayoutMutation.mutate()}
+                  disabled={selectedDesigns.length === 0 || isArranging}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+                  size="lg"
+                >
+                  {isArranging ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                      Profesyonel sistem çalışıyor...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Tek Tuş Otomatik Dizim
+                    </>
+                  )}
+                </Button>
+
+                <div className="text-xs text-purple-600 bg-purple-50 p-3 rounded-lg">
+                  <div className="font-medium mb-1">Bu sistem otomatik olarak:</div>
+                  <div className="space-y-1">
+                    <div>• Dosya içeriğini analiz eder ve boyutları tespit eder</div>
+                    <div>• 3mm kesim payı ile optimal yerleştirme yapar</div>
+                    <div>• Profesyonel PDF çıktısını otomatik oluşturur</div>
+                    <div>• Maksimum verimlilik için rotation algoritması kullanır</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Geleneksel Otomatik Dizim */}
           <Card className="border-2 border-green-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-800">
                 <Zap className="h-6 w-6" />
-                Akıllı Otomatik Dizilim
+                Geleneksel Otomatik Dizilim
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1063,12 +1110,12 @@ export default function AutomationPanelNew() {
                   {isArranging ? (
                     <>
                       <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                      🤖 Akıllı algoritma çalışıyor...
+                      Algoritma çalışıyor...
                     </>
                   ) : (
                     <>
                       <Zap className="h-5 w-5 mr-2" />
-                      🎯 Otomatik Dizilim Başlat
+                      Manuel Ayarlı Dizilim
                     </>
                   )}
                 </Button>
