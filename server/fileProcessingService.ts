@@ -4,6 +4,7 @@ import path from 'path';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import sharp from 'sharp';
+// Professional file processing without external dependencies
 
 const execAsync = promisify(exec);
 

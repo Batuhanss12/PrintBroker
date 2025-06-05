@@ -1547,7 +1547,6 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     updateProgress('PDF Document Initialized');
 
     const PDFDocument = (await import('pdfkit')).default;
-    const fs = await import('fs');
     const mmToPoints = 2.8346456693; // 1mm = 2.8346456693 points
     const pageWidthPt = pageWidthMM * mmToPoints;
     const pageHeightPt = pageHeightMM * mmToPoints;
