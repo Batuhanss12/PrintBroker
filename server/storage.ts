@@ -66,6 +66,7 @@ export interface IStorage {
   updateFile(id: string, data: Partial<File>): Promise<File>;
   getFilesByQuote(quoteId: string): Promise<File[]>;
   getFilesByUser(userId: string): Promise<File[]>;
+  getDesign(id: string): Promise<File | undefined>;
 
   // Admin operations
   getAllUsers(): Promise<User[]>;
@@ -311,6 +312,11 @@ export class DatabaseStorage implements IStorage {
   async getFileById(id: string): Promise<File | undefined> {
     const [file] = await db.select().from(files).where(eq(files.id, id));
     return file;
+  }
+
+  async getDesign(id: string): Promise<File | undefined> {
+    const [design] = await db.select().from(files).where(eq(files.id, id));
+    return design;
   }
 
   async deleteFile(id: string): Promise<void> {
