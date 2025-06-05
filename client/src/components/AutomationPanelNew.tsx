@@ -1087,55 +1087,6 @@ export default function AutomationPanelNew() {
                   )}
                 </Button>
 
-                {oneClickResult && (
-              <div className="space-y-4">
-                {/* AI Önerileri */}
-                {oneClickResult.aiRecommendations && oneClickResult.aiRecommendations.length > 0 && (
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm">🤖</span>
-                      </div>
-                      <h3 className="font-semibold text-blue-800">AI Optimizasyon Önerileri</h3>
-                    </div>
-                    <div className="space-y-2">
-                      {oneClickResult.aiRecommendations.map((recommendation, index) => (
-                        <div key={index} className="text-sm text-blue-700 flex items-start gap-2">
-                          <span className="text-blue-400 mt-1">•</span>
-                          <span>{recommendation}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      {oneClickResult.statistics.arrangedDesigns}
-                    </div>
-                    <div className="text-sm text-green-600">Dizilen Tasarım</div>
-                  </div>
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      %{oneClickResult.efficiency.toFixed(1)}
-                    </div>
-                    <div className="text-sm text-blue-600">Verimlilik</div>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {oneClickResult.statistics.rotatedItems}
-                    </div>
-                    <div className="text-sm text-orange-600">Döndürülmüş</div>
-                  </div>
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      %{oneClickResult.statistics.wastePercentage.toFixed(1)}
-                    </div>
-                    <div className="text-sm text-purple-600">Fire Oranı</div>
-                  </div>
-                </div>
-
                 <div className="text-xs text-purple-600 bg-purple-50 p-3 rounded-lg">
                   <div className="font-medium mb-1">Bu sistem otomatik olarak:</div>
                   <div className="space-y-1">

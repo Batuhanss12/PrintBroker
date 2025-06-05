@@ -1,15 +1,57 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { Upload, Play, Download, Eye, FileText, Zap, Trash2 } from "lucide-react";
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
+import { Separator } from './ui/separator';
+import { Alert, AlertDescription } from './ui/alert';
+import { 
+  Upload, 
+  Settings, 
+  FileImage, 
+  Trash2, 
+  Download, 
+  Zap, 
+  CheckCircle,
+  AlertCircle,
+  Eye,
+  RefreshCw,
+  FileText,
+  Image as ImageIcon,
+  Maximize2,
+  Info,
+  Layout,
+  Target,
+  Sparkles,
+  Clock
+} from 'lucide-react';
+import { useToast } from '../hooks/use-toast';
 
-// Enhanced type definitions
+interface Design {
+  id: string;
+  name: string;
+  originalName: string;
+  filename: string;
+  dimensions: string;
+  realDimensionsMM: string;
+  thumbnailPath?: string;
+  filePath: string;
+  fileType: string;
+  mimeType: string;
+  size: number;
+  fileSize: string;
+  uploadedAt: string;
+  colorProfile?: string;
+  hasTransparency?: boolean;
+  resolution?: number;
+  contentPreserved?: boolean;
+  processingStatus?: 'pending' | 'success' | 'error';
+  processingNotes?: string;
+}
+
 interface PlotterSettings {
   sheetWidth: number;
   sheetHeight: number;
@@ -23,16 +65,24 @@ interface PlotterSettings {
   verticalSpacing: number;
 }
 
-interface Design {
-  id: string;
-  name: string;
-  filename: string;
-  type: string;
-  thumbnailPath?: string;
-  dimensions?: string;
-  realDimensionsMM?: string;
-  fileSize?: string;
-  uploadedAt: string;
+interface Arrangement {
+  designId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  designName?: string;
+  isFullPage?: boolean;
+}
+
+interface ArrangementResponse {
+  arrangements: Arrangement[];
+  totalArranged: number;
+  totalRequested: number;
+  efficiency: string;
+  sheetDimensions: { width: number; height: number };
+  wasteArea: number;
 }
 
 interface ArrangementItem {
@@ -64,467 +114,427 @@ interface FileUploadResponse {
   file?: Design;
 }
 
-interface ClearResponse {
-  message: string;
-  deletedCount: number;
-}
-
-interface APIError extends Error {
-  status?: number;
-  code?: string;
-}
-
-// Constants
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-const ALLOWED_TYPES = ['application/pdf', 'image/svg+xml', 'application/postscript'];
-const API_TIMEOUT = 30000; // 30 seconds
-
 export default function AutomationPanelFixed() {
   const { toast } = useToast();
-  
-  // State management with proper typing
-  const [arrangements, setArrangements] = useState<ArrangementResult | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Plotter settings with validation
-  const plotterSettings: PlotterSettings = {
-    sheetWidth: 330,    // 33cm
-    sheetHeight: 480,   // 48cm
-    marginTop: 3,       // 0.3cm
-    marginBottom: 3,
-    marginLeft: 3,
-    marginRight: 3,
-    labelWidth: 50,     // 5cm
-    labelHeight: 50,    // 5cm
+  // State
+  const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
+  const [arrangements, setArrangements] = useState<ArrangementItem[]>([]);
+  const [isArranging, setIsArranging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const [plotterSettingsState, setPlotterSettings] = useState<PlotterSettings>({
+    sheetWidth: 330,
+    sheetHeight: 480,
+    marginTop: 10,
+    marginBottom: 10,
+    marginLeft: 10,
+    marginRight: 10,
+    labelWidth: 50,
+    labelHeight: 30,
     horizontalSpacing: 2,
-    verticalSpacing: 2
+    verticalSpacing: 2,
+  });
+
+  // API request helper
+  const apiRequest = async (method: string, url: string, data?: any) => {
+    const options: RequestInit = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    };
+
+    if (data) {
+      if (data instanceof FormData) {
+        delete options.headers;
+        options.body = data;
+      } else {
+        options.body = JSON.stringify(data);
+      }
+    }
+
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(`${response.status}: ${errorData.message || 'Request failed'}`);
+    }
+    return response.json();
   };
 
-  // File validation helper
-  const validateFile = (file: File): { isValid: boolean; error?: string } => {
-    if (file.size > MAX_FILE_SIZE) {
-      return { isValid: false, error: `Dosya boyutu ${MAX_FILE_SIZE / 1024 / 1024}MB'yi aşamaz` };
-    }
-    
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return { isValid: false, error: 'Sadece PDF, SVG ve EPS dosyaları desteklenir' };
-    }
-    
-    return { isValid: true };
-  };
+  // Fetch designs
+  const { data: designs = [], isLoading: designsLoading, error: designsError, refetch } = useQuery({
+    queryKey: ['automation-designs'],
+    queryFn: () => apiRequest('GET', '/api/automation/plotter/designs'),
+  });
 
-  // Enhanced error handler
-  const handleError = (error: unknown, fallbackMessage: string): void => {
-    console.error('API Error:', error);
-    
-    const apiError = error as APIError;
-    let errorMessage = fallbackMessage;
-    
-    if (apiError.message) {
-      errorMessage = apiError.message;
-    } else if (apiError.status === 401) {
-      errorMessage = "Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.";
-    } else if (apiError.status === 413) {
-      errorMessage = "Dosya boyutu çok büyük.";
-    } else if (apiError.status === 429) {
-      errorMessage = "Çok fazla istek. Lütfen bekleyin.";
-    }
-    
+  // Handle errors
+  const handleError = (error: unknown, context: string) => {
+    console.error(`${context}:`, error);
+    const message = error instanceof Error ? error.message : 'Bilinmeyen hata oluştu';
     toast({
-      title: "Hata",
-      description: errorMessage,
+      title: context,
+      description: message,
       variant: "destructive",
     });
   };
 
-  // Get designs with enhanced error handling
-  const { data: designs = [], isLoading: designsLoading, refetch: refetchDesigns } = useQuery({
-    queryKey: ['/api/automation/plotter/designs'],
-    queryFn: () => apiRequest<Design[]>('GET', '/api/automation/plotter/designs'),
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
-  // Clear designs mutation
-  const clearMutation = useMutation({
-    mutationFn: async (): Promise<ClearResponse> => {
-      return apiRequest('DELETE', '/api/automation/plotter/designs/clear');
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Temizleme Başarılı",
-        description: `${data.deletedCount} tasarım silindi.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
-      setArrangements(null);
-    },
-    onError: (error: unknown) => handleError(error, "Tasarımlar temizlenemedi"),
-  });
-
-  // File upload mutation with progress tracking
-  const uploadMutation = useMutation({
-    mutationFn: async (files: FileList): Promise<FileUploadResponse[]> => {
-      const results: FileUploadResponse[] = [];
-      setUploadProgress(0);
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Validate each file
-        const validation = validateFile(file);
-        if (!validation.isValid) {
-          throw new Error(validation.error);
-        }
-        
-        const formData = new FormData();
-        formData.append('designs', file);
-        
-        try {
-          const result = await apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
-          results.push(result);
-          
-          // Update progress
-          setUploadProgress(((i + 1) / files.length) * 100);
-        } catch (error) {
-          console.error(`File upload failed for ${file.name}:`, error);
-          throw error;
-        }
-      }
-      
-      return results;
-    },
-    onSuccess: (results) => {
-      const successCount = results.filter(r => r.success).length;
-      toast({
-        title: "Yükleme Başarılı",
-        description: `${successCount} dosya başarıyla yüklendi.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/automation/plotter/designs'] });
-      setUploadProgress(0);
-    },
-    onError: (error: unknown) => {
-      handleError(error, "Dosya yükleme başarısız");
-      setUploadProgress(0);
-    },
-  });
-
-  // Auto-arrange mutation with enhanced error handling
-  const autoArrangeMutation = useMutation({
-    mutationFn: async (): Promise<ArrangementResult> => {
+  // Tek tuş otomatik dizim mutation
+  const oneClickLayoutMutation = useMutation({
+    mutationFn: async () => {
       if (!designs || designs.length === 0) {
         throw new Error("Dizim için en az bir tasarım gerekli");
       }
-      
-      setIsProcessing(true);
+
+      setIsArranging(true);
       const designIds = designs.map((d: Design) => d.id);
-      
-      const result = await apiRequest('POST', '/api/automation/plotter/auto-arrange', {
+
+      const result = await apiRequest('POST', '/api/automation/plotter/one-click-layout', {
         designIds,
-        plotterSettings
+        sheetSettings: {
+          width: plotterSettingsState.sheetWidth,
+          height: plotterSettingsState.sheetHeight,
+          margin: plotterSettingsState.marginTop,
+          bleedMargin: 3
+        },
+        cuttingSettings: {
+          enabled: true,
+          markLength: 5,
+          markWidth: 0.25
+        }
       });
-      
+
       return result;
     },
-    onSuccess: (data: ArrangementResult) => {
-      console.log('Arrangement response received:', data);
-      setArrangements(data);
-      setIsProcessing(false);
-      
+    onSuccess: (data) => {
+      console.log('Tek tuş dizim tamamlandı:', data);
+      setArrangements(data.arrangements);
+      setIsArranging(false);
+
       toast({
-        title: "Dizim Tamamlandı",
-        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik)`,
+        title: "Tek Tuş Dizim Tamamlandı",
+        description: `${data.totalArranged}/${data.totalRequested} tasarım profesyonel olarak dizildi (${data.efficiency} verimlilik)`,
       });
-      
-      // Auto-generate PDF with validation
-      if (data.arrangements && Array.isArray(data.arrangements) && data.arrangements.length > 0) {
-        setTimeout(() => {
-          generatePdfMutation.mutate({ 
-            plotterSettings, 
-            arrangements: data.arrangements
-          });
-        }, 1500); // Increased delay for better UX
-      } else {
+
+      if (data.pdfPath) {
+        console.log('PDF otomatik oluşturuldu, indiriliyor...');
+        const link = document.createElement('a');
+        link.href = `/uploads/${data.pdfPath.split('/').pop()}`;
+        link.download = `matbixx-tek-tus-dizim-${new Date().toISOString().split('T')[0]}.pdf`;
+        link.click();
+        
         toast({
-          title: "Uyarı",
-          description: "Dizim başarılı ama PDF oluşturulamıyor - veri eksik",
-          variant: "destructive",
+          title: "PDF Hazır",
+          description: "Profesyonel dizim PDF'i otomatik olarak indiriliyor...",
         });
       }
     },
     onError: (error: unknown) => {
-      setIsProcessing(false);
-      handleError(error, "Otomatik dizim başarısız");
+      setIsArranging(false);
+      handleError(error, "Tek tuş dizim başarısız");
     },
   });
 
-  // PDF generation mutation
-  const generatePdfMutation = useMutation({
-    mutationFn: async (data: { plotterSettings: PlotterSettings; arrangements: ArrangementItem[] }) => {
-      return apiRequest('POST', '/api/automation/plotter/generate-pdf', data);
-    },
-    onSuccess: (response: { pdfUrl: string }) => {
-      toast({
-        title: "PDF Hazır",
-        description: "Baskı dosyanız indirilmeye başlıyor...",
-      });
-      
-      // Auto-download PDF
-      const link = document.createElement('a');
-      link.href = response.pdfUrl;
-      link.download = `dizim-${new Date().toISOString().slice(0, 10)}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    },
-    onError: (error: unknown) => handleError(error, "PDF oluşturma başarısız"),
-  });
-
-  // File input handler with validation
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>): void => {
+  // File upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
-    
-    // Reset input value for re-upload capability
-    event.target.value = '';
-    
-    uploadMutation.mutate(files);
+
+    const formData = new FormData();
+    Array.from(files).forEach(file => {
+      formData.append('designs', file);
+    });
+
+    uploadMutation.mutate(formData);
   };
 
-  // Render design preview with error boundary
-  const renderDesignPreview = (design: Design) => {
-    try {
-      return (
-        <div 
-          key={design.id} 
-          className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-gray-800"
-          role="listitem"
-          aria-label={`Tasarım: ${design.name}`}
-        >
-          <div className="flex items-center gap-3">
-            <FileText className="w-8 h-8 text-blue-600" aria-hidden="true" />
-            <div>
-              <p className="font-medium text-sm truncate max-w-[200px]" title={design.name}>
-                {design.name}
-              </p>
-              <p className="text-xs text-gray-500">
-                {design.realDimensionsMM || design.dimensions || 'Boyut bilinmiyor'}
-              </p>
-            </div>
-          </div>
-          <Badge variant="secondary" className="text-xs">
-            {design.type || 'PDF'}
-          </Badge>
-        </div>
-      );
-    } catch (error) {
-      console.error('Error rendering design preview:', error);
-      return (
-        <div key={design.id} className="p-3 border rounded-lg bg-red-50 dark:bg-red-900/20">
-          <p className="text-red-600 text-sm">Önizleme hatası</p>
-        </div>
-      );
+  const uploadMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      return apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Yükleme Başarılı",
+        description: `${data.files?.length || 0} dosya başarıyla yüklendi`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['automation-designs'] });
+      setSelectedDesigns(data.files?.map((f: any) => f.id) || []);
+    },
+    onError: (error: unknown) => {
+      handleError(error, "Dosya yükleme başarısız");
+    },
+  });
+
+  // Select all designs when they load
+  useEffect(() => {
+    if (designs && designs.length > 0) {
+      setSelectedDesigns(designs.map((d: Design) => d.id));
     }
-  };
-
-  // Render arrangement visualization
-  const renderArrangementVisualization = () => {
-    if (!arrangements || !arrangements.arrangements.length) return null;
-
-    const scale = 0.5; // Scale down for display
-    const sheetWidth = plotterSettings.sheetWidth * scale;
-    const sheetHeight = plotterSettings.sheetHeight * scale;
-
-    return (
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="w-5 h-5" />
-            Dizim Önizlemesi
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-600 mx-auto"
-               style={{ width: `${sheetWidth}px`, height: `${sheetHeight}px` }}
-               role="img"
-               aria-label="Tasarım dizim önizlemesi">
-            
-            {arrangements.arrangements.map((item, index) => {
-              const design = designs.find((d: Design) => d.id === item.designId);
-              return (
-                <div
-                  key={`${item.designId}-${index}`}
-                  className="absolute bg-blue-200 dark:bg-blue-800 border border-blue-400 rounded flex items-center justify-center text-xs font-medium"
-                  style={{
-                    left: `${item.x * scale}px`,
-                    top: `${item.y * scale}px`,
-                    width: `${item.width * scale}px`,
-                    height: `${item.height * scale}px`,
-                  }}
-                  title={design?.name || `Tasarım ${index + 1}`}
-                >
-                  {index + 1}
-                </div>
-              );
-            })}
-            
-            {/* Sheet dimensions label */}
-            <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-              {plotterSettings.sheetWidth}×{plotterSettings.sheetHeight}mm
-            </div>
-          </div>
-          
-          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium">Dizilen:</span> {arrangements.totalArranged}/{arrangements.totalRequested}
-            </div>
-            <div>
-              <span className="font-medium">Verimlilik:</span> {arrangements.efficiency}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
+  }, [designs]);
 
   return (
-    <div className="space-y-6" role="main" aria-label="Otomatik tasarım dizim sistemi">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
       {/* Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="w-6 h-6 text-orange-600" />
-            Otomatik Tasarım Dizim Sistemi
-          </CardTitle>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Tasarımlarınızı 33×48cm baskı alanına otomatik yerleştirin
-          </p>
-        </CardHeader>
-      </Card>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3 flex items-center gap-3">
+          <Layout className="h-10 w-10 text-blue-600" />
+          Profesyonel Otomatik Dizilim Sistemi
+        </h1>
+        <p className="text-lg text-gray-600">
+          Vektörel dosyalarınızı yükleyin, akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
+        </p>
+      </div>
 
-      {/* File Upload Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            Dosya Yükleme
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button
-              onClick={() => document.getElementById('file-upload')?.click()}
-              disabled={uploadMutation.isPending}
-              className="flex items-center gap-2"
-              aria-label="Tasarım dosyası yükle"
-            >
-              <Upload className="w-4 h-4" />
-              {uploadMutation.isPending ? 'Yükleniyor...' : 'Dosya Seç'}
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => clearMutation.mutate()}
-              disabled={clearMutation.isPending || !designs.length}
-              className="flex items-center gap-2"
-              aria-label="Tüm tasarımları temizle"
-            >
-              <Trash2 className="w-4 h-4" />
-              Temizle
-            </Button>
-          </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="xl:col-span-2 space-y-6">
+          {/* File Upload Section */}
+          <Card className="border-2 border-dashed border-blue-200 bg-blue-50/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <Upload className="h-6 w-6" />
+                Profesyonel Dosya Yükleme Sistemi
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-white">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.svg,.ai,.eps,application/pdf,image/svg+xml,application/postscript"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
 
-          <input
-            id="file-upload"
-            type="file"
-            multiple
-            accept=".pdf,.svg,.eps,.ai"
-            onChange={handleFileUpload}
-            className="hidden"
-            aria-describedby="file-help"
-          />
-          
-          <p id="file-help" className="text-xs text-gray-500">
-            PDF, SVG, EPS formatları desteklenir. Maksimum dosya boyutu: 50MB
-          </p>
+                <div className="mb-4">
+                  <Upload className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Vektörel Dosyalarınızı Yükleyin
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
+                  </p>
+                </div>
 
-          {uploadMutation.isPending && (
-            <div className="space-y-2">
-              <Progress value={uploadProgress} className="w-full" />
-              <p className="text-sm text-center">Yükleniyor... %{Math.round(uploadProgress)}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <Button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadMutation.isPending}
+                  size="lg"
+                  className="mb-6"
+                >
+                  {uploadMutation.isPending ? "Analiz Ediliyor..." : "Dosya Seç ve Yükle"}
+                </Button>
 
-      {/* Designs List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Yüklenen Tasarımlar ({designs.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {designsLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-500">Tasarımlar yükleniyor...</p>
-            </div>
-          ) : designs.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Henüz tasarım yüklenmemiş</p>
-            </div>
-          ) : (
-            <div className="space-y-2" role="list" aria-label="Yüklenen tasarımlar">
-              {designs.map(renderDesignPreview)}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Auto Arrange Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Play className="w-5 h-5" />
-            Otomatik Dizim
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={() => autoArrangeMutation.mutate()}
-            disabled={autoArrangeMutation.isPending || designs.length === 0 || isProcessing}
-            className="w-full flex items-center justify-center gap-2"
-            size="lg"
-          >
-            <Play className="w-4 h-4" />
-            {isProcessing ? 'Dizim Yapılıyor...' : 'Otomatik Dizim Başlat'}
-          </Button>
-          
-          {autoArrangeMutation.isPending && (
-            <div className="mt-4 text-center">
-              <div className="animate-pulse text-sm text-gray-600">
-                Tasarımlar analiz ediliyor ve diziliyor...
+                {uploadMutation.isPending && (
+                  <div className="mt-4">
+                    <Progress value={uploadProgress} className="w-full" />
+                    <p className="text-sm text-gray-600 mt-2">
+                      Dosyalar analiz ediliyor ve işleniyor...
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Arrangement Visualization */}
-      {renderArrangementVisualization()}
+          {/* Designs List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <FileImage className="h-5 w-5" />
+                  Yüklenen Tasarımlar ({designs.length})
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetch()}
+                    disabled={designsLoading}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${designsLoading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {designsError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  {selectedDesigns.length > 0 && (
+                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-blue-600" />
+                        <p className="text-sm text-blue-800 font-medium">
+                          {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-      {/* PDF Generation Status */}
-      {generatePdfMutation.isPending && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-600">PDF oluşturuluyor...</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                  {designs.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      Henüz dosya yüklenmedi
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {designs.map((design: Design) => (
+                        <div key={design.id} className="border rounded-lg p-4 bg-white">
+                          <div className="flex items-center gap-2 mb-2">
+                            <FileText className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium text-sm truncate">{design.originalName}</span>
+                          </div>
+                          <div className="text-xs text-gray-600 space-y-1">
+                            <div>Boyut: {design.realDimensionsMM || 'Tespit edilemiyor'}</div>
+                            <div>Dosya: {design.fileSize}</div>
+                            {design.colorProfile && <div>Renk: {design.colorProfile}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tek Tuş Otomatik Dizim - Premium Feature */}
+          <Card className="border-2 border-gradient-to-r from-purple-500 to-blue-600 bg-gradient-to-r from-purple-50 to-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-800">
+                <Sparkles className="h-6 w-6" />
+                Tek Tuş Profesyonel Dizim Sistemi
+              </CardTitle>
+              <p className="text-sm text-purple-600 mt-2">
+                Yapay zeka destekli tam otomatik dizim: dosya analizi + yerleştirme + PDF üretimi
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Button
+                  onClick={() => oneClickLayoutMutation.mutate()}
+                  disabled={selectedDesigns.length === 0 || isArranging}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+                  size="lg"
+                >
+                  {isArranging ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                      Profesyonel sistem çalışıyor...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Tek Tuş Otomatik Dizim
+                    </>
+                  )}
+                </Button>
+
+                <div className="text-xs text-purple-600 bg-purple-50 p-3 rounded-lg">
+                  <div className="font-medium mb-1">Bu sistem otomatik olarak:</div>
+                  <div className="space-y-1">
+                    <div>• Dosya içeriğini analiz eder ve boyutları tespit eder</div>
+                    <div>• 3mm kesim payı ile optimal yerleştirme yapar</div>
+                    <div>• Profesyonel PDF çıktısını otomatik oluşturur</div>
+                    <div>• Maksimum verimlilik için rotation algoritması kullanır</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Settings Panel */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Plotter Ayarları
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="sheetWidth" className="text-xs font-medium">Sayfa Genişlik (mm)</Label>
+                  <Input
+                    id="sheetWidth"
+                    type="number"
+                    value={plotterSettingsState.sheetWidth}
+                    onChange={(e) => setPlotterSettings(prev => ({
+                      ...prev,
+                      sheetWidth: Number(e.target.value)
+                    }))}
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sheetHeight" className="text-xs font-medium">Sayfa Yükseklik (mm)</Label>
+                  <Input
+                    id="sheetHeight"
+                    type="number"
+                    value={plotterSettingsState.sheetHeight}
+                    onChange={(e) => setPlotterSettings(prev => ({
+                      ...prev,
+                      sheetHeight: Number(e.target.value)
+                    }))}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Status Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                Sistem Durumu
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span>Dosya Analizi:</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    Aktif
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>PDF Üretimi:</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    Hazır
+                  </Badge>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center font-medium">
+                  <span>Yüklenen Dosya:</span>
+                  <span className="text-blue-600">{designs.length}</span>
+                </div>
+                <div className="flex justify-between items-center font-medium">
+                  <span>Seçili Dosya:</span>
+                  <span className="text-green-600">{selectedDesigns.length}</span>
+                </div>
+                {arrangements.length > 0 && (
+                  <div className="flex justify-between items-center font-medium">
+                    <span>Yerleştirilen:</span>
+                    <span className="text-purple-600">{arrangements.length}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
