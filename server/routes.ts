@@ -1582,37 +1582,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Enterprise layout settings:', layoutSettings);
 
-      // Use enterprise layout engine
-      const { enterpriseLayoutEngine } = await import('./enterpriseLayoutEngine');
-      const layoutResult = await enterpriseLayoutEngine.generateOptimalLayout(designs, layoutSettings);
+      // Use operational layout system
+      console.log('🚀 Starting operational layout generation');
+      const layoutResult = await operationalLayoutSystem.generateLayout(designs, layoutSettings);
 
-      if (layoutResult.success && layoutResult.placements.length > 0) {
-        console.log(`Enterprise layout generated: ${layoutResult.placements.length}/${layoutResult.totalDesigns} designs placed`);
-        console.log(`Layout efficiency: ${layoutResult.efficiency}%`);
-        
-        // Generate enterprise PDF
-        const pdfFilename = await enterpriseLayoutEngine.generatePDF(layoutResult.placements, layoutSettings);
+      if (layoutResult.success && layoutResult.pdfPath) {
+        console.log(`✅ Operational layout generated: ${layoutResult.arrangements.length} designs arranged`);
         
         res.json({
           success: true,
-          arrangements: layoutResult.placements,
-          pdfPath: pdfFilename,
-          efficiency: layoutResult.efficiency,
+          arrangements: layoutResult.arrangements,
+          pdfPath: layoutResult.pdfPath,
+          message: layoutResult.message,
           statistics: {
-            totalDesigns: layoutResult.totalDesigns,
-            arrangedDesigns: layoutResult.placedDesigns,
-            efficiency: layoutResult.efficiency,
-            wastePercentage: layoutResult.statistics.wastePercentage
+            totalDesigns: designs.length,
+            arrangedDesigns: layoutResult.arrangements.length,
+            efficiency: Math.round((layoutResult.arrangements.length / designs.length) * 100)
           }
         });
       } else {
-        console.error('Enterprise layout failed:', layoutResult.message);
+        console.error('❌ Operational layout failed:', layoutResult.message);
         res.status(400).json({
           success: false,
-          message: layoutResult.message || 'No designs could be placed on the sheet',
+          message: layoutResult.message || 'Layout generation failed',
           statistics: {
-            totalDesigns: layoutResult.totalDesigns,
-            arrangedDesigns: layoutResult.placedDesigns,
+            totalDesigns: designs.length,
+            arrangedDesigns: 0,
             efficiency: 0
           }
         });
