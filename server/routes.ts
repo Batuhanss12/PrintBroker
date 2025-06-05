@@ -1875,6 +1875,28 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     });
   });
 
+  // Get plotter designs endpoint
+  app.get('/api/automation/plotter/designs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const files = await storage.getFilesByUser(userId);
+      const designFiles = files.filter(f => f.fileType === 'design');
+      
+      console.log(`🎨 Retrieved ${designFiles.length} design files for user ${userId}`);
+      
+      res.json(designFiles);
+    } catch (error) {
+      console.error("Error fetching plotter designs:", error);
+      res.status(500).json({ message: "Failed to fetch designs" });
+    }
+  });
+
   // Auto-arrange endpoint for plotter automation
   app.post('/api/automation/plotter/auto-arrange', isAuthenticated, async (req: any, res) => {
     try {
@@ -1906,7 +1928,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
         dimensions: d.dimensions
       })));
 
-      // Enhanced auto-arrangement algorithm
+      // Enhanced auto-arrangement algorithm with intelligent design handling
       const sheetWidth = plotterSettings?.sheetWidth || 330; // mm
       const sheetHeight = plotterSettings?.sheetHeight || 480; // mm
       const margin = plotterSettings?.margin || 5; // mm
@@ -1945,30 +1967,52 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
           }
         }
 
-        // Validation and size limits
-        if (width > sheetWidth || height > sheetHeight) {
-          // If design is larger than sheet, try to scale it down
+        // Special handling for full-page designs
+        const isFullPageDesign = (width >= sheetWidth * 0.9 && height >= sheetHeight * 0.9);
+        
+        if (isFullPageDesign) {
+          console.log(`🎯 Full-page design detected: ${width}x${height}mm`);
+          // For full-page designs, treat as single layout
+          arrangements.push({
+            designId: design.id,
+            x: 0,
+            y: 0,
+            width: sheetWidth,
+            height: sheetHeight,
+            rotation: 0,
+            designName: design.originalName,
+            isFullPage: true
+          });
+          arranged++;
+          console.log(`✅ Full-page design arranged`);
+          break; // Only one full-page design per sheet
+        }
+
+        // Check if design needs to be scaled down
+        if (width > sheetWidth - 2 * margin || height > sheetHeight - 2 * margin) {
           const scaleX = (sheetWidth - 2 * margin) / width;
           const scaleY = (sheetHeight - 2 * margin) / height;
-          const scale = Math.min(scaleX, scaleY, 1); // Don't scale up
+          const scale = Math.min(scaleX, scaleY, 1);
 
-          if (scale > 0.1) { // Only if scaling is reasonable
+          if (scale > 0.1) {
+            const originalWidth = width;
+            const originalHeight = height;
             width = Math.floor(width * scale);
             height = Math.floor(height * scale);
-            console.log(`🔧 Scaled design to fit: ${width}x${height}mm (scale: ${scale.toFixed(2)})`);
+            console.log(`🔧 Scaled design from ${originalWidth}x${originalHeight}mm to ${width}x${height}mm (scale: ${scale.toFixed(2)})`);
           } else {
-            console.log(`❌ Design too large, skipping: ${width}x${height}mm`);
+            console.log(`❌ Design too large to scale: ${width}x${height}mm`);
             continue;
           }
         }
 
-        // Ensure minimum size
+        // Ensure reasonable minimum size
         width = Math.max(width, 10);
         height = Math.max(height, 10);
 
         console.log(`📏 Final dimensions for arrangement: ${width}x${height}mm`);
 
-        // Check if design fits in current row
+        // Check if design fits in current position
         if (currentX + width + margin <= sheetWidth && currentY + height + margin <= sheetHeight) {
           arrangements.push({
             designId: design.id,
@@ -1986,7 +2030,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
           console.log(`✅ Arranged design at (${currentX - width - spacing}, ${currentY})`);
         } else {
-          // Move to next row
+          // Try next row
           currentX = margin;
           currentY += rowHeight + spacing;
           rowHeight = 0;
@@ -2009,9 +2053,28 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
             console.log(`✅ Arranged design in new row at (${currentX - width - spacing}, ${currentY})`);
           } else {
-            console.log(`❌ Design doesn't fit anywhere: ${width}x${height}mm`);
-            // Design doesn't fit - continue to try others
-            continue;
+            console.log(`⚠️ Design doesn't fit in remaining space: ${width}x${height}mm`);
+            
+            // For designs that don't fit, try to create a separate small version
+            if (width > 100 || height > 100) {
+              const smallWidth = Math.min(width / 2, 50);
+              const smallHeight = Math.min(height / 2, 30);
+              
+              if (currentX + smallWidth + margin <= sheetWidth && currentY + smallHeight + margin <= sheetHeight) {
+                arrangements.push({
+                  designId: design.id,
+                  x: currentX,
+                  y: currentY,
+                  width: smallWidth,
+                  height: smallHeight,
+                  rotation: 0,
+                  designName: design.originalName + " (küçük)",
+                  isScaled: true
+                });
+                arranged++;
+                console.log(`✅ Added scaled-down version: ${smallWidth}x${smallHeight}mm`);
+              }
+            }
           }
         }
       }
