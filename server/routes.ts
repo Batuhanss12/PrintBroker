@@ -15,6 +15,7 @@ import { nodePDFGenerator } from "./pdfGeneratorJS";
 import { advancedLayoutEngine } from "./advancedLayoutEngine";
 import { professionalPDFProcessor } from "./professionalPDFProcessor";
 import { oneClickLayoutSystem } from "./oneClickLayoutSystem";
+import { aiDesignAnalyzer } from "./aiDesignAnalyzer";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -1238,6 +1239,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             realDimensions: metadata.realDimensionsMM,
             processingNotes: metadata.processingNotes
           });
+
+          // AI-powered design analysis
+          let aiAnalysisResult = null;
+          try {
+            console.log(`🤖 AI analizi başlatılıyor: ${file.originalname}`);
+            aiAnalysisResult = await aiDesignAnalyzer.analyzeDesignFile(
+              file.path, 
+              file.originalname, 
+              file.mimetype
+            );
+            console.log(`✅ AI analizi tamamlandı:`, {
+              success: aiAnalysisResult.success,
+              designsDetected: aiAnalysisResult.totalDesignsDetected,
+              analysis: aiAnalysisResult.aiAnalysis
+            });
+          } catch (aiError) {
+            console.warn("AI analizi başarısız:", aiError);
+          }
 
           // Enhanced thumbnail generation
           let thumbnailPath = '';
