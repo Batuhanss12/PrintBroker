@@ -9,7 +9,7 @@ import Navigation from "@/components/Navigation";
 import StatsCard from "@/components/StatsCard";
 import ContractManager from "@/components/ContractManager";
 import ReportsAndAnalytics from "@/components/ReportsAndAnalytics";
-import AutomationPanelFixed from "@/components/AutomationPanelFixed";
+import AutomationPanelNew from "@/components/AutomationPanelNew";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -162,7 +162,7 @@ export default function PrinterDashboard() {
       completed: { label: "Tamamlandı", variant: "default" },
       cancelled: { label: "İptal", variant: "destructive" }
     };
-    
+
     const config = statusMap[status] || { label: status, variant: "outline" as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
@@ -174,7 +174,7 @@ export default function PrinterDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-2xl mb-8">
@@ -276,7 +276,7 @@ export default function PrinterDashboard() {
                         </p>
                       </div>
                     </div>
-                    
+
                     {quote.specifications && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
                         {Object.entries(quote.specifications as Record<string, any>).slice(0, 4).map(([key, value]) => (
@@ -287,7 +287,7 @@ export default function PrinterDashboard() {
                         ))}
                       </div>
                     )}
-                    
+
                     <div className="flex items-center justify-between">
                       <Button
                         variant="ghost"
@@ -355,7 +355,7 @@ export default function PrinterDashboard() {
                     onChange={(e) => setQuoteForm({ ...quoteForm, price: e.target.value })}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="estimatedDays">Tahmini Süre (Gün)</Label>
                   <Input
@@ -366,7 +366,7 @@ export default function PrinterDashboard() {
                     onChange={(e) => setQuoteForm({ ...quoteForm, estimatedDays: e.target.value })}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="notes">Notlar (Opsiyonel)</Label>
                   <Textarea
@@ -376,7 +376,7 @@ export default function PrinterDashboard() {
                     onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
                   />
                 </div>
-                
+
                 <div className="flex space-x-2 pt-4">
                   <Button
                     variant="outline"
@@ -415,7 +415,7 @@ export default function PrinterDashboard() {
           </TabsContent>
 
           <TabsContent value="automation">
-            <AutomationPanelFixed />
+            <AutomationPanelNew />
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">
