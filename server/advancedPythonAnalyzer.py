@@ -5,15 +5,26 @@ import sys
 import json
 import os
 from pathlib import Path
-import fitz  # PyMuPDF
-from PIL import Image
-import cv2
-import numpy as np
-from svglib.svglib import renderSVG
-from reportlab.graphics import renderPDF
-import cairosvg
-import magic
 import re
+
+# Try to import optional libraries
+try:
+    import fitz  # PyMuPDF
+    HAS_PYMUPDF = True
+except ImportError:
+    HAS_PYMUPDF = False
+
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
+try:
+    import magic
+    HAS_MAGIC = True
+except ImportError:
+    HAS_MAGIC = False
 
 class AdvancedDesignAnalyzer:
     def __init__(self):
@@ -31,7 +42,23 @@ class AdvancedDesignAnalyzer:
             
             # MIME type belirleme
             if not mime_type:
-                mime_type = magic.from_file(file_path, mime=True)
+                if HAS_MAGIC:
+                    mime_type = magic.from_file(file_path, mime=True)
+                else:
+                    # Dosya uzantısından MIME type belirle
+                    ext = Path(file_path).suffix.lower()
+                    mime_map = {
+                        '.pdf': 'application/pdf',
+                        '.svg': 'image/svg+xml',
+                        '.eps': 'application/postscript',
+                        '.ai': 'application/postscript',
+                        '.jpg': 'image/jpeg',
+                        '.jpeg': 'image/jpeg',
+                        '.png': 'image/png',
+                        '.bmp': 'image/bmp',
+                        '.tiff': 'image/tiff'
+                    }
+                    mime_type = mime_map.get(ext, 'application/octet-stream')
             
             # Dosya türüne göre analiz
             if mime_type == 'application/pdf':
@@ -52,6 +79,9 @@ class AdvancedDesignAnalyzer:
     def analyze_pdf_advanced(self, file_path, file_name):
         """Gelişmiş PDF analizi"""
         try:
+            if not HAS_PYMUPDF:
+                return self.analyze_pdf_basic(file_path, file_name)
+                
             doc = fitz.open(file_path)
             page = doc[0]  # İlk sayfa
             
@@ -65,11 +95,17 @@ class AdvancedDesignAnalyzer:
             height_mm = round(height_pts * self.pts_to_mm)
             
             # İçerik analizi
-            text_blocks = page.get_text("blocks")
-            image_list = page.get_images()
+            try:
+                text_blocks = page.get_text("blocks")
+                image_list = page.get_images()
+                has_text = len(text_blocks) > 0
+                has_images = len(image_list) > 0
+            except:
+                has_text = False
+                has_images = False
             
             # Tasarım kategorisi belirleme
-            category = self.determine_category(width_mm, height_mm, file_name, len(text_blocks) > 0, len(image_list) > 0)
+            category = self.determine_category(width_mm, height_mm, file_name, has_text, has_images)
             
             # Sayfa sayısı
             page_count = len(doc)
@@ -104,6 +140,57 @@ class AdvancedDesignAnalyzer:
             
         except Exception as e:
             print(f"PDF analiz hatası: {str(e)}", file=sys.stderr)
+            return self.analyze_pdf_basic(file_path, file_name)
+    
+    def analyze_pdf_basic(self, file_path, file_name):
+        """Temel PDF analizi - kütüphane bağımsız"""
+        try:
+            # PDF dosyasını binary olarak oku ve MediaBox ara
+            with open(file_path, 'rb') as f:
+                content = f.read().decode('latin1', errors='ignore')
+            
+            # MediaBox pattern'i ara
+            import re
+            mediabox_pattern = r'/MediaBox\s*\[\s*(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s*\]'
+            match = re.search(mediabox_pattern, content)
+            
+            if match:
+                x1, y1, x2, y2 = map(float, match.groups())
+                width_pts = x2 - x1
+                height_pts = y2 - y1
+            else:
+                # Varsayılan A4 boyutları
+                width_pts = 595
+                height_pts = 842
+            
+            # Points'i mm'ye çevir
+            width_mm = round(width_pts * self.pts_to_mm)
+            height_mm = round(height_pts * self.pts_to_mm)
+            
+            category = self.determine_category(width_mm, height_mm, file_name)
+            should_rotate = self.should_rotate(width_mm, height_mm, category)
+            
+            return {
+                "success": True,
+                "dimensions": {
+                    "widthMM": width_mm,
+                    "heightMM": height_mm,
+                    "category": category,
+                    "confidence": 0.7,
+                    "description": f"Temel PDF analizi: {width_mm}x{height_mm}mm {category}",
+                    "shouldRotate": should_rotate
+                },
+                "detectedDesigns": 1,
+                "processingNotes": [
+                    "Temel PDF boyut analizi yapıldı",
+                    f"MediaBox: {width_pts}x{height_pts}pts",
+                    f"Boyutlar: {width_mm}x{height_mm}mm",
+                    f"Kategori: {category}"
+                ]
+            }
+            
+        except Exception as e:
+            print(f"Temel PDF analiz hatası: {str(e)}", file=sys.stderr)
             return self.create_fallback_result(file_name)
     
     def analyze_svg_advanced(self, file_path, file_name):
