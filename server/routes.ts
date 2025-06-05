@@ -1885,9 +1885,9 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
       const files = await storage.getFilesByUser(userId);
       const designFiles = files.filter(f => f.fileType === 'design');
-      
+
       console.log(`🎨 Retrieved ${designFiles.length} design files for user ${userId}`);
-      
+
       res.json(designFiles);
     } catch (error) {
       console.error("Error fetching plotter designs:", error);
@@ -1931,179 +1931,81 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       const sheetHeight = plotterSettings?.sheetHeight || 480; // mm
       const margin = plotterSettings?.margin || 3; // Reduced margin for better efficiency
       const spacing = plotterSettings?.spacing || 1; // Reduced spacing for better packing
+      const verticalSpacing = plotterSettings?.verticalSpacing || spacing;
 
       const arrangements = [];
       let currentX = margin;
       let currentY = margin;
       let rowHeight = 0;
       let arranged = 0;
+      const availableWidth = sheetWidth - 2 * margin;
+      const availableHeight = sheetHeight - 2 * margin;
 
       for (const design of designs) {
-        console.log(`📐 Processing design: ${design.originalName}`);
-        console.log(`Raw realDimensionsMM: "${design.realDimensionsMM}"`);
+        console.log('📐 Processing design:', design.originalName);
+        console.log('Raw realDimensionsMM:', JSON.stringify(design.realDimensionsMM));
 
-        // Enhanced dimension parsing with fallbacks
+        // Parse dimensions more reliably with better fallbacks
         let width = 50; // Default fallback
         let height = 30; // Default fallback
 
-        // Try multiple parsing methods
-        if (design.realDimensionsMM) {
-          // Method 1: Standard format "50x30mm"
-          const standardMatch = design.realDimensionsMM.match(/(\d+)x(\d+)mm/);
-          if (standardMatch) {
-            width = parseInt(standardMatch[1]);
-            height = parseInt(standardMatch[2]);
-            console.log(`✅ Standard parse: ${width}x${height}mm`);
-          } else {
-            // Method 2: Look for any numbers
-            const numbers = design.realDimensionsMM.match(/(\d+)/g);
-            if (numbers && numbers.length >= 2) {
-              width = parseInt(numbers[0]);
-              height = parseInt(numbers[1]);
-              console.log(`✅ Number extraction: ${width}x${height}mm`);
+        if (design.realDimensionsMM && design.realDimensionsMM !== 'Boyut tespit edilemedi') {
+          const dimensionMatch = design.realDimensionsMM.match(/(\d+)x(\d+)mm/i);
+          if (dimensionMatch) {
+            width = parseInt(dimensionMatch[1]);
+            height = parseInt(dimensionMatch[2]);
+          }
+        } else {
+          // Try to parse from dimensions field as fallback
+          if (design.dimensions && design.dimensions !== 'Unknown') {
+            const altDimensionMatch = design.dimensions.match(/(\d+)x(\d+)/);
+            if (altDimensionMatch) {
+              width = parseInt(altDimensionMatch[1]);
+              height = parseInt(altDimensionMatch[2]);
+              console.log(`📏 Using fallback dimensions from ${design.dimensions}`);
             }
           }
         }
 
-        // Special handling for full-page designs (including exact matches)
-        const isFullPageDesign = (width >= sheetWidth * 0.85 && height >= sheetHeight * 0.85) || 
-                                 (width === sheetWidth && height === sheetHeight);
-        
-        if (isFullPageDesign) {
-          console.log(`🎯 Full-page design detected: ${width}x${height}mm (sheet: ${sheetWidth}x${sheetHeight}mm)`);
-          // For full-page designs, place with minimal margins
-          const fullPageMargin = 2; // Very small margin for full-page designs
-          arrangements.push({
-            designId: design.id,
-            x: fullPageMargin,
-            y: fullPageMargin,
-            width: sheetWidth - (fullPageMargin * 2),
-            height: sheetHeight - (fullPageMargin * 2),
-            rotation: 0,
-            designName: design.originalName,
-            isFullPage: true
-          });
-          arranged++;
-          console.log(`✅ Full-page design arranged with minimal margins`);
-          break; // Only one full-page design per sheet
-        }
-
-        // Check if design needs to be scaled down
-        if (width > sheetWidth - 2 * margin || height > sheetHeight - 2 * margin) {
-          const scaleX = (sheetWidth - 2 * margin) / width;
-          const scaleY = (sheetHeight - 2 * margin) / height;
-          const scale = Math.min(scaleX, scaleY, 1);
-
-          if (scale > 0.1) {
-            const originalWidth = width;
-            const originalHeight = height;
-            width = Math.floor(width * scale);
-            height = Math.floor(height * scale);
-            console.log(`🔧 Scaled design from ${originalWidth}x${originalHeight}mm to ${width}x${height}mm (scale: ${scale.toFixed(2)})`);
-          } else {
-            console.log(`❌ Design too large to scale: ${width}x${height}mm`);
-            continue;
-          }
-        }
-
-        // Ensure reasonable minimum size
-        width = Math.max(width, 10);
-        height = Math.max(height, 10);
-
         console.log(`📏 Final dimensions for arrangement: ${width}x${height}mm`);
 
-        // Improved packing algorithm - try multiple orientations and positions
-        let placed = false;
-        
-        // Try normal orientation first
-        if (!placed && currentX + width + margin <= sheetWidth && currentY + height + margin <= sheetHeight) {
-          arrangements.push({
-            designId: design.id,
-            x: currentX,
-            y: currentY,
-            width: width,
-            height: height,
-            rotation: 0,
-            designName: design.originalName
-          });
-
-          currentX += width + spacing;
-          rowHeight = Math.max(rowHeight, height);
-          arranged++;
-          placed = true;
-
-          console.log(`✅ Arranged design at (${currentX - width - spacing}, ${currentY})`);
-        }
-        
-        // Try rotated orientation if normal doesn't fit
-        if (!placed && currentX + height + margin <= sheetWidth && currentY + width + margin <= sheetHeight) {
-          arrangements.push({
-            designId: design.id,
-            x: currentX,
-            y: currentY,
-            width: height, // Swapped for rotation
-            height: width, // Swapped for rotation
-            rotation: 90,
-            designName: design.originalName + " (döndürülmüş)"
-          });
-
-          currentX += height + spacing;
-          rowHeight = Math.max(rowHeight, width);
-          arranged++;
-          placed = true;
-
-          console.log(`✅ Arranged rotated design at (${currentX - height - spacing}, ${currentY})`);
-        }
-
-        // Try next row if current row doesn't work
-        if (!placed) {
+        // Check if design fits in current row (use available width)
+        if (currentX + width > margin + availableWidth) {
+          // Move to next row
           currentX = margin;
-          currentY += rowHeight + spacing;
+          currentY += rowHeight + verticalSpacing;
           rowHeight = 0;
 
-          // Try normal orientation in new row
-          if (currentY + height + margin <= sheetHeight && currentX + width + margin <= sheetWidth) {
-            arrangements.push({
-              designId: design.id,
-              x: currentX,
-              y: currentY,
-              width: width,
-              height: height,
-              rotation: 0,
-              designName: design.originalName
-            });
-
-            currentX += width + spacing;
-            rowHeight = height;
-            arranged++;
-            placed = true;
-
-            console.log(`✅ Arranged design in new row at (${currentX - width - spacing}, ${currentY})`);
-          }
-          // Try rotated in new row
-          else if (currentY + width + margin <= sheetHeight && currentX + height + margin <= sheetWidth) {
-            arrangements.push({
-              designId: design.id,
-              x: currentX,
-              y: currentY,
-              width: height,
-              height: width,
-              rotation: 90,
-              designName: design.originalName + " (döndürülmüş)"
-            });
-
-            currentX += height + spacing;
-            rowHeight = width;
-            arranged++;
-            placed = true;
-
-            console.log(`✅ Arranged rotated design in new row at (${currentX - height - spacing}, ${currentY})`);
-          }
+          console.log(`📝 Moving to next row: y=${currentY}`);
         }
 
-        if (!placed) {
-          console.log(`❌ Design doesn't fit anywhere: ${width}x${height}mm`);
+        // Check if design fits in available height
+        if (currentY + height > margin + availableHeight) {
+          console.log(`⚠️ Design ${design.originalName} doesn't fit in remaining space (y: ${currentY + height} > ${margin + availableHeight})`);
+          break;
         }
+
+        // Place the design
+        arrangements.push({
+          designId: design.id,
+          x: currentX,
+          y: currentY,
+          width: width,
+          height: height,
+          rotation: 0,
+          designName: design.originalName,
+          withMargins: {
+            width: width + (spacing * 2),
+            height: height + (verticalSpacing * 2)
+          }
+        });
+
+        console.log(`✅ Arranged design "${design.originalName}" at (${currentX}, ${currentY}) with margins`);
+
+        // Update position for next design
+        currentX += width + spacing;
+        rowHeight = Math.max(rowHeight, height);
+        arranged++;
       }
 
       // Calculate efficiency
