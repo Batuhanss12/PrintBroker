@@ -1510,75 +1510,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Fixed automatic layout generation endpoint
-  app.post('/api/generate-layout', isAuthenticated, async (req: any, res) => {
+  // Enterprise Layout Generation Endpoint
+  app.post('/api/generate-layout', async (req: any, res) => {
     try {
-      console.log('🎯 Starting automatic layout generation');
+      console.log('Enterprise layout generation started');
       
       const { designIds, plotterSettings } = req.body;
-      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
 
       if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "At least one design ID is required" 
+        return res.status(400).json({
+          success: false,
+          message: 'No designs selected for layout'
         });
       }
 
-      // Get user's design files
-      const files = await storage.getFilesByUser(userId);
-      const designs = files.filter(f => designIds.includes(f.id) && f.fileType === 'design');
+      console.log(`Processing enterprise layout for ${designIds.length} designs`);
+
+      // Get design data from storage
+      const designs = [];
+      for (const designId of designIds) {
+        const design = await storage.getDesign(designId);
+        if (design) {
+          // Extract proper dimensions for enterprise layout
+          let width = 50;  // fallback
+          let height = 30; // fallback
+          
+          if (design.smartDimensions?.width && design.smartDimensions?.height) {
+            width = design.smartDimensions.width;
+            height = design.smartDimensions.height;
+          } else if (design.realDimensionsMM && typeof design.realDimensionsMM === 'string') {
+            const match = design.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)mm/);
+            if (match) {
+              width = parseFloat(match[1]);
+              height = parseFloat(match[2]);
+            }
+          }
+
+          designs.push({
+            id: design.id,
+            name: design.name || design.originalName || `Design_${design.id}`,
+            width,
+            height,
+            filePath: design.filePath,
+            canRotate: true
+          });
+        }
+      }
 
       if (designs.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "No valid designs found" 
+        return res.status(400).json({
+          success: false,
+          message: 'No valid designs found'
         });
       }
 
-      console.log('📋 Processing designs:', designs.map(d => ({
-        id: d.id,
-        name: d.originalName,
-        dimensions: d.realDimensionsMM || d.dimensions
-      })));
+      console.log(`Found ${designs.length} designs for enterprise layout`);
+      designs.forEach(d => console.log(`  - ${d.name}: ${d.width}x${d.height}mm`));
 
-      // Use OneClick layout system for automatic arrangement
-      const layoutRequest = {
-        designIds,
-        sheetSettings: {
-          width: plotterSettings?.sheetWidth || 330,
-          height: plotterSettings?.sheetHeight || 480,
-          margin: plotterSettings?.margin || 10,
-          bleedMargin: plotterSettings?.bleedMargin || 3
-        },
-        cuttingSettings: {
-          enabled: true,
-          markLength: 5,
-          markWidth: 0.25
-        }
+      // Enterprise layout settings
+      const layoutSettings = {
+        sheetWidth: plotterSettings?.sheetWidth || 330,   // 33cm default
+        sheetHeight: plotterSettings?.sheetHeight || 480, // 48cm default  
+        margin: plotterSettings?.margin || 10,            // 1cm margin
+        bleedMargin: plotterSettings?.bleedMargin || 3,   // 3mm bleed
+        spacing: 5                                        // 5mm spacing between designs
       };
 
-      const layoutResult = await oneClickLayoutSystem.processOneClickLayout(designs, layoutRequest);
+      console.log('Enterprise layout settings:', layoutSettings);
 
-      if (layoutResult.success) {
-        console.log(`✅ Layout generated: ${layoutResult.arrangements.length} designs arranged`);
+      // Use enterprise layout engine
+      const { enterpriseLayoutEngine } = await import('./enterpriseLayoutEngine');
+      const layoutResult = await enterpriseLayoutEngine.generateOptimalLayout(designs, layoutSettings);
+
+      if (layoutResult.success && layoutResult.placements.length > 0) {
+        console.log(`Enterprise layout generated: ${layoutResult.placements.length}/${layoutResult.totalDesigns} designs placed`);
+        console.log(`Layout efficiency: ${layoutResult.efficiency}%`);
         
-        // Generate PDF with arrangements
-        const pdfPath = await generateLayoutPDF(layoutResult.arrangements, designs, layoutRequest.sheetSettings);
+        // Generate enterprise PDF
+        const pdfFilename = await enterpriseLayoutEngine.generatePDF(layoutResult.placements, layoutSettings);
         
         res.json({
           success: true,
-          arrangements: layoutResult.arrangements,
-          pdfPath,
+          arrangements: layoutResult.placements,
+          pdfPath: pdfFilename,
           efficiency: layoutResult.efficiency,
-          statistics: layoutResult.statistics
+          statistics: {
+            totalDesigns: layoutResult.totalDesigns,
+            arrangedDesigns: layoutResult.placedDesigns,
+            efficiency: layoutResult.efficiency,
+            wastePercentage: layoutResult.statistics.wastePercentage
+          }
         });
       } else {
-        console.error('❌ Layout generation failed:', layoutResult.message);
-        res.status(500).json({
+        console.error('Enterprise layout failed:', layoutResult.message);
+        res.status(400).json({
           success: false,
-          message: layoutResult.message,
-          statistics: layoutResult.statistics
+          message: layoutResult.message || 'No designs could be placed on the sheet',
+          statistics: {
+            totalDesigns: layoutResult.totalDesigns,
+            arrangedDesigns: layoutResult.placedDesigns,
+            efficiency: 0
+          }
         });
       }
 
