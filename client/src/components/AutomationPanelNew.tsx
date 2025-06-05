@@ -1094,44 +1094,144 @@ export default function AutomationPanelNew() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="xl:col-span-2 space-y-6">
-          {/* File Upload Section */}</div>
-          
-            
-              
-                
+          {/* File Upload Section */}
+          <Card className="border-2 border-dashed border-blue-200 bg-blue-50/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <Upload className="h-6 w-6" />
                 Profesyonel Dosya Yükleme Sistemi
-              
-            
-            
-              
-                
-                  
-                    
-                      Vektörel Dosyalarınızı Yükleyin
-                    
-                    
-                      PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
-                    
-                  
-                  
-                    {uploadDesignsMutation.isPending ? "🔄 Analiz Ediliyor..." : "📁 Dosya Seç ve Yükle"}
-                  
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-white">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.svg,.ai,.eps,application/pdf,image/svg+xml,application/postscript"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
 
-                  {uploadProgress > 0 && (
-                    <div className="text-sm text-blue-600">
+                <div className="mb-4">
+                  <Upload className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Vektörel Dosyalarınızı Yükleyin
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadDesignsMutation.isPending}
+                  size="lg"
+                  className="mb-6"
+                >
+                  {uploadDesignsMutation.isPending ? "🔄 Analiz Ediliyor..." : "📁 Dosya Seç ve Yükle"}
+                </Button>
+
+                {uploadProgress > 0 && (
+                  <div className="mt-4">
+                    <Progress value={uploadProgress} className="w-full" />
+                    <p className="text-sm text-blue-600 mt-2">
                       Yükleniyor ve analiz ediliyor: {uploadProgress.toFixed(0)}%
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 text-xs text-blue-600 bg-blue-50 p-3 rounded-lg">
+                  <div className="space-y-1">
+                    <div>✅ Maksimum dosya boyutu: 50MB</div>
+                    <div>✅ İçerik analizi ve boyut tespiti</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div>✅ Otomatik önizleme oluşturma</div>
+                    <div>✅ Vektör kalitesi korunur</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Otomatik Dizim Sistemi - Dosya yükleme altında */}
+          {designs.length > 0 && (
+            <Card className="border-2 border-gradient-to-r from-purple-500 to-blue-600 bg-gradient-to-r from-purple-50 to-blue-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-800">
+                  <Sparkles className="h-6 w-6" />
+                  🚀 Tek Tuş Otomatik Dizim Sistemi
+                </CardTitle>
+                <p className="text-sm text-purple-600 mt-2">
+                  Yapay zeka destekli tam otomatik dizim: dosya analizi + yerleştirme + PDF üretimi
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button
+                    onClick={handleOneClickLayout}
+                    disabled={selectedDesigns.length === 0 || isProcessing}
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+                    size="lg"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                        🤖 AI analiz ediyor ve diziyor...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        🚀 Tek Tuş Otomatik Dizim ({selectedDesigns.length} dosya)
+                      </>
+                    )}
+                  </Button>
+
+                  <div className="text-xs text-purple-600 bg-purple-50 p-3 rounded-lg">
+                    <div className="font-medium mb-1">Bu sistem otomatik olarak:</div>
+                    <div className="space-y-1">
+                      <div>• Dosya içeriğini analiz eder ve boyutları tespit eder</div>
+                      <div>• 3mm kesim payı ile optimal yerleştirme yapar</div>
+                      <div>• Profesyonel PDF çıktısını otomatik oluşturur</div>
+                      <div>• Maksimum verimlilik için rotation algoritması kullanır</div>
+                    </div>
+                  </div>
+
+                  {arrangements.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline" className="text-green-700 border-green-300">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {arrangements.length} Yerleştirilen
+                          </Badge>
+                          <Badge variant="outline" className="text-blue-700 border-blue-300">
+                            <Target className="h-3 w-3 mr-1" />
+                            {selectedDesigns.length} Seçilen
+                          </Badge>
+                          <Badge variant="outline" className="text-purple-700 border-purple-300">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            {arrangements.length > 0 ? Math.round((arrangements.length / selectedDesigns.length) * 100) : 0}% Başarı
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={() => generatePDFMutation.mutate()}
+                        disabled={generatePDFMutation.isPending}
+                        className="w-full mt-3 bg-green-600 hover:bg-green-700"
+                        size="sm"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        {generatePDFMutation.isPending ? "📄 Profesyonel PDF Oluşturuluyor..." : "📥 Profesyonel PDF İndir"}
+                      </Button>
                     </div>
                   )}
-
-                  
-                    
-                      
-                        ✅ Maksimum dosya boyutu: 50MB
-                        ✅ İçerik analizi ve boyut tespiti
-                      
-                      
-                        ✅ Otomatik önizleme oluşturma
-                        ✅ Vektör kalitesi korunur
+                </div>
+              </CardContent>
+            </Card>
+          )}
                       
                     
                   
@@ -1182,146 +1282,7 @@ export default function AutomationPanelNew() {
             
           
 
-          {/* Python Profesyonel Dizim Sistemi */}
           
-            
-              
-                
-                  
-                    🐍 Python Profesyonel Dizim Motoru
-                  
-                
-                
-                  Firma kalitesinde vektörel dosya işleme ve PDF üretimi
-                
-              
-            
-            
-              
-                
-                  {isArranging ? (
-                    <>
-                      
-                      🐍 Python Analiz Ediyor...
-                    </>
-                  ) : (
-                    <>
-                      
-                      🚀 Python Profesyonel Dizim
-                    </>
-                  )}
-                
-
-                
-                  
-                    
-                      Python Sistem Özellikleri:
-                    
-                    
-                      
-                        
-                         PyMuPDF ile gerçek PDF boyutları okur
-                        
-                      
-                      
-                        
-                         ReportLab ile vektörel PDF oluşturur
-                        
-                      
-                      
-                        
-                         CairoSVG ile SVG desteği
-                        
-                      
-                      
-                        
-                         2D Bin Packing algoritması
-                        
-                      
-                    
-                  
-                
-              
-            
-          
-
-          {/* AI Destekli Tek Tuş Profesyonel Dizim Sistemi */}
-           AI Destekli Profesyonel Dizim Sistemi
-                
-                🤖 Yapay zeka ile dosya analizi + akıllı yerleştirme + otomatik PDF üretimi
-              
-            
-            
-              
-                
-                  {isProcessing ? (
-                    <>
-                      
-                      🤖 AI Analiz Ediyor ve Diziyor...
-                    </>
-                  ) : (
-                    <>
-                      
-                      🚀 AI Akıllı Otomatik Dizim
-                    </>
-                  )}
-                
-
-                
-                  
-                    
-                      AI Sistem Özellikleri:
-                    
-                    
-                      
-                        
-                         Dosya içeriğini AI ile analiz eder (logo, metin, grafik türü tespiti)
-                        
-                      
-                      
-                        
-                         Öncelik sıralaması ve akıllı gruplama yapar
-                        
-                      
-                      
-                        
-                         3mm kesim payı ile %85+ verimlilik sağlar
-                        
-                      
-                      
-                        
-                         Profesyonel PDF çıktısını otomatik oluşturur ve indirir
-                        
-                      
-                    
-                  
-                
-
-                {arrangements.length > 0 && (
-                  
-                    
-                      
-                        
-                          {arrangements.length}
-                          Yerleştirilen
-                        
-                        
-                          {selectedDesigns.length}
-                          Seçilen
-                        
-                        
-                          {arrangements.length > 0 ? Math.round((arrangements.length / selectedDesigns.length) * 100) : 0}%
-                          Başarı
-                        
-                      
-                    
-
-                    
-                      
-                      {generatePDFMutation.isPending ? "📄 Profesyonel PDF Oluşturuluyor..." : "📥 Profesyonel PDF İndir"}
-                    
-                  
-                )}
               
             
           
