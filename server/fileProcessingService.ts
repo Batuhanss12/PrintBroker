@@ -188,33 +188,43 @@ export class FileProcessingService {
         }
       }
 
-      // Method 3: Common page size detection
+      // Method 3: Enhanced dimension detection
+      const fileSizeKB = buffer.length / 1024;
+      
+      // First try to find dimensions in filename
+      const filename = path.basename(filePath);
+      const filenameMatch = filename.match(/(\d+)x(\d+)/i);
+      if (filenameMatch) {
+        const width = parseInt(filenameMatch[1]);
+        const height = parseInt(filenameMatch[2]);
+        if (width > 0 && height > 0 && width < 1000 && height < 1000) {
+          metadata.realDimensionsMM = `${width}x${height}mm`;
+          metadata.processingNotes = `PDF dimensions from filename: ${width}×${height}mm`;
+          console.log(`📏 PDF dimensions from filename: ${width}×${height}mm`);
+          return metadata;
+        }
+      }
+
+      // Common page size detection with better defaults
       const commonSizes = [
-        { name: 'A4', width: 210, height: 297 },
-        { name: 'A3', width: 297, height: 420 },
-        { name: 'A5', width: 148, height: 210 },
-        { name: 'Letter', width: 216, height: 279 },
-        { name: 'Label 50x30', width: 50, height: 30 },
-        { name: 'Label 70x50', width: 70, height: 50 },
-        { name: 'Business Card', width: 85, height: 55 }
+        { name: 'Label 50x30', width: 50, height: 30, minSize: 0, maxSize: 100 },
+        { name: 'Business Card', width: 85, height: 55, minSize: 100, maxSize: 300 },
+        { name: 'Label 100x70', width: 100, height: 70, minSize: 300, maxSize: 600 },
+        { name: 'A5', width: 148, height: 210, minSize: 600, maxSize: 1200 },
+        { name: 'A4', width: 210, height: 297, minSize: 1200, maxSize: 5000 },
+        { name: 'A3', width: 297, height: 420, minSize: 5000, maxSize: Infinity }
       ];
 
-      // If no size detected, use default based on file size
-      const fileSizeKB = buffer.length / 1024;
-      let defaultSize;
+      let defaultSize = commonSizes.find(s => fileSizeKB >= s.minSize && fileSizeKB < s.maxSize);
       
-      if (fileSizeKB < 100) {
+      if (!defaultSize) {
         defaultSize = commonSizes.find(s => s.name === 'Label 50x30');
-      } else if (fileSizeKB < 500) {
-        defaultSize = commonSizes.find(s => s.name === 'Business Card');
-      } else {
-        defaultSize = commonSizes.find(s => s.name === 'A4');
       }
 
       if (defaultSize) {
         metadata.realDimensionsMM = `${defaultSize.width}x${defaultSize.height}mm`;
-        metadata.processingNotes = `PDF size estimated as ${defaultSize.name}: ${defaultSize.width}×${defaultSize.height}mm`;
-        console.log(`📏 PDF size estimated: ${defaultSize.name}`);
+        metadata.processingNotes = `PDF size estimated as ${defaultSize.name} (${fileSizeKB.toFixed(0)}KB): ${defaultSize.width}×${defaultSize.height}mm`;
+        console.log(`📏 PDF size estimated: ${defaultSize.name} based on file size`);
       }
 
     } catch (error) {
