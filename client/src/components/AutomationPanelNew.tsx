@@ -403,9 +403,17 @@ export default function AutomationPanelNew() {
       );
     }
 
+    // Filter out invalid designs
+    const validDesigns = designs.filter(design => 
+      design && 
+      typeof design === 'object' && 
+      design.id && 
+      design.name
+    );
+
     return (
       <div className={`grid gap-3 ${previewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
-        {designs.map((design: Design) => (
+        {validDesigns.map((design: Design) => (
           <div
             key={design.id}
             className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
@@ -448,7 +456,7 @@ export default function AutomationPanelNew() {
                   <div className="text-center">
                     <div className="text-lg">🎨</div>
                     <span className="text-xs text-purple-600">
-              {design.name && typeof design.name === 'string' ? design.name.split('.').pop()?.toUpperCase() : 'DESIGN'}
+              {design.name && typeof design.name === 'string' && design.name.includes('.') ? design.name.split('.').pop()?.toUpperCase() : 'DESIGN'}
             </span>
                   </div>
                 </div>
@@ -457,8 +465,8 @@ export default function AutomationPanelNew() {
 
             {/* File info */}
             <div className="space-y-1">
-              <h4 className="font-medium text-sm truncate" title={design.name}>
-                {design.name}
+              <h4 className="font-medium text-sm truncate" title={design.name || 'Adsız dosya'}>
+                {design.name || 'Adsız dosya'}
               </h4>
 
               <div className="text-xs text-gray-600 space-y-1">
