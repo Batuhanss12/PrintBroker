@@ -456,8 +456,8 @@ export default function AutomationPanelNew() {
                   <div className="text-center">
                     <div className="text-lg">🎨</div>
                     <span className="text-xs text-purple-600">
-              {design.name && typeof design.name === 'string' && design.name.includes('.') ? design.name.split('.').pop()?.toUpperCase() : 'DESIGN'}
-            </span>
+                      {design.name && typeof design.name === 'string' && design.name.includes('.') ? design.name.split('.').pop()?.toUpperCase() : 'DESIGN'}
+                    </span>
                   </div>
                 </div>
               )}
