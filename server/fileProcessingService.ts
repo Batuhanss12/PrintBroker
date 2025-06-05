@@ -1,10 +1,8 @@
-
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import sharp from 'sharp';
-// Professional file processing without external dependencies
 
 const execAsync = promisify(exec);
 
@@ -83,20 +81,20 @@ export class FileProcessingService {
       }
 
       const buffer = fs.readFileSync(filePath, { encoding: null });
-      
+
       // File signature checks
       switch (mimeType) {
         case 'application/pdf':
           const isPdf = buffer.subarray(0, 4).toString('ascii') === '%PDF';
           console.log(`📄 PDF integrity check: ${isPdf}`);
           return isPdf;
-          
+
         case 'image/svg+xml':
           const svgContent = buffer.toString('utf8', 0, 200);
           const isSvg = svgContent.includes('<svg') || svgContent.includes('<?xml');
           console.log(`🎨 SVG integrity check: ${isSvg}`);
           return isSvg;
-          
+
         case 'application/postscript':
         case 'application/eps':
         case 'image/eps':
@@ -107,14 +105,14 @@ export class FileProcessingService {
                        epsContent.includes('Adobe Illustrator') ||
                        epsContent.includes('%%Creator: Adobe');
           console.log(`✏️ EPS/AI integrity check: ${isEps}, first 100 chars: "${epsContent.substring(0, 50)}..."`);
-          
+
           // Even if header check fails, allow if file size is reasonable
           if (!isEps && stats.size > 1024) {
             console.log('📝 EPS header not found but file size suggests valid content, allowing...');
             return true;
           }
           return isEps;
-          
+
         default:
           console.log(`🔧 Unknown type ${mimeType}, allowing by default`);
           return true;
@@ -138,7 +136,7 @@ export class FileProcessingService {
       try {
         const { stdout } = await execAsync(`pdfinfo "${filePath}" 2>/dev/null`);
         const lines = stdout.split('\n');
-        
+
         for (const line of lines) {
           if (line.includes('Pages:')) {
             metadata.pageCount = parseInt(line.split(':')[1].trim()) || 1;
@@ -164,7 +162,7 @@ export class FileProcessingService {
       // Method 2: Binary PDF analysis
       const buffer = fs.readFileSync(filePath);
       const content = buffer.toString('binary');
-      
+
       // Look for MediaBox
       const mediaBoxMatches = content.match(/\/MediaBox\s*\[\s*([^\]]+)\]/g);
       if (mediaBoxMatches && mediaBoxMatches.length > 0) {
@@ -175,7 +173,7 @@ export class FileProcessingService {
             if (numbers.length >= 4) {
               const widthPt = numbers[2] - numbers[0];
               const heightPt = numbers[3] - numbers[1];
-              
+
               if (widthPt > 0 && heightPt > 0) {
                 const widthMM = Math.round(widthPt * 0.352778);
                 const heightMM = Math.round(heightPt * 0.352778);
@@ -189,10 +187,11 @@ export class FileProcessingService {
         }
       }
 
-      // Method 3: Enhanced dimension detection
+      // Enhanced dimension detection with content analysis
       const fileSizeKB = buffer.length / 1024;
-      
-      // First try to find dimensions in filename
+      console.log(`📊 File analysis: ${fileSizeKB.toFixed(1)}KB`);
+
+      // Method 1: Extract dimensions from filename
       const filename = path.basename(filePath);
       const filenameMatch = filename.match(/(\d+)x(\d+)/i);
       if (filenameMatch) {
@@ -200,9 +199,41 @@ export class FileProcessingService {
         const height = parseInt(filenameMatch[2]);
         if (width > 0 && height > 0 && width < 1000 && height < 1000) {
           metadata.realDimensionsMM = `${width}x${height}mm`;
-          metadata.processingNotes = `PDF dimensions from filename: ${width}×${height}mm`;
-          console.log(`📏 PDF dimensions from filename: ${width}×${height}mm`);
+          metadata.processingNotes = `Dosya adından boyut tespit edildi: ${width}×${height}mm`;
+          metadata.processingStatus = 'processed';
+          console.log(`📏 Filename dimensions: ${width}×${height}mm`);
           return metadata;
+        }
+      }
+
+      // Method 2: Content-based analysis
+      const contentText = buffer.toString('latin1');
+
+      // Search for dimension patterns in content
+      const dimensionPatterns = [
+        /\/MediaBox\s*\[\s*[\d\.\-]+\s+[\d\.\-]+\s+([\d\.]+)\s+([\d\.]+)\s*\]/i,
+        /\/CropBox\s*\[\s*[\d\.\-]+\s+[\d\.\-]+\s+([\d\.]+)\s+([\d\.]+)\s*\]/i,
+        /width["\s]*[:=]\s*["']?(\d+(?:\.\d+)?)/i,
+        /height["\s]*[:=]\s*["']?(\d+(?:\.\d+)?)/i
+      ];
+
+      for (const pattern of dimensionPatterns) {
+        const match = contentText.match(pattern);
+        if (match) {
+          const width = parseFloat(match[1]);
+          const height = parseFloat(match[2] || match[1]);
+          if (width > 0 && height > 0) {
+            // Convert points to mm (1 point = 0.352778 mm)
+            const widthMM = Math.round(width * 0.352778);
+            const heightMM = Math.round(height * 0.352778);
+            if (widthMM < 1000 && heightMM < 1000) {
+              metadata.realDimensionsMM = `${widthMM}x${heightMM}mm`;
+              metadata.processingNotes = `İçerik analizinden boyut tespit edildi: ${widthMM}×${heightMM}mm`;
+              metadata.processingStatus = 'processed';
+              console.log(`📏 Content analysis dimensions: ${widthMM}×${heightMM}mm`);
+              return metadata;
+            }
+          }
         }
       }
 
@@ -217,7 +248,7 @@ export class FileProcessingService {
       ];
 
       let defaultSize = commonSizes.find(s => fileSizeKB >= s.minSize && fileSizeKB < s.maxSize);
-      
+
       if (!defaultSize) {
         defaultSize = commonSizes.find(s => s.name === 'Label 50x30');
       }
@@ -245,12 +276,12 @@ export class FileProcessingService {
 
     try {
       const content = fs.readFileSync(filePath, 'utf8');
-      
+
       // Extract dimensions from SVG
       const viewBoxMatch = content.match(/viewBox="([^"]+)"/);
       const widthMatch = content.match(/width="([^"]+)"/);
       const heightMatch = content.match(/height="([^"]+)"/);
-      
+
       if (viewBoxMatch) {
         const viewBox = viewBoxMatch[1].split(/\s+/).map(Number);
         if (viewBox.length >= 4) {
@@ -262,7 +293,7 @@ export class FileProcessingService {
       } else if (widthMatch && heightMatch) {
         const width = parseFloat(widthMatch[1].replace(/[^0-9.]/g, ''));
         const height = parseFloat(heightMatch[1].replace(/[^0-9.]/g, ''));
-        
+
         if (width && height) {
           metadata.dimensions = `${width}x${height}`;
           // Assume SVG units are in pixels, convert to mm
@@ -271,7 +302,7 @@ export class FileProcessingService {
       }
 
       metadata.processingNotes = `SVG processed: ${metadata.realDimensionsMM || 'dimensions detected'}`;
-      
+
     } catch (error) {
       console.error('SVG processing error:', error);
       metadata.contentPreserved = false;
@@ -291,7 +322,7 @@ export class FileProcessingService {
       const content = fs.readFileSync(filePath, 'utf8');
       const stats = fs.statSync(filePath);
       const fileSizeKB = stats.size / 1024;
-      
+
       // Look for BoundingBox in EPS
       const boundingBoxMatch = content.match(/%%BoundingBox:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/);
       if (boundingBoxMatch) {
@@ -299,19 +330,19 @@ export class FileProcessingService {
         const y1 = parseInt(boundingBoxMatch[2]);
         const x2 = parseInt(boundingBoxMatch[3]);
         const y2 = parseInt(boundingBoxMatch[4]);
-        
+
         const widthPt = x2 - x1;
         const heightPt = y2 - y1;
         const widthMM = Math.round(widthPt * 0.352778);
         const heightMM = Math.round(heightPt * 0.352778);
-        
+
         metadata.realDimensionsMM = `${widthMM}x${heightMM}mm`;
         metadata.dimensions = `${widthPt}x${heightPt}pt`;
         console.log(`✅ EPS dimensions detected: ${widthMM}×${heightMM}mm`);
       } else {
         // Intelligent size estimation based on file size and content
         let estimatedSize;
-        
+
         if (fileSizeKB < 100) {
           estimatedSize = { width: 50, height: 30 }; // Business card size
         } else if (fileSizeKB < 500) {
@@ -321,13 +352,13 @@ export class FileProcessingService {
         } else {
           estimatedSize = { width: 297, height: 420 }; // A3 size
         }
-        
+
         metadata.realDimensionsMM = `${estimatedSize.width}x${estimatedSize.height}mm`;
         console.log(`📏 EPS size estimated based on file size (${fileSizeKB.toFixed(0)}KB): ${estimatedSize.width}×${estimatedSize.height}mm`);
       }
 
       metadata.processingNotes = `EPS/AI processed: ${metadata.realDimensionsMM}`;
-      
+
     } catch (error) {
       console.error('EPS processing error:', error);
       metadata.realDimensionsMM = '85x55mm'; // Default business card size
@@ -343,7 +374,7 @@ export class FileProcessingService {
     try {
       const image = sharp(filePath);
       const imageMetadata = await image.metadata();
-      
+
       metadata.dimensions = `${imageMetadata.width}x${imageMetadata.height}px`;
       metadata.resolution = imageMetadata.density || 300;
       metadata.colorProfile = this.getColorSpace(imageMetadata.space);
@@ -359,7 +390,7 @@ export class FileProcessingService {
       }
 
       metadata.processingNotes = `Image processed: ${metadata.dimensions}, ${metadata.colorProfile}`;
-      
+
     } catch (error) {
       console.error('Image processing error:', error);
       metadata.contentPreserved = false;
@@ -393,7 +424,7 @@ export class FileProcessingService {
       const basename = path.basename(filename, ext);
       const thumbnailName = `${basename}_thumb.jpg`;
       const thumbnailPath = path.join(this.thumbnailDir, thumbnailName);
-      
+
       await sharp(filePath)
         .resize(200, 200, { 
           fit: 'inside', 
@@ -402,7 +433,7 @@ export class FileProcessingService {
         })
         .jpeg({ quality: 85 })
         .toFile(thumbnailPath);
-      
+
       return `/uploads/thumbnails/${thumbnailName}`;
     } catch (error) {
       console.error('Thumbnail generation failed:', error);
@@ -417,7 +448,7 @@ export class FileProcessingService {
       const basename = path.basename(filename, ext);
       const thumbnailName = `${basename}_thumb.jpg`;
       const thumbnailPath = path.join(this.thumbnailDir, thumbnailName);
-      
+
       try {
         await execAsync(`convert "${filePath}[0]" -thumbnail 200x200 -background white -alpha remove "${thumbnailPath}"`);
         return `/uploads/thumbnails/${thumbnailName}`;
@@ -433,22 +464,22 @@ export class FileProcessingService {
 
   async validateFile(filePath: string, mimeType: string): Promise<{ isValid: boolean; errors: string[] }> {
     const errors: string[] = [];
-    
+
     try {
       const stats = fs.statSync(filePath);
-      
+
       if (!stats.isFile()) {
         errors.push('Not a valid file');
       }
-      
+
       if (stats.size === 0) {
         errors.push('File is empty');
       }
-      
+
       if (stats.size > 50 * 1024 * 1024) {
         errors.push('File size exceeds 50MB limit');
       }
-      
+
       const allowedMimeTypes = [
         'application/pdf',
         'image/svg+xml',
@@ -459,15 +490,15 @@ export class FileProcessingService {
         'application/eps',
         'image/eps'
       ];
-      
+
       if (!allowedMimeTypes.includes(mimeType)) {
         errors.push(`Unsupported file type: ${mimeType}`);
       }
-      
+
     } catch (error) {
       errors.push('File validation failed');
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors
@@ -578,17 +609,17 @@ export class FileProcessingService {
 
       // Check for text content
       analysis.hasText = content.includes('/Font') || content.includes('Tf') || content.includes('Tj');
-      
+
       // Check for images
       analysis.hasImages = content.includes('/Image') || content.includes('/XObject') || content.includes('JFIF');
-      
+
       // Check for vector paths
       analysis.hasVectorPaths = content.includes(' re ') || content.includes(' l ') || content.includes(' c ') || content.includes(' m ');
 
       // Estimate complexity
       const streamCount = (content.match(/stream/g) || []).length;
       const objectCount = (content.match(/obj/g) || []).length;
-      
+
       if (streamCount > 10 && objectCount > 20) {
         analysis.complexity = 'complex';
         analysis.printQuality = 'high';
@@ -617,7 +648,7 @@ export class FileProcessingService {
   private async analyzeSVGDesignContent(filePath: string) {
     try {
       const content = fs.readFileSync(filePath, 'utf8');
-      
+
       const analysis = {
         actualDimensions: { width: 50, height: 30 },
         contentBounds: { x: 0, y: 0, width: 50, height: 30 },
@@ -655,7 +686,7 @@ export class FileProcessingService {
       // Complexity analysis
       const pathCount = (content.match(/<path/g) || []).length;
       const shapeCount = (content.match(/<(circle|rect|polygon|ellipse)/g) || []).length;
-      
+
       if (pathCount > 10 || shapeCount > 15) {
         analysis.complexity = 'complex';
       } else if (pathCount > 3 || shapeCount > 5) {
@@ -684,7 +715,7 @@ export class FileProcessingService {
     try {
       const content = fs.readFileSync(filePath, 'utf8');
       const stats = fs.statSync(filePath);
-      
+
       const analysis = {
         actualDimensions: { width: 85, height: 55 },
         contentBounds: { x: 0, y: 0, width: 85, height: 55 },
@@ -704,7 +735,7 @@ export class FileProcessingService {
         const y1 = parseInt(boundingBoxMatch[2]);
         const x2 = parseInt(boundingBoxMatch[3]);
         const y2 = parseInt(boundingBoxMatch[4]);
-        
+
         analysis.actualDimensions = {
           width: Math.round((x2 - x1) * 0.352778),
           height: Math.round((y2 - y1) * 0.352778)
@@ -740,7 +771,7 @@ export class FileProcessingService {
     try {
       const image = sharp(filePath);
       const metadata = await image.metadata();
-      
+
       const analysis = {
         actualDimensions: {
           width: Math.round((metadata.width || 200) / (metadata.density || 300) * 25.4),
@@ -753,7 +784,8 @@ export class FileProcessingService {
         colorCount: 0,
         complexity: 'simple' as const,
         printQuality: (metadata.density || 72) >= 300 ? 'high' as const : 'medium' as const,
-        recommendedProcessing: 'High-resolution raster processing'
+        recommendedProcessing:```text
+ 'High-resolution raster processing'
       };
 
       analysis.contentBounds = {
@@ -797,7 +829,7 @@ export class FileProcessingService {
         // Check if PDF has vector content
         const buffer = fs.readFileSync(filePath);
         const content = buffer.toString('binary');
-        
+
         const hasStreamObjects = content.includes('/Type/XObject') || content.includes('/Subtype/Form');
         const hasVectorPaths = content.includes('re') || content.includes('l') || content.includes('c');
         const hasText = content.includes('/Font') || content.includes('Tf');
@@ -877,7 +909,7 @@ export class FileProcessingService {
 
       // Verify vector content
       const contentAnalysis = await this.verifyVectorContent(filePath, mimeType);
-      
+
       // Copy file to a processing path
       const ext = path.extname(filePath);
       const processedFileName = `processed_${Date.now()}${ext}`;
@@ -904,6 +936,47 @@ export class FileProcessingService {
       };
     }
   }
+
+async processDesignFile(filePath: string): Promise<{
+    success: boolean;
+    metadata?: any;
+    error?: string;
+  }> {
+    try {
+      console.log(`🔍 Processing design file: ${filePath}`);
+      const buffer = await fs.readFile(filePath);
+      const fileStats = await fs.stat(filePath);
+
+      const metadata = {
+        filename: path.basename(filePath),
+        fileSize: this.formatFileSize(fileStats.size),
+        fileSizeBytes: fileStats.size,
+        uploadedAt: new Date().toISOString(),
+        type: this.getFileType(filePath),
+        processingStatus: 'processing',
+        processingNotes: 'Gelişmiş dosya analizi yapılıyor...'
+      };
+
+async processDesignFile(filePath: string): Promise<{
+    success: boolean;
+    metadata?: any;
+    error?: string;
+  }> {
+    try {
+      console.log(`🔍 Processing design file: ${filePath}`);
+      const buffer = await fs.readFile(filePath);
+      const fileStats = await fs.stat(filePath);
+
+      const metadata = {
+        filename: path.basename(filePath),
+        fileSize: this.formatFileSize(fileStats.size),
+        fileSizeBytes: fileStats.size,
+        uploadedAt: new Date().toISOString(),
+        type: this.getFileType(filePath),
+        processingStatus: 'processing',
+        processingNotes: 'Gelişmiş dosya analizi yapılıyor...'
+      };
+
 }
 
 export const fileProcessingService = new FileProcessingService();

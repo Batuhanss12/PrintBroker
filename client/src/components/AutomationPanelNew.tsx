@@ -83,6 +83,36 @@ interface ArrangementResponse {
   wasteArea: number;
 }
 
+// Enhanced type definitions
+interface ArrangementItem {
+  designId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  withMargins: {
+    width: number;
+    height: number;
+  };
+}
+
+interface ArrangementResult {
+  arrangements: ArrangementItem[];
+  totalArranged: number;
+  totalRequested: number;
+  efficiency: string;
+  usedArea: {
+    width: number;
+    height: number;
+  };
+}
+
+interface FileUploadResponse {
+  success: boolean;
+  message: string;
+  file?: Design;
+}
+
 export default function AutomationPanelNew() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -94,7 +124,7 @@ export default function AutomationPanelNew() {
   const [arrangements, setArrangements] = useState<Arrangement[]>([]);
   const [isArranging, setIsArranging] = useState(false);
   const [previewMode, setPreviewMode] = useState<'list' | 'grid'>('grid');
-  const [plotterSettings, setPlotterSettings] = useState<PlotterSettings>({
+  const [plotterSettingsState, setPlotterSettings] = useState<PlotterSettings>({
     sheetWidth: 330,
     sheetHeight: 480,
     marginTop: 10,
@@ -163,6 +193,22 @@ export default function AutomationPanelNew() {
 
     return { isValid: true };
   };
+
+  // Enhanced error handler
+  const handleError = useCallback((error: unknown, fallbackMessage: string): void => {
+    console.error('Operation failed:', error);
+
+    let errorMessage = fallbackMessage;
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    toast({
+      title: "Hata",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  }, [toast]);
 
   // Fetch designs query
   const { data: designs = [], isLoading: designsLoading, error: designsError, refetch } = useQuery({
@@ -357,6 +403,122 @@ export default function AutomationPanelNew() {
     },
   });
 
+  // File upload mutation
+  const uploadMutation = useMutation({
+    mutationFn: async (files: FileList): Promise<FileUploadResponse[]> => {
+      const results: FileUploadResponse[] = [];
+      setUploadProgress(0);
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        // File validation
+        if (file.size > 50 * 1024 * 1024) { // 50MB
+          throw new Error(`${file.name} dosyası çok büyük (maksimum 50MB)`);
+        }
+
+        const formData = new FormData();
+        formData.append('designs', file);
+
+        try {
+          const result = await apiRequest<FileUploadResponse>('POST', '/api/automation/plotter/upload-designs', formData);
+          results.push(result);
+
+          // Update progress
+          setUploadProgress(((i + 1) / files.length) * 100);
+        } catch (error) {
+          console.error(`File upload failed for ${file.name}:`, error);
+          throw error;
+        }
+      }
+
+      return results;
+    },
+    onSuccess: (results) => {
+      const successCount = results.filter(r => r.success).length;
+      toast({
+        title: "Yükleme Başarılı",
+        description: `${successCount} dosya başarıyla yüklendi ve analiz edildi.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['automation-designs'] });
+      setUploadProgress(0);
+    },
+    onError: (error: unknown) => {
+      handleError(error, "Dosya yükleme başarısız");
+      setUploadProgress(0);
+    },
+  });
+
+  // Auto-arrange mutation
+  const autoArrangeMutationNew = useMutation({
+    mutationFn: async (): Promise<ArrangementResult> => {
+      if (!designs || designs.length === 0) {
+        throw new Error("Dizim için en az bir tasarım gerekli");
+      }
+
+      setIsArranging(true);
+      const designIds = designs.map((d: Design) => d.id);
+
+      const result = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
+        designIds,
+        plotterSettings
+      });
+
+      return result;
+    },
+    onSuccess: (data: ArrangementResult) => {
+      console.log('Arrangement completed:', data);
+      setArrangements(data.arrangements);
+      setIsArranging(false);
+
+      toast({
+        title: "Dizim Tamamlandı",
+        description: `${data.totalArranged}/${data.totalRequested} tasarım dizildi (${data.efficiency} verimlilik)`,
+      });
+
+      // Auto-generate PDF
+      if (data.arrangements && data.arrangements.length > 0) {
+        setTimeout(() => {
+          generatePdfMutation.mutate({ 
+            plotterSettings, 
+            arrangements: data.arrangements
+          });
+        }, 1000);
+      }
+    },
+    onError: (error: unknown) => {
+      setIsArranging(false);
+      handleError(error, "Otomatik dizim başarısız");
+    },
+  });
+
+  // PDF generation mutation
+    const generatePdfMutationNew = useMutation({
+    mutationFn: async (data: { plotterSettings: PlotterSettings; arrangements: ArrangementItem[] }) => {
+      //setIsPdfGenerating(true); //TODO: check isPdfGenerating
+      return apiRequest('POST', '/api/automation/plotter/generate-pdf', data);
+    },
+    onSuccess: (response: { pdfUrl: string }) => {
+      //setIsPdfGenerating(false);  //TODO: check isPdfGenerating
+      toast({
+        title: "PDF Hazır",
+        description: "Baskı dosyanız indirilmeye başlıyor...",
+      });
+
+      // Auto-download PDF
+      const link = document.createElement('a');
+      link.href = response.pdfUrl;
+      link.download = `dizim-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+    onError: (error: unknown) => {
+      //setIsPdfGenerating(false); //TODO: check isPdfGenerating
+      handleError(error, "PDF oluşturma başarısız");
+    },
+  });
+
   // Event handlers
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -415,7 +577,7 @@ export default function AutomationPanelNew() {
 
     autoArrangeMutation.mutate({
       designIds: selectedDesigns,
-      plotterSettings
+      plotterSettings: plotterSettingsState
     });
   };
 
@@ -597,6 +759,83 @@ export default function AutomationPanelNew() {
       </div>
     );
   };
+
+    // Design preview component
+    const DesignListNew = () => {
+      if (designsLoading) {
+        return (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">Tasarımlar yükleniyor...</p>
+          </div>
+        );
+      }
+  
+      if (!designs || designs.length === 0) {
+        return (
+          <div className="text-center py-8 text-gray-500">
+            <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <p>Henüz tasarım yüklenmemiş</p>
+            <p className="text-xs mt-1">PDF, SVG, EPS dosyalarınızı yükleyin</p>
+          </div>
+        );
+      }
+  
+      return (
+        <div className="space-y-3">
+          {designs.map((design: Design) => {
+            const dimensions = design.realDimensionsMM || design.dimensions || 'Boyut analiz ediliyor...';
+            const status = design.processingStatus || 'processed';
+  
+            return (
+              <div 
+                key={design.id} 
+                className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <FileText className="w-10 h-10 text-blue-600" />
+                    {status === 'processing' && (
+                      <Clock className="w-4 h-4 text-yellow-600 absolute -top-1 -right-1" />
+                    )}
+                    {status === 'processed' && (
+                      <CheckCircle className="w-4 h-4 text-green-600 absolute -top-1 -right-1" />
+                    )}
+                    {status === 'error' && (
+                      <AlertCircle className="w-4 h-4 text-red-600 absolute -top-1 -right-1" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate max-w-[200px]" title={design.name}>
+                      {design.name}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {dimensions}
+                    </p>
+                    {design.processingNotes && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        {design.processingNotes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {design.fileType || 'PDF'}
+                  </Badge>
+                  {design.fileSize && (
+                    <Badge variant="outline" className="text-xs">
+                      {design.fileSize}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+  
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -815,7 +1054,7 @@ export default function AutomationPanelNew() {
                   <Input
                     id="sheetWidth"
                     type="number"
-                    value={plotterSettings.sheetWidth}
+                    value={plotterSettingsState.sheetWidth}
                     onChange={(e) => setPlotterSettings(prev => ({
                       ...prev,
                       sheetWidth: Number(e.target.value)
@@ -828,7 +1067,7 @@ export default function AutomationPanelNew() {
                   <Input
                     id="sheetHeight"
                     type="number"
-                    value={plotterSettings.sheetHeight}
+                    value={plotterSettingsState.sheetHeight}
                     onChange={(e) => setPlotterSettings(prev => ({
                       ...prev,
                       sheetHeight: Number(e.target.value)
@@ -844,7 +1083,7 @@ export default function AutomationPanelNew() {
                   <Input
                     id="marginTop"
                     type="number"
-                    value={plotterSettings.marginTop}
+                    value={plotterSettingsState.marginTop}
                     onChange={(e) => setPlotterSettings(prev => ({
                       ...prev,
                       marginTop: Number(e.target.value)
@@ -857,7 +1096,7 @@ export default function AutomationPanelNew() {
                   <Input
                     id="marginBottom"
                     type="number"
-                    value={plotterSettings.marginBottom}
+                    value={plotterSettingsState.marginBottom}
                     onChange={(e) => setPlotterSettings(prev => ({
                       ...prev,
                       marginBottom: Number(e.target.value)
@@ -873,7 +1112,7 @@ export default function AutomationPanelNew() {
                   <Input
                     id="horizontalSpacing"
                     type="number"
-                    value={plotterSettings.horizontalSpacing}
+                    value={plotterSettingsState.horizontalSpacing}
                     onChange={(e) => setPlotterSettings(prev => ({
                       ...prev,
                       horizontalSpacing: Number(e.target.value)
@@ -886,7 +1125,7 @@ export default function AutomationPanelNew() {
                   <Input
                     id="verticalSpacing"
                     type="number"
-                    value={plotterSettings.verticalSpacing}
+                    value={plotterSettingsState.verticalSpacing}
                     onChange={(e) => setPlotterSettings(prev => ({
                       ...prev,
                       verticalSpacing: Number(e.target.value)
