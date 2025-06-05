@@ -449,7 +449,65 @@ export default function AutomationPanelNew() {
     },
   });
 
-  // Auto-arrange mutation
+  // Tek tuş otomatik dizim mutation
+  const oneClickLayoutMutation = useMutation({
+    mutationFn: async (): Promise<ArrangementResult> => {
+      if (!designs || designs.length === 0) {
+        throw new Error("Dizim için en az bir tasarım gerekli");
+      }
+
+      setIsArranging(true);
+      const designIds = designs.map((d: Design) => d.id);
+
+      const result = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/one-click-layout', {
+        designIds,
+        sheetSettings: {
+          width: plotterSettings.sheetWidth,
+          height: plotterSettings.sheetHeight,
+          margin: plotterSettings.marginTop,
+          bleedMargin: 3
+        },
+        cuttingSettings: {
+          enabled: true,
+          markLength: 5,
+          markWidth: 0.25
+        }
+      });
+
+      return result;
+    },
+    onSuccess: (data: ArrangementResult) => {
+      console.log('🎯 Tek tuş dizim tamamlandı:', data);
+      setArrangements(data.arrangements);
+      setIsArranging(false);
+
+      toast({
+        title: "Tek Tuş Dizim Tamamlandı",
+        description: `${data.totalArranged}/${data.totalRequested} tasarım profesyonel olarak dizildi (${data.efficiency} verimlilik)`,
+      });
+
+      // PDF otomatik olarak oluşturuldu, indirme linkini göster
+      if (data.pdfPath) {
+        console.log('✅ PDF otomatik oluşturuldu, indiriliyor...');
+        // PDF indirme işlemi
+        const link = document.createElement('a');
+        link.href = `/uploads/${data.pdfPath.split('/').pop()}`;
+        link.download = `matbixx-tek-tus-dizim-${new Date().toISOString().split('T')[0]}.pdf`;
+        link.click();
+        
+        toast({
+          title: "PDF Hazır",
+          description: "Profesyonel dizim PDF'i otomatik olarak indiriliyor...",
+        });
+      }
+    },
+    onError: (error: unknown) => {
+      setIsArranging(false);
+      handleError(error, "Tek tuş dizim başarısız");
+    },
+  });
+
+  // Auto-arrange mutation (eski sistem)
   const autoArrangeMutationNew = useMutation({
     mutationFn: async (): Promise<ArrangementResult> => {
       if (!designs || designs.length === 0) {

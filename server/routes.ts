@@ -14,6 +14,7 @@ import { ideogramService } from "./ideogramApi";
 import { nodePDFGenerator } from "./pdfGeneratorJS";
 import { advancedLayoutEngine } from "./advancedLayoutEngine";
 import { professionalPDFProcessor } from "./professionalPDFProcessor";
+import { oneClickLayoutSystem } from "./oneClickLayoutSystem";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -1955,6 +1956,79 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     }
   });
 
+  // Tek tuş otomatik dizim endpoint'i
+  app.post('/api/automation/plotter/one-click-layout', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { designIds, sheetSettings, cuttingSettings } = req.body;
+
+      if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
+        return res.status(400).json({ message: "Design IDs gerekli" });
+      }
+
+      console.log('🚀 Tek tuş otomatik dizim başlatılıyor:', { designIds, sheetSettings });
+
+      // Tasarımları getir
+      const designs = await Promise.all(
+        designIds.map(async (id: string) => {
+          const file = await storage.getFileById(id);
+          return file;
+        })
+      );
+
+      const validDesigns = designs.filter(d => d && d.userId === userId);
+
+      if (validDesigns.length === 0) {
+        return res.status(400).json({ message: "Geçerli tasarım bulunamadı" });
+      }
+
+      // Tek tuş sistemiyle işle
+      const result = await oneClickLayoutSystem.processOneClickLayout(validDesigns, {
+        designIds,
+        sheetSettings: sheetSettings || {
+          width: 330,
+          height: 480,
+          margin: 10,
+          bleedMargin: 3
+        },
+        cuttingSettings: cuttingSettings || {
+          enabled: true,
+          markLength: 5,
+          markWidth: 0.25
+        }
+      });
+
+      if (result.success) {
+        console.log(`✅ Tek tuş dizim başarılı: ${result.arrangements.length} tasarım, ${result.efficiency}% verimlilik`);
+        res.json({
+          success: true,
+          arrangements: result.arrangements,
+          pdfPath: result.pdfPath,
+          efficiency: `${result.efficiency}%`,
+          statistics: result.statistics,
+          message: result.message
+        });
+      } else {
+        console.error('❌ Tek tuş dizim başarısız:', result.message);
+        res.status(500).json({
+          success: false,
+          message: result.message,
+          statistics: result.statistics
+        });
+      }
+
+    } catch (error) {
+      console.error("❌ Tek tuş dizim hatası:", error);
+      res.status(500).json({ message: "Tek tuş dizim başarısız: " + (error as Error).message });
+    }
+  });
+
   // Auto-arrange endpoint for plotter automation
   app.post('/api/automation/plotter/auto-arrange', isAuthenticated, async (req: any, res) => {
     try {
@@ -2050,16 +2124,15 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
       const result = {
         arrangements,
-        totalArranged: arranged,
+        totalArranged: arrangements.length,
         totalRequested: designs.length,
-        efficiency: `${efficiency}%`,
+        efficiency: `${layoutResult.efficiency}%`,
         sheetDimensions: { width: sheetWidth, height: sheetHeight },
-        wasteArea: sheetArea - totalDesignArea,
-        debug: {
-          designsProcessed: designs.length,
-          arrangementsCreated: arrangements.length,
-          totalDesignArea,
-          sheetArea
+        wasteArea: layoutResult.statistics.wasteArea,
+        statistics: {
+          rotatedItems: layoutResult.statistics.rotatedItems,
+          utilizationRate: layoutResult.statistics.utilizationRate,
+          advancedAlgorithm: true
         }
       };
 

@@ -61,7 +61,7 @@ export class FileProcessingService {
       console.error('File processing error:', error);
       return {
         dimensions: 'Unknown',
-        processingNotes: 'Processing failed: ' + error.message,
+        processingNotes: 'Processing failed: ' + (error as Error).message,
         contentPreserved: false
       };
     }
