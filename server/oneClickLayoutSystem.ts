@@ -1,6 +1,7 @@
 import { advancedLayoutEngine } from "./advancedLayoutEngine";
 import { fileProcessingService } from "./fileProcessingService";
 import { nodePDFGenerator } from "./pdfGeneratorJS";
+import { aiLayoutOptimizer } from "./aiLayoutOptimizer";
 
 interface OneClickLayoutRequest {
   designIds: string[];
@@ -61,34 +62,65 @@ export class OneClickLayoutSystem {
         };
       }
 
-      // 2. Gelişmiş otomatik yerleştirme
-      const layoutResult = advancedLayoutEngine.optimizeLayout(
-        processedDesigns.map(d => ({
-          id: d.id,
-          width: d.width + (settings.sheetSettings.bleedMargin * 2), // Kesim payı ekle
-          height: d.height + (settings.sheetSettings.bleedMargin * 2),
-          name: d.name,
-          canRotate: true
-        })),
-        {
-          sheetWidth: settings.sheetSettings.width,
-          sheetHeight: settings.sheetSettings.height,
-          margin: settings.sheetSettings.margin,
-          spacing: 2,
-          allowRotation: true,
-          optimizeForWaste: true
-        }
-      );
+      // 2. AI destekli akıllı yerleştirme
+      let layoutResult;
+      let aiRecommendations: string[] = [];
+
+      if (aiLayoutOptimizer.isAvailable()) {
+        console.log('🤖 AI destekli dizim kullanılıyor...');
+        const aiResult = await aiLayoutOptimizer.optimizeLayoutWithAI(
+          processedDesigns,
+          {
+            width: settings.sheetSettings.width,
+            height: settings.sheetSettings.height,
+            margin: settings.sheetSettings.margin,
+            spacing: settings.sheetSettings.bleedMargin
+          }
+        );
+        
+        layoutResult = {
+          arrangements: aiResult.arrangements,
+          efficiency: aiResult.efficiency,
+          statistics: {
+            rotatedItems: aiResult.arrangements.filter(a => a.rotation === 90).length,
+            wasteArea: 0,
+            utilizationRate: Math.round((aiResult.arrangements.length / processedDesigns.length) * 100)
+          }
+        };
+        
+        aiRecommendations = aiResult.aiRecommendations;
+        console.log('🎯 AI Önerileri:', aiRecommendations);
+        
+      } else {
+        console.log('🔧 Standart dizim kullanılıyor...');
+        layoutResult = advancedLayoutEngine.optimizeLayout(
+          processedDesigns.map(d => ({
+            id: d.id,
+            width: d.width + (settings.sheetSettings.bleedMargin * 2),
+            height: d.height + (settings.sheetSettings.bleedMargin * 2),
+            name: d.name,
+            canRotate: true
+          })),
+          {
+            sheetWidth: settings.sheetSettings.width,
+            sheetHeight: settings.sheetSettings.height,
+            margin: settings.sheetSettings.margin,
+            spacing: 2,
+            allowRotation: true,
+            optimizeForWaste: true
+          }
+        );
+      }
 
       // 3. Düzenleme formatını dönüştür
       const arrangements = layoutResult.arrangements.map(item => ({
-        designId: item.id,
+        designId: item.id || item.designId,
         x: item.x,
         y: item.y,
         width: item.width,
         height: item.height,
         rotation: item.rotation,
-        designName: item.rotation === 90 ? `${item.name} (döndürülmüş)` : item.name,
+        designName: item.rotation === 90 ? `${item.name || item.designName} (döndürülmüş)` : (item.name || item.designName),
         withCuttingMarks: settings.cuttingSettings.enabled,
         withMargins: {
           width: item.width,
@@ -138,7 +170,8 @@ export class OneClickLayoutSystem {
         pdfPath,
         efficiency: layoutResult.efficiency,
         statistics,
-        message: `${arrangements.length} tasarım başarıyla dizildi`
+        message: `${arrangements.length} tasarım başarıyla dizildi`,
+        aiRecommendations: aiRecommendations.length > 0 ? aiRecommendations : undefined
       };
 
     } catch (error) {

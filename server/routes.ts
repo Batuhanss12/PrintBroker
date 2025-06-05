@@ -1438,12 +1438,12 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       const designFile = designFilesWithPaths.find(d => d.id === item.designId);
       if (designFile && designFile.filePath) {
         console.log(`🔧 Preparing file for embedding: ${designFile.name}`);
-        
+
         const preparation = await fileProcessingService.prepareFileForEmbedding(
           designFile.filePath, 
           designFile.mimeType || 'application/pdf'
         );
-        
+
         if (preparation.success) {
           preparedFiles.push({
             ...designFile,
@@ -1734,7 +1734,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     const efficiency = pageArea > 0 ? (totalArrangementArea / pageArea) * 100 : 0;
     const wastePercentage = 100 - efficiency;
 
-    doc.fontSize(7)
+    docfontSize(7)
        .fillColor('#000000')
        .font('Helvetica')
        .text('LAYOUT STATISTICS', 50, pageHeightPt - 120);
@@ -2114,7 +2114,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       }));
 
       console.log(`🎯 Advanced layout: ${arrangements.length}/${designs.length} designs, ${layoutResult.efficiency}% efficiency`);
-      
+
 
 
       // Calculate efficiency
@@ -2122,22 +2122,39 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       const sheetArea = sheetWidth * sheetHeight;
       const efficiency = sheetArea > 0 ? Math.round((totalDesignArea / sheetArea) * 100) : 0;
 
-      const result = {
+      // AI destekli dizim dene
+      let aiRecommendations: string[] = [];
+      if (require('./aiLayoutOptimizer').aiLayoutOptimizer.isAvailable()) {
+        try {
+          const aiResult = await require('./aiLayoutOptimizer').aiLayoutOptimizer.optimizeLayoutWithAI(
+            designs,
+            { width: sheetWidth, height: sheetHeight, margin, spacing }
+          );
+
+          if (aiResult.efficiency > layoutResult.efficiency) {
+            console.log('🤖 AI daha iyi sonuç buldu, kullanılıyor...');
+            arrangements.splice(0, arrangements.length, ...aiResult.arrangements);
+            layoutResult.efficiency = aiResult.efficiency;
+            aiRecommendations = aiResult.aiRecommendations;
+          }
+        } catch (aiError) {
+          console.log('⚠️ AI optimizasyonu başarısız, standart sonuç kullanılıyor');
+        }
+      }
+
+      res.json({
+        success: true,
         arrangements,
         totalArranged: arrangements.length,
-        totalRequested: designs.length,
-        efficiency: `${layoutResult.efficiency}%`,
-        sheetDimensions: { width: sheetWidth, height: sheetHeight },
-        wasteArea: layoutResult.statistics.wasteArea,
+        efficiency: Math.round(layoutResult.efficiency * 100) / 100,
         statistics: {
+          totalDesigns: designs.length,
+          arrangedDesigns: arrangements.length,
           rotatedItems: layoutResult.statistics.rotatedItems,
-          utilizationRate: layoutResult.statistics.utilizationRate,
-          advancedAlgorithm: true
-        }
-      };
-
-      console.log('🎯 Enhanced auto-arrangement completed:', result);
-      res.json(result);
+          wastePercentage: Math.round((100 - layoutResult.efficiency) * 100) / 100
+        },
+        aiRecommendations: aiRecommendations.length > 0 ? aiRecommendations : undefined
+      });
 
     } catch (error) {
       console.error("❌ Auto-arrange error:", error);
