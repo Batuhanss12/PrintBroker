@@ -415,7 +415,7 @@ export default function PrinterDashboard() {
           </TabsContent>
 
           <TabsContent value="automation">
-            <AutomationPanelNew />
+            <AutomationPanelFixed />
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">
