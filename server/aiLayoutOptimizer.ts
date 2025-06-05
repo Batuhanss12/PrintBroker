@@ -108,6 +108,58 @@ JSON formatında döndür: { "analyses": [{"index": 0, "category": "...", "prior
     }
   }
 
+  // Akıllı otomatik dizim - tasarımları ben analiz edip optimal yerleştirme öneriyorum
+  async intelligentAutoLayout(designs: any[]): Promise<{
+    success: boolean;
+    arrangements: any[];
+    aiInsights: string[];
+    optimizationRecommendations: string[];
+    sheetRecommendation: { width: number; height: number; reasoning: string };
+  }> {
+    console.log('🤖 AI: Tasarımlarınızı analiz ediyorum ve optimal dizim oluşturuyorum...');
+
+    try {
+      // 1. Tasarımları AI ile derinlemesine analiz et
+      const analyzedDesigns = await this.analyzeDesignsWithAI(designs);
+      
+      // 2. Optimal sayfa boyutunu belirle
+      const optimalSheet = this.suggestOptimalSheetSize(analyzedDesigns);
+      
+      // 3. AI destekli dizim stratejisi oluştur
+      const layoutResult = await this.optimizeLayoutWithAI(analyzedDesigns, {
+        width: optimalSheet.width,
+        height: optimalSheet.height,
+        margin: 10,
+        spacing: 3
+      });
+
+      // 4. AI görüşlerini ve önerilerini oluştur
+      const aiInsights = await this.generateSmartInsights(analyzedDesigns, layoutResult);
+      
+      return {
+        success: true,
+        arrangements: layoutResult.arrangements,
+        aiInsights,
+        optimizationRecommendations: layoutResult.aiRecommendations,
+        sheetRecommendation: {
+          width: optimalSheet.width,
+          height: optimalSheet.height,
+          reasoning: `${analyzedDesigns.length} tasarım için en verimli boyut`
+        }
+      };
+
+    } catch (error) {
+      console.error('🤖 AI analiz hatası:', error);
+      return {
+        success: false,
+        arrangements: [],
+        aiInsights: ['AI analizi başarısız oldu, manuel dizim öneriliyor'],
+        optimizationRecommendations: [],
+        sheetRecommendation: { width: 330, height: 480, reasoning: 'Standart A3 boyutu' }
+      };
+    }
+  }
+
   // AI ile optimize edilmiş dizim
   async optimizeLayoutWithAI(
     designs: any[],
@@ -340,6 +392,49 @@ JSON formatında döndür: { "analyses": [{"index": 0, "category": "...", "prior
     }).length * 5;
 
     return Math.min(100, score + rotationBonus);
+  }
+
+  // Akıllı görüşler oluştur
+  private async generateSmartInsights(designs: DesignAnalysis[], layout: any): Promise<string[]> {
+    const insights: string[] = [];
+
+    // Tasarım çeşitliliği analizi
+    const categories = [...new Set(designs.map(d => d.category))];
+    if (categories.length > 1) {
+      insights.push(`🎨 ${categories.length} farklı tasarım kategorisi tespit ettim: ${categories.join(', ')}`);
+    }
+
+    // Boyut uyumu analizi
+    const sizes = designs.map(d => d.width * d.height);
+    const avgSize = sizes.reduce((a, b) => a + b, 0) / sizes.length;
+    const largeSizes = sizes.filter(s => s > avgSize * 1.5).length;
+    
+    if (largeSizes > 0) {
+      insights.push(`📏 ${largeSizes} büyük tasarım tespit ettim, bunları öncelikli yerleştirdim`);
+    }
+
+    // Kalite analizi
+    const highQuality = designs.filter(d => d.priority === 'high').length;
+    if (highQuality > 0) {
+      insights.push(`⭐ ${highQuality} yüksek kaliteli tasarım için özel konumlandırma uyguladım`);
+    }
+
+    // Verimlilik yorumu
+    if (layout.efficiency > 85) {
+      insights.push(`🎯 Mükemmel! %${layout.efficiency.toFixed(1)} alan verimliliği elde ettim`);
+    } else if (layout.efficiency > 70) {
+      insights.push(`✅ İyi sonuç: %${layout.efficiency.toFixed(1)} alan verimliliği`);
+    } else {
+      insights.push(`💡 Daha büyük sayfa boyutu ile verimliliği artırabiliriz`);
+    }
+
+    // Döndürme optimizasyonu
+    const rotatedCount = layout.arrangements.filter((a: any) => a.rotation === 90).length;
+    if (rotatedCount > 0) {
+      insights.push(`🔄 ${rotatedCount} tasarımı optimal yerleşim için döndürdüm`);
+    }
+
+    return insights;
   }
 }
 

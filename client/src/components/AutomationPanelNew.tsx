@@ -26,7 +26,8 @@ import {
   Layout,
   Target,
   Sparkles,
-  Clock
+  Clock,
+  Brain
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
@@ -905,6 +906,132 @@ export default function AutomationPanelNew() {
       );
     };
 
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [layoutResult, setLayoutResult] = useState<any>(null);
+  const [settings, setSettings] = useState({
+    sheetWidth: 330,
+    sheetHeight: 480,
+    margin: 10,
+    bleedMargin: 3,
+    cuttingMarks: true
+  });
+
+  const handleAIAutoLayout = async () => {
+    if (selectedDesigns.length === 0) return;
+
+    setIsProcessing(true);
+    setLayoutResult(null);
+
+    try {
+      console.log('🤖 AI akıllı dizim başlatılıyor...');
+
+      const response = await fetch('/api/ai-auto-layout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designIds: selectedDesigns
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('🤖 AI akıllı dizim tamamlandı:', result);
+
+        // AI önerilerini göster
+        if (result.aiInsights && result.aiInsights.length > 0) {
+          toast({
+            title: "🤖 AI Analizi Tamamlandı",
+            description: result.aiInsights.join(' • '),
+            duration: 5000
+          });
+        }
+
+        setLayoutResult({
+          ...result,
+          efficiency: result.statistics.efficiency
+        });
+
+        // PDF zaten oluşturulmuş, sadece download linkini göster
+        if (result.pdfPath) {
+          console.log('✅ AI PDF hazır:', result.pdfPath);
+        }
+      } else {
+        toast({
+          title: "AI Analizi Başarısız",
+          description: result.message || "AI destekli dizim başarısız",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('AI dizim hatası:', error);
+      toast({
+        title: "Hata",
+        description: "AI dizim işlemi başarısız oldu",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleOneClickLayout = async () => {
+    if (selectedDesigns.length === 0) return;
+
+    setIsProcessing(true);
+    setLayoutResult(null);
+
+    try {
+      console.log('🎯 Tek tuş dizim başlatılıyor...');
+
+      const response = await fetch('/api/one-click-layout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designIds: selectedDesigns,
+          sheetSettings: {
+            width: settings.sheetWidth,
+            height: settings.sheetHeight,
+            margin: settings.margin,
+            bleedMargin: settings.bleedMargin
+          },
+          cuttingSettings: {
+            enabled: settings.cuttingMarks,
+            markLength: 5,
+            markWidth: 0.5
+          }
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('🎯 Tek tuş dizim tamamlandı:', result);
+        setLayoutResult(result);
+
+        // Auto-generate PDF
+        if (result.arrangements && result.arrangements.length > 0) {
+          console.log('🔄 Auto-generating PDF after arrangement...');
+          await handleGeneratePDF();
+        }
+      } else {
+        toast({
+          title: "Dizim Başarısız",
+          description: result.message || "Otomatik dizim sırasında hata oluştu",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Tek tuş dizim hatası:', error);
+      toast({
+        title: "Hata",
+        description: "Dizim işlemi başarısız oldu",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -1068,24 +1195,42 @@ export default function AutomationPanelNew() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <Button
-                  onClick={() => oneClickLayoutMutation.mutate()}
-                  disabled={selectedDesigns.length === 0 || isArranging}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
-                  size="lg"
-                >
-                  {isArranging ? (
-                    <>
-                      <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                      Profesyonel sistem çalışıyor...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5 mr-2" />
-                      Tek Tuş Otomatik Dizim
-                    </>
-                  )}
-                </Button>
+            <Button 
+              onClick={handleAIAutoLayout}
+              disabled={selectedDesigns.length === 0 || isProcessing}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  AI Analiz Ediyor...
+                </>
+              ) : (
+                <>
+                  <Brain className="h-5 w-5 mr-2" />
+                  🤖 AI Akıllı Dizim
+                </>
+              )}
+            </Button>
+
+            <Button 
+              onClick={handleOneClickLayout}
+              disabled={selectedDesigns.length === 0 || isProcessing}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              variant="outline"
+            >
+              {isProcessing ? (
+                <>
+                  <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                  İşleniyor...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-5 w-5 mr-2" />
+                  Manuel Ayarlı Dizilim
+                </>
+              )}
+            </Button>
 
                 <div className="text-xs text-purple-600 bg-purple-50 p-3 rounded-lg">
                   <div className="font-medium mb-1">Bu sistem otomatik olarak:</div>

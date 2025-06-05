@@ -2162,6 +2162,92 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     }
   });
 
+  // AI Destekli Akıllı Otomatik Dizim
+  app.post('/api/ai-auto-layout', async (req, res) => {
+    try {
+      console.log('🤖 AI destekli akıllı dizim başlatılıyor...');
+      
+      const { designIds } = req.body;
+      
+      if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
+        return res.status(400).json({ message: 'Tasarım ID\'leri gerekli' });
+      }
+
+      // Tasarımları veritabanından al
+      const designs = await db.select().from(userDesigns).where(
+        designIds.map(id => eq(userDesigns.id, id)).reduce((acc, curr) => or(acc, curr))
+      );
+
+      if (designs.length === 0) {
+        return res.status(404).json({ message: 'Tasarım bulunamadı' });
+      }
+
+      console.log(`🔍 ${designs.length} tasarım AI analizi için hazırlanıyor...`);
+
+      // AI ile akıllı analiz ve dizim
+      const aiResult = await require('./aiLayoutOptimizer').aiLayoutOptimizer.intelligentAutoLayout(designs);
+
+      if (!aiResult.success) {
+        return res.status(500).json({ 
+          message: 'AI analizi başarısız',
+          suggestions: aiResult.aiInsights 
+        });
+      }
+
+      // PDF otomatik oluştur
+      let pdfPath;
+      try {
+        const pdfResult = await require('./pdfGeneratorJS').nodePDFGenerator.generateArrangementPDF({
+          plotterSettings: {
+            sheetWidth: aiResult.sheetRecommendation.width,
+            sheetHeight: aiResult.sheetRecommendation.height,
+            marginTop: 10,
+            marginBottom: 10,
+            marginLeft: 10,
+            marginRight: 10,
+            labelWidth: 50,
+            labelHeight: 30,
+            horizontalSpacing: 3,
+            verticalSpacing: 3
+          },
+          arrangements: aiResult.arrangements
+        });
+
+        if (pdfResult.success) {
+          pdfPath = pdfResult.filePath;
+        }
+      } catch (pdfError) {
+        console.warn('PDF oluşturma hatası:', pdfError);
+      }
+
+      console.log('🎯 AI akıllı dizim tamamlandı!');
+
+      res.json({
+        success: true,
+        arrangements: aiResult.arrangements,
+        aiInsights: aiResult.aiInsights,
+        recommendations: aiResult.optimizationRecommendations,
+        sheetSettings: aiResult.sheetRecommendation,
+        pdfPath,
+        statistics: {
+          totalDesigns: designs.length,
+          arrangedDesigns: aiResult.arrangements.length,
+          efficiency: aiResult.arrangements.length > 0 ? 
+            Math.round((aiResult.arrangements.reduce((sum: number, arr: any) => 
+              sum + (arr.width * arr.height), 0) / 
+              (aiResult.sheetRecommendation.width * aiResult.sheetRecommendation.height)) * 100) : 0
+        },
+        message: '🤖 AI tarafından optimize edilmiş dizim hazır!'
+      });
+
+    } catch (error) {
+      console.error('❌ AI akıllı dizim hatası:', error);
+      res.status(500).json({ 
+        message: 'AI dizim başarısız: ' + (error as Error).message 
+      });
+    }
+  });
+
   // Extended Plotter Data Service API Endpoints
 
   // Plotter models endpoint
