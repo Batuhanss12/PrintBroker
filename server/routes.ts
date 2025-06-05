@@ -1487,7 +1487,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
     updateProgress('PDF Document Initialized');
 
-    const { PDFDocument } = await import('pdfkit');
+    const PDFDocument = (await import('pdfkit')).default;
     const fs = await import('fs');
     const mmToPoints = 2.8346456693; // 1mm = 2.8346456693 points
     const pageWidthPt = pageWidthMM * mmToPoints;
@@ -1967,24 +1967,26 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
           }
         }
 
-        // Special handling for full-page designs
-        const isFullPageDesign = (width >= sheetWidth * 0.9 && height >= sheetHeight * 0.9);
+        // Special handling for full-page designs (including exact matches)
+        const isFullPageDesign = (width >= sheetWidth * 0.85 && height >= sheetHeight * 0.85) || 
+                                 (width === sheetWidth && height === sheetHeight);
         
         if (isFullPageDesign) {
-          console.log(`🎯 Full-page design detected: ${width}x${height}mm`);
-          // For full-page designs, treat as single layout
+          console.log(`🎯 Full-page design detected: ${width}x${height}mm (sheet: ${sheetWidth}x${sheetHeight}mm)`);
+          // For full-page designs, place with minimal margins
+          const fullPageMargin = 2; // Very small margin for full-page designs
           arrangements.push({
             designId: design.id,
-            x: 0,
-            y: 0,
-            width: sheetWidth,
-            height: sheetHeight,
+            x: fullPageMargin,
+            y: fullPageMargin,
+            width: sheetWidth - (fullPageMargin * 2),
+            height: sheetHeight - (fullPageMargin * 2),
             rotation: 0,
             designName: design.originalName,
             isFullPage: true
           });
           arranged++;
-          console.log(`✅ Full-page design arranged`);
+          console.log(`✅ Full-page design arranged with minimal margins`);
           break; // Only one full-page design per sheet
         }
 

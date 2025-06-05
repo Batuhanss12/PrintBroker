@@ -113,7 +113,7 @@ export const files = pgTable("files", {
   uploadedBy: varchar("uploaded_by").notNull().references(() => users.id),
   quoteId: uuid("quote_id").references(() => quotes.id),
   fileType: varchar("file_type", { enum: ["design", "document", "image", "proof", "other"] }).notNull().default("other"),
-  status: varchar("status", { enum: ["uploading", "processing", "ready", "error"] }).notNull().default("uploading"),
+  status: varchar("status", { enum: ["uploading", "processing", "ready", "error", "warning"] }).notNull().default("uploading"),
   thumbnailPath: varchar("thumbnail_path"),
   dimensions: varchar("dimensions"), // width x height for images
   realDimensionsMM: varchar("real_dimensions_mm"), // Real dimensions in mm

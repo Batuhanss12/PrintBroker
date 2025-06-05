@@ -1,3 +1,10 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
 export const useAuth = () => {
   const queryClient = useQueryClient();
 

@@ -14,6 +14,7 @@ interface FileMetadata {
   pageCount?: number;
   realDimensionsMM?: string;
   processingNotes?: string;
+  contentPreserved?: boolean;
 }
 
 export class FileProcessingService {
