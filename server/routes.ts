@@ -19,6 +19,7 @@ import { aiDesignAnalyzer } from "./aiDesignAnalyzer";
 import { professionalDesignAnalyzer } from "./professionalDesignAnalyzer";
 import { pythonAnalyzerService } from "./pythonAnalyzerService";
 import { multiMethodAnalyzer } from "./multiMethodAnalyzer";
+import { operationalLayoutSystem } from "./operationalLayoutSystem";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
