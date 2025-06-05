@@ -119,7 +119,7 @@ export default function AutomationPanelNew() {
     if (data instanceof FormData) {
       options.body = data;
     } else if (data) {
-      options.headers['Content-Type'] = 'application/json';
+      (options.headers as Record<string, string>)['Content-Type'] = 'application/json';
       options.body = JSON.stringify(data);
     }
 

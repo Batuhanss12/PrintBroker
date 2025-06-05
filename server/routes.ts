@@ -1929,8 +1929,8 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       // Enhanced auto-arrangement algorithm with intelligent design handling
       const sheetWidth = plotterSettings?.sheetWidth || 330; // mm
       const sheetHeight = plotterSettings?.sheetHeight || 480; // mm
-      const margin = plotterSettings?.margin || 5; // mm
-      const spacing = plotterSettings?.spacing || 2; // mm
+      const margin = plotterSettings?.margin || 3; // Reduced margin for better efficiency
+      const spacing = plotterSettings?.spacing || 1; // Reduced spacing for better packing
 
       const arrangements = [];
       let currentX = margin;
@@ -2012,8 +2012,11 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
         console.log(`📏 Final dimensions for arrangement: ${width}x${height}mm`);
 
-        // Check if design fits in current position
-        if (currentX + width + margin <= sheetWidth && currentY + height + margin <= sheetHeight) {
+        // Improved packing algorithm - try multiple orientations and positions
+        let placed = false;
+        
+        // Try normal orientation first
+        if (!placed && currentX + width + margin <= sheetWidth && currentY + height + margin <= sheetHeight) {
           arrangements.push({
             designId: design.id,
             x: currentX,
@@ -2027,15 +2030,38 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
           currentX += width + spacing;
           rowHeight = Math.max(rowHeight, height);
           arranged++;
+          placed = true;
 
           console.log(`✅ Arranged design at (${currentX - width - spacing}, ${currentY})`);
-        } else {
-          // Try next row
+        }
+        
+        // Try rotated orientation if normal doesn't fit
+        if (!placed && currentX + height + margin <= sheetWidth && currentY + width + margin <= sheetHeight) {
+          arrangements.push({
+            designId: design.id,
+            x: currentX,
+            y: currentY,
+            width: height, // Swapped for rotation
+            height: width, // Swapped for rotation
+            rotation: 90,
+            designName: design.originalName + " (döndürülmüş)"
+          });
+
+          currentX += height + spacing;
+          rowHeight = Math.max(rowHeight, width);
+          arranged++;
+          placed = true;
+
+          console.log(`✅ Arranged rotated design at (${currentX - height - spacing}, ${currentY})`);
+        }
+
+        // Try next row if current row doesn't work
+        if (!placed) {
           currentX = margin;
           currentY += rowHeight + spacing;
           rowHeight = 0;
 
-          // Check if design fits in new row
+          // Try normal orientation in new row
           if (currentY + height + margin <= sheetHeight && currentX + width + margin <= sheetWidth) {
             arrangements.push({
               designId: design.id,
@@ -2050,32 +2076,33 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
             currentX += width + spacing;
             rowHeight = height;
             arranged++;
+            placed = true;
 
             console.log(`✅ Arranged design in new row at (${currentX - width - spacing}, ${currentY})`);
-          } else {
-            console.log(`⚠️ Design doesn't fit in remaining space: ${width}x${height}mm`);
-            
-            // For designs that don't fit, try to create a separate small version
-            if (width > 100 || height > 100) {
-              const smallWidth = Math.min(width / 2, 50);
-              const smallHeight = Math.min(height / 2, 30);
-              
-              if (currentX + smallWidth + margin <= sheetWidth && currentY + smallHeight + margin <= sheetHeight) {
-                arrangements.push({
-                  designId: design.id,
-                  x: currentX,
-                  y: currentY,
-                  width: smallWidth,
-                  height: smallHeight,
-                  rotation: 0,
-                  designName: design.originalName + " (küçük)",
-                  isScaled: true
-                });
-                arranged++;
-                console.log(`✅ Added scaled-down version: ${smallWidth}x${smallHeight}mm`);
-              }
-            }
           }
+          // Try rotated in new row
+          else if (currentY + width + margin <= sheetHeight && currentX + height + margin <= sheetWidth) {
+            arrangements.push({
+              designId: design.id,
+              x: currentX,
+              y: currentY,
+              width: height,
+              height: width,
+              rotation: 90,
+              designName: design.originalName + " (döndürülmüş)"
+            });
+
+            currentX += height + spacing;
+            rowHeight = width;
+            arranged++;
+            placed = true;
+
+            console.log(`✅ Arranged rotated design in new row at (${currentX - height - spacing}, ${currentY})`);
+          }
+        }
+
+        if (!placed) {
+          console.log(`❌ Design doesn't fit anywhere: ${width}x${height}mm`);
         }
       }
 
