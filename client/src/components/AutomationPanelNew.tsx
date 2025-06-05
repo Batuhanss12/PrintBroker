@@ -92,7 +92,7 @@ export default function AutomationPanelNew() {
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [arrangements, setArrangements] = useState<Arrangement[]>([]);
-  const [isArranging, setIsArranging] = useState(false);
+  const [isArranging, setIsArranging] = useState(isArranging);
   const [previewMode, setPreviewMode] = useState<'list' | 'grid'>('grid');
   const [plotterSettings, setPlotterSettings] = useState<PlotterSettings>({
     sheetWidth: 330,
@@ -455,6 +455,21 @@ export default function AutomationPanelNew() {
         </div>
       );
     }
+
+    const parseDimensions = (dimensionStr: string | undefined): { width: number; height: number } => {
+          if (!dimensionStr || typeof dimensionStr !== 'string') return { width: 100, height: 100 };
+
+          const parts = dimensionStr.split('x');
+          if (parts.length !== 2) return { width: 100, height: 100 };
+
+          const width = parseFloat(parts[0]);
+          const height = parseFloat(parts[1]);
+
+          return { 
+            width: isNaN(width) ? 100 : width, 
+            height: isNaN(height) ? 100 : height 
+          };
+        };
 
     return (
       <div className={`grid gap-4 ${previewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'}`}>
