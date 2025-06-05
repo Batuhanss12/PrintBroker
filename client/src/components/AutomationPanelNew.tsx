@@ -461,12 +461,12 @@ export default function AutomationPanelNew() {
       setIsArranging(true);
       const designIds = designs.map((d: Design) => d.id);
 
-      const result = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/one-click-layout', {
+      const result = await apiRequest('POST', '/api/automation/plotter/one-click-layout', {
         designIds,
         sheetSettings: {
-          width: plotterSettings.sheetWidth,
-          height: plotterSettings.sheetHeight,
-          margin: plotterSettings.marginTop,
+          width: plotterSettingsState.sheetWidth,
+          height: plotterSettingsState.sheetHeight,
+          margin: plotterSettingsState.marginTop,
           bleedMargin: 3
         },
         cuttingSettings: {
@@ -519,9 +519,9 @@ export default function AutomationPanelNew() {
       setIsArranging(true);
       const designIds = designs.map((d: Design) => d.id);
 
-      const result = await apiRequest<ArrangementResult>('POST', '/api/automation/plotter/auto-arrange', {
+      const result = await apiRequest('POST', '/api/automation/plotter/auto-arrange', {
         designIds,
-        plotterSettings
+        plotterSettings: plotterSettingsState
       });
 
       return result;
@@ -539,8 +539,8 @@ export default function AutomationPanelNew() {
       // Auto-generate PDF
       if (data.arrangements && data.arrangements.length > 0) {
         setTimeout(() => {
-          generatePdfMutation.mutate({ 
-            plotterSettings, 
+          generatePDFMutation.mutate({ 
+            plotterSettings: plotterSettingsState, 
             arrangements: data.arrangements
           });
         }, 1000);

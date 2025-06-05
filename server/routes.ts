@@ -1982,7 +1982,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
         })
       );
 
-      const validDesigns = designs.filter(d => d && d.userId === userId);
+      const validDesigns = designs.filter(d => d && d.uploadedBy === userId);
 
       if (validDesigns.length === 0) {
         return res.status(400).json({ message: "Geçerli tasarım bulunamadı" });
