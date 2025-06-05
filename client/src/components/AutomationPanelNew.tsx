@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -125,7 +124,7 @@ export default function AutomationPanelNew() {
     }
 
     const response = await fetch(url, options);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Network error' }));
       throw new Error(errorData.message || `HTTP ${response.status}`);
@@ -144,7 +143,7 @@ export default function AutomationPanelNew() {
       'application/eps',
       'image/eps'
     ];
-    
+
     const allowedExtensions = ['.pdf', '.svg', '.ai', '.eps'];
     const fileExtension = file.name.toLowerCase().split('.').pop();
 
@@ -178,7 +177,7 @@ export default function AutomationPanelNew() {
   const uploadDesignsMutation = useMutation({
     mutationFn: async (formData: FormData): Promise<{ designs: Design[] }> => {
       setUploadProgress(0);
-      
+
       // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
@@ -188,7 +187,7 @@ export default function AutomationPanelNew() {
         const result = await apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
         clearInterval(progressInterval);
         setUploadProgress(100);
-        
+
         setTimeout(() => setUploadProgress(0), 1000);
         return result;
       } catch (error) {
@@ -201,7 +200,7 @@ export default function AutomationPanelNew() {
       if (data.designs && data.designs.length > 0) {
         const newDesignIds = data.designs.map(d => d.id);
         setSelectedDesigns(prev => [...prev, ...newDesignIds]);
-        
+
         toast({
           title: "Başarılı",
           description: `${data.designs.length} dosya yüklendi ve içeriği korundu.`,
@@ -448,7 +447,9 @@ export default function AutomationPanelNew() {
                 <div className="w-full h-full flex items-center justify-center bg-purple-50">
                   <div className="text-center">
                     <div className="text-lg">🎨</div>
-                    <span className="text-xs text-purple-600">{design.name.split('.').pop()?.toUpperCase()}</span>
+                    <span className="text-xs text-purple-600">
+              {design.name && typeof design.name === 'string' ? design.name.split('.').pop()?.toUpperCase() : 'DESIGN'}
+            </span>
                   </div>
                 </div>
               )}
@@ -459,7 +460,7 @@ export default function AutomationPanelNew() {
               <h4 className="font-medium text-sm truncate" title={design.name}>
                 {design.name}
               </h4>
-              
+
               <div className="text-xs text-gray-600 space-y-1">
                 <div className="flex justify-between">
                   <span>Boyut:</span>
@@ -467,7 +468,7 @@ export default function AutomationPanelNew() {
                     {design.realDimensionsMM || design.dimensions}
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span>Dosya:</span>
                   <span>{design.fileSize}</span>
@@ -530,7 +531,7 @@ export default function AutomationPanelNew() {
                   onChange={handleFileUpload}
                   className="hidden"
                 />
-                
+
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   Vektörel Dosyalarınızı Yükleyin
@@ -538,7 +539,7 @@ export default function AutomationPanelNew() {
                 <p className="text-gray-600 mb-4">
                   PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği korunur.
                 </p>
-                
+
                 <Button 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadDesignsMutation.isPending}
@@ -582,7 +583,7 @@ export default function AutomationPanelNew() {
                   >
                     {previewMode === 'grid' ? <Eye className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -629,7 +630,7 @@ export default function AutomationPanelNew() {
                       </p>
                     </div>
                   )}
-                  
+
                   <DesignList designs={designs} />
                 </>
               )}
@@ -672,7 +673,7 @@ export default function AutomationPanelNew() {
                       <div>Dizilen: {arrangements.length}</div>
                       <div>Seçilen: {selectedDesigns.length}</div>
                     </div>
-                    
+
                     <Button
                       onClick={() => generatePDFMutation.mutate()}
                       disabled={generatePDFMutation.isPending}
