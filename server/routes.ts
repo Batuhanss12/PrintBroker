@@ -1539,7 +1539,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: file.mimetype,
             mimeType: file.mimetype,
             dimensions: metadata.dimensions || 'Unknown',
-            realDimensionsMM: metadata.realDimensionsMM || 'Boyut bilinmiyor',
+            realDimensionsMM: designAnalysisResult?.success ? 
+              `${designAnalysisResult.dimensions.widthMM}x${designAnalysisResult.dimensions.heightMM}mm` : 
+              metadata.realDimensionsMM || 'Boyut bilinmiyor',
             fileSize: `${Math.round(file.size / 1024)}KB`,
             fileType: 'design',
             contentPreserved: metadata.contentPreserved !== false,

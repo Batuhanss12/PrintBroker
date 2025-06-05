@@ -276,8 +276,12 @@ export class OneClickLayoutSystem {
       let vectorContent = false;
       let quality: 'low' | 'medium' | 'high' = 'medium';
 
-      // Dosya boyutlarını tespit et
-      if (design.realDimensionsMM && design.realDimensionsMM !== 'Boyut tespit edilemedi') {
+      // Python analiz sonuçlarından boyut tespit et
+      if (design.smartDimensions) {
+        width = design.smartDimensions.width;
+        height = design.smartDimensions.height;
+        console.log(`🐍 Python analizi: ${width}x${height}mm (${design.smartDimensions.category})`);
+      } else if (design.realDimensionsMM && design.realDimensionsMM !== 'Boyut tespit edilemedi') {
         const dimensionMatch = design.realDimensionsMM.match(/(\d+)x(\d+)mm/i);
         if (dimensionMatch) {
           width = parseInt(dimensionMatch[1]);
