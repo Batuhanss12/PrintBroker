@@ -2,6 +2,7 @@ import { advancedLayoutEngine } from "./advancedLayoutEngine";
 import { fileProcessingService } from "./fileProcessingService";
 import { nodePDFGenerator } from "./pdfGeneratorJS";
 import { aiLayoutOptimizer } from "./aiLayoutOptimizer";
+import { aiDesignAnalyzer } from "./aiDesignAnalyzer";
 
 interface OneClickLayoutRequest {
   designIds: string[];
@@ -49,8 +50,8 @@ export class OneClickLayoutSystem {
     try {
       console.log('🚀 Tek tuş otomatik dizim başlatılıyor...');
       
-      // 1. Dosyaları analiz et ve boyutları tespit et
-      const processedDesigns = await this.analyzeAndProcessDesigns(designs);
+      // 1. AI destekli dosya analizi ve boyut tespiti
+      const processedDesigns = await this.analyzeAndProcessDesignsWithAI(designs);
       
       if (processedDesigns.length === 0) {
         return {
@@ -182,6 +183,123 @@ export class OneClickLayoutSystem {
         efficiency: 0,
         statistics: { totalDesigns: 0, arrangedDesigns: 0, rotatedItems: 0, wastePercentage: 100 },
         message: 'Dizim işlemi başarısız: ' + (error as Error).message
+      };
+    }
+  }
+
+  private async analyzeAndProcessDesignsWithAI(designs: any[]): Promise<ProcessedDesign[]> {
+    const processed: ProcessedDesign[] = [];
+
+    for (const design of designs) {
+      try {
+        console.log(`🤖 AI ile tasarım analizi: ${design.name}`);
+
+        // AI analiz sonuçlarını kullan
+        let width = 50;
+        let height = 30;
+        let vectorContent = false;
+        let quality: 'low' | 'medium' | 'high' = 'medium';
+
+        // Eğer AI analizi mevcutsa kullan
+        if (design.aiAnalysis && design.aiAnalysis.success) {
+          const aiDesign = design.aiAnalysis.designs[0];
+          if (aiDesign) {
+            width = aiDesign.realWorldDimensions.widthMM;
+            height = aiDesign.realWorldDimensions.heightMM;
+            vectorContent = aiDesign.contentType !== 'complex_design';
+            quality = aiDesign.aiConfidence > 0.8 ? 'high' : 'medium';
+            console.log(`✅ AI boyutları kullanıldı: ${width}x${height}mm (güven: ${aiDesign.aiConfidence})`);
+          }
+        } else if (design.smartDimensions) {
+          // Smart dimensions'dan boyutları al
+          width = design.smartDimensions.width;
+          height = design.smartDimensions.height;
+          quality = design.smartDimensions.confidence > 0.7 ? 'high' : 'medium';
+          console.log(`📐 Akıllı boyutlar kullanıldı: ${width}x${height}mm`);
+        } else {
+          // Geleneksel analiz yap
+          const result = await this.analyzeDesignTraditional(design);
+          width = result.width;
+          height = result.height;
+          vectorContent = result.vectorContent;
+          quality = result.quality;
+        }
+
+        processed.push({
+          id: design.id,
+          name: design.name || design.originalName,
+          width,
+          height,
+          filePath: design.filePath,
+          vectorContent,
+          quality
+        });
+
+        console.log(`✅ Tasarım hazır: ${design.name} (${width}x${height}mm)`);
+
+      } catch (error) {
+        console.warn(`⚠️ Tasarım analiz hatası ${design.name}:`, error);
+        
+        // Hata durumunda varsayılan değerlerle ekle
+        processed.push({
+          id: design.id,
+          name: design.name || design.originalName,
+          width: 50,
+          height: 30,
+          filePath: design.filePath,
+          vectorContent: false,
+          quality: 'low'
+        });
+      }
+    }
+
+    return processed;
+  }
+
+  private async analyzeDesignTraditional(design: any): Promise<{
+    width: number;
+    height: number;
+    vectorContent: boolean;
+    quality: 'low' | 'medium' | 'high';
+  }> {
+    try {
+      console.log(`🔍 Geleneksel analiz: ${design.originalName || design.name}`);
+
+      // Dosya boyutlarını tespit et
+      let width = 50;
+      let height = 30;
+      let vectorContent = false;
+      let quality: 'low' | 'medium' | 'high' = 'medium';
+
+      // Dosya boyutlarını tespit et
+      if (design.realDimensionsMM && design.realDimensionsMM !== 'Boyut tespit edilemedi') {
+        const dimensionMatch = design.realDimensionsMM.match(/(\d+)x(\d+)mm/i);
+        if (dimensionMatch) {
+          width = parseInt(dimensionMatch[1]);
+          height = parseInt(dimensionMatch[2]);
+        }
+      }
+
+      // Vektör içerik analizi
+      try {
+        const vectorAnalysis = await fileProcessingService.verifyVectorContent(
+          design.filePath, 
+          design.mimeType || 'application/pdf'
+        );
+        vectorContent = vectorAnalysis.isVector;
+        quality = vectorAnalysis.quality;
+      } catch (error) {
+        console.warn('Vektör analiz hatası:', error);
+      }
+
+      return { width, height, vectorContent, quality };
+    } catch (error) {
+      console.warn('Geleneksel analiz hatası:', error);
+      return {
+        width: 50,
+        height: 30,
+        vectorContent: false,
+        quality: 'low'
       };
     }
   }

@@ -1290,7 +1290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             processingNotes: metadata.processingNotes
           });
 
-          // Create enhanced design object
+          // Create enhanced design object with AI analysis
           const designFile = {
             id: fileRecord.id,
             name: file.originalname,
@@ -1310,7 +1310,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             colorProfile: metadata.colorProfile,
             resolution: metadata.resolution,
             userId,
-            uploadedAt: new Date().toISOString()
+            uploadedAt: new Date().toISOString(),
+            // AI Analysis Results
+            aiAnalysis: aiAnalysisResult || null,
+            detectedDesigns: aiAnalysisResult?.designs || [],
+            aiProcessed: !!aiAnalysisResult?.success,
+            smartDimensions: aiAnalysisResult?.designs?.[0] ? {
+              width: aiAnalysisResult.designs[0].width,
+              height: aiAnalysisResult.designs[0].height,
+              category: aiAnalysisResult.designs[0].contentType,
+              confidence: aiAnalysisResult.designs[0].aiConfidence
+            } : null
           };
 
           uploadedDesigns.push(designFile);
