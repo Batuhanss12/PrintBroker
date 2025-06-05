@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import sharp from 'sharp';
 
 const execAsync = promisify(exec);
@@ -37,7 +37,7 @@ export class FileProcessingService {
   async processFile(filePath: string, mimeType: string): Promise<FileMetadata> {
     try {
       const contentIntegrityCheck = await this.verifyContentIntegrity(filePath, mimeType);
-      
+
       if (!contentIntegrityCheck) {
         return {
           dimensions: 'Unknown',
@@ -76,7 +76,7 @@ export class FileProcessingService {
         const buffer = fs.readFileSync(filePath);
         return buffer.toString('ascii', 0, 4) === '%PDF';
       }
-      
+
       return true;
     } catch (error) {
       return false;
@@ -92,23 +92,23 @@ export class FileProcessingService {
 
     try {
       console.log('📄 PDF integrity check:', await this.verifyContentIntegrity(filePath, 'application/pdf'));
-      
+
       const buffer = fs.readFileSync(filePath);
       const pdfString = buffer.toString('binary');
-      
+
       const mediaBoxMatch = pdfString.match(/\/MediaBox\s*\[\s*([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s*\]/);
-      
+
       if (mediaBoxMatch) {
         const [, x1, y1, x2, y2] = mediaBoxMatch.map(Number);
         const widthPt = x2 - x1;
         const heightPt = y2 - y1;
-        
+
         const widthMM = Math.round(widthPt * 0.352778);
         const heightMM = Math.round(heightPt * 0.352778);
-        
+
         metadata.realDimensionsMM = `${widthMM}x${heightMM}mm`;
         metadata.processingNotes = `PDF analyzed via MediaBox: ${widthMM}×${heightMM}mm`;
-        
+
         console.log(`✅ PDF dimensions from MediaBox: ${widthMM}×${heightMM}mm`);
       } else {
         metadata.realDimensionsMM = 'Boyut tespit edilemedi';
@@ -136,14 +136,14 @@ export class FileProcessingService {
 
     try {
       const svgContent = fs.readFileSync(filePath, 'utf8');
-      
+
       const widthMatch = svgContent.match(/width\s*=\s*["']?([^"'\s>]+)/);
       const heightMatch = svgContent.match(/height\s*=\s*["']?([^"'\s>]+)/);
-      
+
       if (widthMatch && heightMatch) {
         const width = parseFloat(widthMatch[1]);
         const height = parseFloat(heightMatch[1]);
-        
+
         if (!isNaN(width) && !isNaN(height)) {
           metadata.realDimensionsMM = `${Math.round(width)}x${Math.round(height)}mm`;
           metadata.processingNotes = `SVG dimensions: ${width}×${height}`;
@@ -175,7 +175,7 @@ export class FileProcessingService {
 
     try {
       const imageMetadata = await sharp(filePath).metadata();
-      
+
       metadata.dimensions = `${imageMetadata.width}×${imageMetadata.height}`;
       metadata.resolution = imageMetadata.density;
       metadata.hasTransparency = imageMetadata.hasAlpha;
@@ -212,7 +212,7 @@ export class FileProcessingService {
   async generateThumbnail(filePath: string, filename: string): Promise<string> {
     try {
       const thumbnailPath = path.join(this.thumbnailDir, `thumb_${filename}.png`);
-      
+
       if (filePath.toLowerCase().endsWith('.pdf')) {
         return await this.generatePDFThumbnail(filePath, filename);
       }
@@ -239,11 +239,11 @@ export class FileProcessingService {
 
     try {
       const stats = fs.statSync(filePath);
-      
+
       if (stats.size === 0) {
         errors.push('File is empty');
       }
-      
+
       if (stats.size > 100 * 1024 * 1024) {
         errors.push('File too large (>100MB)');
       }
@@ -268,7 +268,7 @@ export class FileProcessingService {
   async extractDesignsFromPDF(filePath: string): Promise<Array<{ width: number; height: number; page: number }>> {
     try {
       const metadata = await this.processPDFAdvanced(filePath);
-      
+
       if (metadata.realDimensionsMM) {
         const match = metadata.realDimensionsMM.match(/(\d+)x(\d+)mm/);
         if (match) {
@@ -279,7 +279,7 @@ export class FileProcessingService {
           }];
         }
       }
-      
+
       return [];
     } catch (error) {
       console.error('PDF design extraction error:', error);
@@ -312,7 +312,7 @@ export class FileProcessingService {
           processingRecommendation: 'Raster image processing'
         };
       }
-      
+
       return {
         hasVectorContent: false,
         contentQuality: 'low',
@@ -333,7 +333,7 @@ export class FileProcessingService {
     recommendation: string;
   }> {
     const analysis = await this.extractRealDesignContent(filePath, mimeType);
-    
+
     return {
       isVector: analysis.hasVectorContent,
       quality: analysis.contentQuality,
@@ -349,9 +349,9 @@ export class FileProcessingService {
     try {
       const processedPath = path.join(this.uploadDir, `processed_${Date.now()}`);
       fs.copyFileSync(filePath, processedPath);
-      
+
       const contentAnalysis = await this.extractRealDesignContent(filePath, mimeType);
-      
+
       return {
         processedPath,
         contentAnalysis,
@@ -364,6 +364,70 @@ export class FileProcessingService {
         contentAnalysis: { hasVectorContent: false, contentQuality: 'low', processingRecommendation: 'Standard processing' },
         preparationNotes: 'File preparation failed, using original'
       };
+    }
+  }
+
+  async processLayoutWithPython(
+    files: string[],
+    pageWidth: number = 210,
+    pageHeight: number = 297,
+    cuttingSpace: number = 5
+  ): Promise<any> {
+    try {
+      console.log('🐍 Profesyonel Python dizim motoru başlatılıyor...');
+
+      const inputData = {
+        files,
+        pageWidth,
+        pageHeight,
+        cuttingSpace,
+        outputPath: path.join(process.cwd(), 'uploads', `professional-layout-${Date.now()}.pdf`)
+      };
+
+      return new Promise((resolve, reject) => {
+        const pythonProcess = spawn('python3', [
+          path.join(process.cwd(), 'server', 'professionalLayoutEngine.py'),
+          JSON.stringify(inputData)
+        ]);
+
+        let result = '';
+        let error = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+          result += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+          error += data.toString();
+          console.error('Python stderr:', data.toString());
+        });
+
+        pythonProcess.on('close', (code) => {
+          if (code === 0) {
+            try {
+              const parsedResult = JSON.parse(result.trim());
+              console.log('✅ Profesyonel Python işlemi başarılı:', parsedResult);
+              resolve(parsedResult);
+            } catch (parseError) {
+              console.error('❌ Python sonuç parsing hatası:', parseError);
+              reject(new Error('Python sonucu parse edilemedi'));
+            }
+          } else {
+            console.error(`❌ Python process exited with code ${code}`);
+            console.error('Error output:', error);
+            reject(new Error(`Python process failed: ${error}`));
+          }
+        });
+
+        pythonProcess.on('error', (err) => {
+          console.error('❌ Python process spawn error:', err);
+          reject(err);
+        });
+      });
+
+    } catch (error) {
+      console.error('❌ processLayoutWithPython error:', error);
+      throw error;
     }
   }
 }

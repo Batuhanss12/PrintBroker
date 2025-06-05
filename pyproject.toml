@@ -1,6 +1,29 @@
+
+[tool.poetry]
+name = "professional-layout-system"
+version = "0.1.0"
+description = "Professional design layout and PDF processing system"
+authors = ["Your Name <your.email@example.com>"]
+
 [tool.poetry.dependencies]
 python = "^3.10"
 reportlab = "^4.0.9"
 pypdf2 = "^3.0.1"
 pillow = "^10.2.0"
 cairosvg = "^2.7.1"
+pymupdf = "^1.23.0"
+svglib = "^1.5.1"
+pdf2image = "^1.17.0"
+numpy = "^1.24.0"
+opencv-python = "^4.8.0"
+matplotlib = "^3.7.0"
+scipy = "^1.11.0"
+scikit-image = "^0.21.0"
+wand = "^0.6.13"
+python-magic = "^0.4.27"
+pycairo = "^1.25.0"
+pygobject = "^3.46.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

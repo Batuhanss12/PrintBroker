@@ -17,6 +17,7 @@ import { professionalPDFProcessor } from "./professionalPDFProcessor";
 import { oneClickLayoutSystem } from "./oneClickLayoutSystem";
 import { aiDesignAnalyzer } from "./aiDesignAnalyzer";
 import { professionalDesignAnalyzer } from "./professionalDesignAnalyzer";
+import { pythonAnalyzerService } from "./pythonAnalyzerService";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -1466,23 +1467,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             processingNotes: metadata.processingNotes
           });
 
-          // Profesyonel dosya analizi
+          // Python tabanlı gelişmiş dosya analizi
           let designAnalysisResult = null;
           try {
-            console.log(`🔍 Profesyonel analiz başlatılıyor: ${file.originalname}`);
-            designAnalysisResult = await professionalDesignAnalyzer.analyzeDesignFile(
+            console.log(`🐍 Python analizi başlatılıyor: ${file.originalname}`);
+            designAnalysisResult = await pythonAnalyzerService.analyzeFile(
               file.path, 
               file.originalname, 
               file.mimetype
             );
-            console.log(`✅ Profesyonel analiz tamamlandı:`, {
+            console.log(`✅ Python analizi tamamlandı:`, {
               success: designAnalysisResult.success,
               dimensions: `${designAnalysisResult.dimensions.widthMM}x${designAnalysisResult.dimensions.heightMM}mm`,
               category: designAnalysisResult.dimensions.category,
               confidence: designAnalysisResult.dimensions.confidence
             });
           } catch (analysisError) {
-            console.warn("Profesyonel analiz başarısız:", analysisError);
+            console.warn("Python analizi başarısız, fallback kullanılıyor:", analysisError);
+            // Fallback olarak JavaScript analizi
+            try {
+              designAnalysisResult = await professionalDesignAnalyzer.analyzeDesignFile(
+                file.path, 
+                file.originalname, 
+                file.mimetype
+              );
+            } catch (fallbackError) {
+              console.warn("Fallback analizi de başarısız:", fallbackError);
+            }
           }
 
           // Enhanced thumbnail generation
