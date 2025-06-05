@@ -2041,74 +2041,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
 
       console.log(`🎯 Advanced layout: ${arrangements.length}/${designs.length} designs, ${layoutResult.efficiency}% efficiency`);
       
-      let arranged = arrangements.length;
 
-      for (const design of designs) {
-        console.log('📐 Processing design:', design.originalName);
-        console.log('Raw realDimensionsMM:', JSON.stringify(design.realDimensionsMM));
-
-        // Parse dimensions more reliably with better fallbacks
-        let width = 50; // Default fallback
-        let height = 30; // Default fallback
-
-        if (design.realDimensionsMM && design.realDimensionsMM !== 'Boyut tespit edilemedi') {
-          const dimensionMatch = design.realDimensionsMM.match(/(\d+)x(\d+)mm/i);
-          if (dimensionMatch) {
-            width = parseInt(dimensionMatch[1]);
-            height = parseInt(dimensionMatch[2]);
-          }
-        } else {
-          // Try to parse from dimensions field as fallback
-          if (design.dimensions && design.dimensions !== 'Unknown') {
-            const altDimensionMatch = design.dimensions.match(/(\d+)x(\d+)/);
-            if (altDimensionMatch) {
-              width = parseInt(altDimensionMatch[1]);
-              height = parseInt(altDimensionMatch[2]);
-              console.log(`📏 Using fallback dimensions from ${design.dimensions}`);
-            }
-          }
-        }
-
-        console.log(`📏 Final dimensions for arrangement: ${width}x${height}mm`);
-
-        // Check if design fits in current row (use available width)
-        if (currentX + width > margin + availableWidth) {
-          // Move to next row
-          currentX = margin;
-          currentY += rowHeight + verticalSpacing;
-          rowHeight = 0;
-
-          console.log(`📝 Moving to next row: y=${currentY}`);
-        }
-
-        // Check if design fits in available height
-        if (currentY + height > margin + availableHeight) {
-          console.log(`⚠️ Design ${design.originalName} doesn't fit in remaining space (y: ${currentY + height} > ${margin + availableHeight})`);
-          break;
-        }
-
-        // Place the design
-        arrangements.push({
-          designId: design.id,
-          x: currentX,
-          y: currentY,
-          width: width,
-          height: height,
-          rotation: 0,
-          designName: design.originalName,
-          withMargins: {
-            width: width + (spacing * 2),
-            height: height + (verticalSpacing * 2)
-          }
-        });
-
-        console.log(`✅ Arranged design "${design.originalName}" at (${currentX}, ${currentY}) with margins`);
-
-        // Update position for next design
-        currentX += width + spacing;
-        rowHeight = Math.max(rowHeight, height);
-        arranged++;
-      }
 
       // Calculate efficiency
       const totalDesignArea = arrangements.reduce((sum, arr) => sum + (arr.width * arr.height), 0);
