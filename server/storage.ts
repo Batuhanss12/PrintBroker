@@ -53,6 +53,7 @@ export interface IStorage {
 
   // Order operations
   createOrder(order: InsertOrder): Promise<Order>;
+  getOrder(id: string): Promise<Order | undefined>;
   getOrdersByCustomer(customerId: string): Promise<Order[]>;
   getOrdersByPrinter(printerId: string): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<void>;
@@ -225,6 +226,14 @@ export class DatabaseStorage implements IStorage {
   async createOrder(order: InsertOrder): Promise<Order> {
     const [newOrder] = await db.insert(orders).values(order).returning();
     return newOrder;
+  }
+
+  async getOrder(id: string): Promise<Order | undefined> {
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, id));
+    return order;
   }
 
   async getOrdersByCustomer(customerId: string): Promise<Order[]> {
@@ -647,6 +656,13 @@ export class DatabaseStorage implements IStorage {
         status: status as any,
         updatedAt: new Date()
       })
+      .where(eq(contracts.id, id));
+  }
+
+  async updateContract(id: string, updateData: Partial<Contract>): Promise<void> {
+    await db
+      .update(contracts)
+      .set({ ...updateData, updatedAt: new Date() })
       .where(eq(contracts.id, id));
   }
 
