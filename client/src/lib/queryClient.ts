@@ -7,28 +7,34 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest<T = any>(
-  method: string,
-  url: string,
-  data?: unknown | FormData,
-): Promise<T> {
-  const isFormData = data instanceof FormData;
-  
-  const headers: Record<string, string> = {};
-  if (!isFormData && data) {
-    headers["Content-Type"] = "application/json";
+// Real API request implementation
+export const apiRequest = async (method: string, url: string, data?: any) => {
+  const options: RequestInit = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include', // Important for session cookies
+  };
+
+  if (data && method !== 'GET') {
+    options.body = JSON.stringify(data);
   }
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
-    credentials: "include",
-  });
+  try {
+    const response = await fetch(url, options);
 
-  await throwIfResNotOk(res);
-  return await res.json();
-}
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
+      throw new Error(`${response.status}: ${errorData.message || 'Request failed'}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`API Request failed: ${method} ${url}`, error);
+    throw error;
+  }
+};
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {

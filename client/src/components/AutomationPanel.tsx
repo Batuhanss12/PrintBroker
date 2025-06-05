@@ -87,17 +87,28 @@ export default function AutomationPanel() {
   // Get designs from API with better error handling
   const { data: designs = [], refetch: refetchDesigns, isLoading: designsLoading } = useQuery({
     queryKey: ['/api/automation/plotter/designs'],
-    enabled: true,
-    refetchInterval: 2000,
-    onSuccess: (data) => {
-      console.log('🎨 Designs loaded:', data?.length || 0, 'designs');
-      if (data && data.length > 0) {
-        console.log('First design sample:', data[0]);
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/automation/plotter/designs', {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Authentication required');
+          }
+          throw new Error('Failed to fetch designs');
+        }
+        const data = await response.json();
+        console.log('🎨 Designs loaded:', data?.length || 0, 'designs');
+        return data;
+      } catch (error) {
+        console.error('Designs fetch error:', error);
+        return [];
       }
     },
-    onError: (error) => {
-      console.error('❌ Error loading designs:', error);
-    }
+    enabled: !!user,
+    refetchInterval: 5000,
+    retry: 3
   });
 
   // Save layout mutation
@@ -846,8 +857,7 @@ export default function AutomationPanel() {
                     <input
                       type="file"
                       id="design-upload"
-                      multiple
-                      accept=".pdf,.svg,.ai,.eps,application/pdf,image/svg+xml,application/postscript"
+                      multiple                      accept=".pdf,.svg,.ai,.eps,application/pdf,image/svg+xml,application/postscript"
                       onChange={handleFileUpload}
                       className="hidden"
                     />
