@@ -1722,7 +1722,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
           });
           console.log(`✅ File prepared: ${designFile.name} - ${preparation.processingNotes}`);
         } else {
-          console.warn(`⚠️ File preparation failed: ${designFile.name} - ${preparation.processingNotes}`);
+          console.warn(`⚠️ File preparation failed: ${designFile.name} - ${designFile.preparationNotes}`);
           preparedFiles.push({
             ...designFile,
             preparationNotes: preparation.processingNotes

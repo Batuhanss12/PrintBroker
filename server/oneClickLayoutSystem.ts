@@ -281,11 +281,17 @@ export class OneClickLayoutSystem {
       let vectorContent = false;
       let quality: 'low' | 'medium' | 'high' = 'medium';
 
-      // Python analiz sonuçlarından boyut tespit et
-      if (design.smartDimensions) {
+      // Python analiz sonuçlarından öncelikli boyut tespit et
+      if (design.smartDimensions && design.smartDimensions.source === 'python_analyzer') {
         width = design.smartDimensions.width;
         height = design.smartDimensions.height;
-        console.log(`🐍 Python analizi: ${width}x${height}mm (${design.smartDimensions.category})`);
+        console.log(`🐍 Python analizi AKTIF: ${width}x${height}mm (${design.smartDimensions.category}) - güven: ${design.smartDimensions.confidence}`);
+        
+        // Python önerilerini uygula
+        if (design.smartDimensions.shouldRotate) {
+          console.log(`🔄 Python döndürme önerisi uygulanıyor`);
+          [width, height] = [height, width];
+        }
       } else if (design.realDimensionsMM && design.realDimensionsMM !== 'Boyut tespit edilemedi') {
         const dimensionMatch = design.realDimensionsMM.match(/(\d+)x(\d+)mm/i);
         if (dimensionMatch) {
