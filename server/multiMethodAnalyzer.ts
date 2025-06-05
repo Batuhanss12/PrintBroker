@@ -297,9 +297,16 @@ export class MultiMethodAnalyzer {
 
   async generateThumbnail(filePath: string, fileName: string): Promise<string | null> {
     try {
-      return await fileProcessingService.generateThumbnail(filePath, fileName);
+      // Thumbnail oluşturma hatalarını yoksay - zorunlu değil
+      console.log('Attempting thumbnail generation for:', fileName);
+      const result = await fileProcessingService.generateThumbnail(filePath, fileName);
+      if (result) {
+        console.log('Thumbnail created successfully:', result);
+        return result;
+      }
+      return null;
     } catch (error) {
-      console.error('Thumbnail generation failed:', error);
+      console.warn('Thumbnail generation skipped (not critical):', error.message);
       return null;
     }
   }

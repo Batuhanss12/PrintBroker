@@ -40,14 +40,14 @@ class EnhancedPDFAnalyzer:
             },
             'boxes': {},
             'contentAnalysis': {
-                'hasVectorContent': False,
+                'hasVectorContent': True,  # PDF genelde vektörel
                 'hasRasterContent': False,
                 'hasText': False,
-                'isEmpty': True,
+                'isEmpty': False,
                 'contentBounds': None
             },
             'qualityReport': {
-                'isVectorBased': False,
+                'isVectorBased': True,  # PDF genelde vektörel
                 'hasProperBoxes': False,
                 'needsOptimization': True,
                 'warnings': [],
