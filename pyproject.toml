@@ -23,6 +23,9 @@ wand = "^0.6.13"
 python-magic = "^0.4.27"
 pycairo = "^1.25.0"
 pygobject = "^3.46.0"
+pydantic = "^2.11.5"
+fastapi = "^0.115.12"
+uvicorn = "^0.34.3"
 
 [build-system]
 requires = ["poetry-core"]

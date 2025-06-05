@@ -20,6 +20,7 @@ import { professionalDesignAnalyzer } from "./professionalDesignAnalyzer";
 import { pythonAnalyzerService } from "./pythonAnalyzerService";
 import { multiMethodAnalyzer } from "./multiMethodAnalyzer";
 import { operationalLayoutSystem } from "./operationalLayoutSystem";
+import { fastApiClient } from "./fastApiClient";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -1582,30 +1583,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Enterprise layout settings:', layoutSettings);
 
-      // Use operational layout system
-      console.log('🚀 Starting operational layout generation');
-      const layoutResult = await operationalLayoutSystem.generateLayout(designs, layoutSettings);
+      // Use FastAPI microservice for layout generation
+      console.log('🚀 Starting FastAPI-based layout generation');
+      
+      // Check if FastAPI service is available
+      const isHealthy = await fastApiClient.healthCheck();
+      if (!isHealthy) {
+        console.log('⚡ Starting FastAPI microservice...');
+        const started = await fastApiClient.startMicroservice();
+        if (!started) {
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to start layout microservice',
+            statistics: { totalDesigns: designs.length, arrangedDesigns: 0, efficiency: 0 }
+          });
+        }
+      }
+
+      // Prepare output path
+      const outputPath = path.join(process.cwd(), 'uploads', `layout_${Date.now()}.pdf`);
+      
+      // Send request to FastAPI microservice
+      const layoutResult = await fastApiClient.generateLayout({
+        designs,
+        settings: layoutSettings,
+        outputPath
+      });
 
       if (layoutResult.success && layoutResult.pdfPath) {
-        console.log(`✅ Operational layout generated: ${layoutResult.arrangements.length} designs arranged`);
+        console.log(`✅ FastAPI layout generated: ${layoutResult.arrangements.length} designs arranged`);
         
         res.json({
           success: true,
           arrangements: layoutResult.arrangements,
           pdfPath: layoutResult.pdfPath,
           message: layoutResult.message,
-          statistics: {
-            totalDesigns: designs.length,
-            arrangedDesigns: layoutResult.arrangements.length,
-            efficiency: Math.round((layoutResult.arrangements.length / designs.length) * 100)
-          }
+          statistics: layoutResult.statistics
         });
       } else {
-        console.error('❌ Operational layout failed:', layoutResult.message);
+        console.error('❌ FastAPI layout failed:', layoutResult.message);
         res.status(400).json({
           success: false,
           message: layoutResult.message || 'Layout generation failed',
-          statistics: {
+          statistics: layoutResult.statistics || {
             totalDesigns: designs.length,
             arrangedDesigns: 0,
             efficiency: 0
