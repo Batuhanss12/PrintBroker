@@ -1079,459 +1079,378 @@ export default function AutomationPanelNew() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-3 flex items-center gap-3">
-          <Layout className="h-10 w-10 text-blue-600" />
-          Profesyonel Otomatik Dizilim Sistemi
-        </h1>
-        <p className="text-lg text-gray-600">
-          Vektörel dosyalarınızı yükleyin, akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
-        </p>
-      </div>
+    
+      
+        
+          
+            Profesyonel Otomatik Dizilim Sistemi
+          
+          
+            Vektörel dosyalarınızı yükleyin, akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
+          
+        
+      
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      
         {/* Main Content */}
-        <div className="xl:col-span-2 space-y-6">
+        
           {/* File Upload Section */}
-          <Card className="border-2 border-dashed border-blue-200 bg-blue-50/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-800">
-                <Upload className="h-6 w-6" />
+          
+            
+              
+                
                 Profesyonel Dosya Yükleme Sistemi
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-white">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept=".pdf,.svg,.ai,.eps,application/pdf,image/svg+xml,application/postscript"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
+              
+            
+            
+              
+                
+                  
+                    
+                      Vektörel Dosyalarınızı Yükleyin
+                    
+                    
+                      PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
+                    
+                  
+                  
+                    {uploadDesignsMutation.isPending ? "🔄 Analiz Ediliyor..." : "📁 Dosya Seç ve Yükle"}
+                  
 
-                <div className="mb-4">
-                  <Upload className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Vektörel Dosyalarınızı Yükleyin
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    PDF, SVG, AI, EPS formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
-                  </p>
-                </div>
+                  {uploadProgress > 0 && (
+                    
+                      
+                      
+                        📊 Yükleniyor ve analiz ediliyor: %{uploadProgress.toFixed(0)}
+                      
+                    
+                  )}
 
-                <Button 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadDesignsMutation.isPending}
-                  size="lg"
-                  className="mb-6"
-                >
-                  {uploadDesignsMutation.isPending ? "🔄 Analiz Ediliyor..." : "📁 Dosya Seç ve Yükle"}
-                </Button>
-
-                {uploadProgress > 0 && (
-                  <div className="mb-4">
-                    <Progress value={uploadProgress} className="w-full h-3 mb-2" />
-                    <p className="text-sm text-blue-600 font-medium">
-                      📊 Yükleniyor ve analiz ediliyor: %{uploadProgress.toFixed(0)}
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4 text-xs text-gray-500 border-t pt-4">
-                  <div className="space-y-1">
-                    <div>✅ Maksimum dosya boyutu: 50MB</div>
-                    <div>✅ İçerik analizi ve boyut tespiti</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div>✅ Otomatik önizleme oluşturma</div>
-                    <div>✅ Vektör kalitesi korunur</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  
+                    
+                      
+                        ✅ Maksimum dosya boyutu: 50MB
+                        ✅ İçerik analizi ve boyut tespiti
+                      
+                      
+                        ✅ Otomatik önizleme oluşturma
+                        ✅ Vektör kalitesi korunur
+                      
+                    
+                  
+                
+              
+            
+          
 
           {/* Design Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileImage className="h-5 w-5" />
-                  Tasarım Dosyaları ({designs.length})
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPreviewMode(previewMode === 'grid' ? 'list' : 'grid')}
-                  >
-                    {previewMode === 'grid' ? <Eye className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={selectAllDesigns}
-                    disabled={designs.length === 0}
-                  >
-                    {selectedDesigns.length === designs.length ? "❌ Hiçbirini Seçme" : "✅ Tümünü Seç"}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => refetch()}
-                    disabled={designsLoading}
-                  >
-                    <RefreshCw className={`h-4 w-4 ${designsLoading ? 'animate-spin' : ''}`} />
-                  </Button>
-
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => clearDesignsMutation.mutate()}
-                    disabled={designs.length === 0 || clearDesignsMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          
+            
+              
+                
+                  
+                    Tasarım Dosyaları ({designs.length})
+                  
+                
+                
+                  
+                    
+                      {previewMode === 'grid' ?  : }
+                    
+                    
+                      {selectedDesigns.length === designs.length ? "❌ Hiçbirini Seçme" : "✅ Tümünü Seç"}
+                    
+                    
+                      
+                        
+                      
+                    
+                    
+                      
+                    
+                  
+                
+              
+            
+            
               {designsError ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
-                  </AlertDescription>
-                </Alert>
+                 Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
               ) : (
                 <>
                   {selectedDesigns.length > 0 && (
-                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-blue-600" />
-                        <p className="text-sm text-blue-800 font-medium">
-                          {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
-                        </p>
-                      </div>
-                    </div>
+                     {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
                   )}
 
-                  <DesignList designs={designs} />
+                  
                 </>
               )}
-            </CardContent>
-          </Card>
+            
+          
 
           {/* Python Profesyonel Dizim Sistemi */}
-          <Card className="border-2 border-green-500 bg-gradient-to-r from-green-50 to-emerald-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-800">
-                <FileText className="h-6 w-6" />
-                🐍 Python Profesyonel Dizim Motoru
-              </CardTitle>
-              <p className="text-sm text-green-600 mt-2">
-                Firma kalitesinde vektörel dosya işleme ve PDF üretimi
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button 
-                  onClick={() => pythonLayoutMutation.mutate()}
-                  disabled={designs.length === 0 || isArranging}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
-                  size="lg"
-                >
+          
+            
+              
+                
+                  
+                    🐍 Python Profesyonel Dizim Motoru
+                  
+                
+                
+                  Firma kalitesinde vektörel dosya işleme ve PDF üretimi
+                
+              
+            
+            
+              
+                
                   {isArranging ? (
                     <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      
                       🐍 Python Analiz Ediyor...
                     </>
                   ) : (
                     <>
-                      <FileText className="h-5 w-5 mr-2" />
+                      
                       🚀 Python Profesyonel Dizim
                     </>
                   )}
-                </Button>
+                
 
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <div className="font-medium text-green-800 mb-2 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Python Sistem Özellikleri:
-                  </div>
-                  <div className="space-y-2 text-sm text-green-700">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>PyMuPDF ile gerçek PDF boyutları okur</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                      <span>ReportLab ile vektörel PDF oluşturur</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>CairoSVG ile SVG desteği</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                      <span>2D Bin Packing algoritması</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                
+                  
+                    
+                      Python Sistem Özellikleri:
+                    
+                    
+                      
+                        
+                         PyMuPDF ile gerçek PDF boyutları okur
+                        
+                      
+                      
+                        
+                         ReportLab ile vektörel PDF oluşturur
+                        
+                      
+                      
+                        
+                         CairoSVG ile SVG desteği
+                        
+                      
+                      
+                        
+                         2D Bin Packing algoritması
+                        
+                      
+                    
+                  
+                
+              
+            
+          
 
           {/* AI Destekli Tek Tuş Profesyonel Dizim Sistemi */}
-          <Card className="border-2 border-gradient-to-r from-purple-500 to-blue-600 bg-gradient-to-r from-purple-50 to-blue-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-purple-800">
-                <Brain className="h-6 w-6" />
-                AI Destekli Profesyonel Dizim Sistemi
-              </CardTitle>
-              <p className="text-sm text-purple-600 mt-2">
+           AI Destekli Profesyonel Dizim Sistemi
+                
                 🤖 Yapay zeka ile dosya analizi + akıllı yerleştirme + otomatik PDF üretimi
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button 
-                  onClick={handleAIAutoLayout}
-                  disabled={selectedDesigns.length === 0 || isProcessing}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg"
-                  size="lg"
-                >
+              
+            
+            
+              
+                
                   {isProcessing ? (
                     <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      
                       🤖 AI Analiz Ediyor ve Diziyor...
                     </>
                   ) : (
                     <>
-                      <Brain className="h-5 w-5 mr-2" />
+                      
                       🚀 AI Akıllı Otomatik Dizim
                     </>
                   )}
-                </Button>
+                
 
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
-                  <div className="font-medium text-purple-800 mb-2 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    AI Sistem Özellikleri:
-                  </div>
-                  <div className="space-y-2 text-sm text-purple-700">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <span>Dosya içeriğini AI ile analiz eder (logo, metin, grafik türü tespiti)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Öncelik sıralaması ve akıllı gruplama yapar</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <span>3mm kesim payı ile %85+ verimlilik sağlar</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Profesyonel PDF çıktısını otomatik oluşturur ve indirir</span>
-                    </div>
-                  </div>
-                </div>
+                
+                  
+                    
+                      AI Sistem Özellikleri:
+                    
+                    
+                      
+                        
+                         Dosya içeriğini AI ile analiz eder (logo, metin, grafik türü tespiti)
+                        
+                      
+                      
+                        
+                         Öncelik sıralaması ve akıllı gruplama yapar
+                        
+                      
+                      
+                        
+                         3mm kesim payı ile %85+ verimlilik sağlar
+                        
+                      
+                      
+                        
+                         Profesyonel PDF çıktısını otomatik oluşturur ve indirir
+                        
+                      
+                    
+                  
+                
 
                 {arrangements.length > 0 && (
-                  <div className="space-y-4 border-t border-purple-200 pt-4">
-                    <div className="grid grid-cols-3 gap-3 text-sm">
-                      <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
-                        <div className="text-lg font-bold text-green-700">{arrangements.length}</div>
-                        <div className="text-green-600 text-xs">Yerleştirilen</div>
-                      </div>
-                      <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-200">
-                        <div className="text-lg font-bold text-blue-700">{selectedDesigns.length}</div>
-                        <div className="text-blue-600 text-xs">Seçilen</div>
-                      </div>
-                      <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
-                        <div className="text-lg font-bold text-purple-700">
+                  
+                    
+                      
+                        
+                          {arrangements.length}
+                          Yerleştirilen
+                        
+                        
+                          {selectedDesigns.length}
+                          Seçilen
+                        
+                        
                           {arrangements.length > 0 ? Math.round((arrangements.length / selectedDesigns.length) * 100) : 0}%
-                        </div>
-                        <div className="text-purple-600 text-xs">Başarı</div>
-                      </div>
-                    </div>
+                          Başarı
+                        
+                      
+                    
 
-                    <Button
-                      onClick={() => generatePDFMutation.mutate()}
-                      disabled={generatePDFMutation.isPending}
-                      className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                      size="lg"
-                    >
-                      <Download className="h-5 w-5 mr-2" />
+                    
+                      
                       {generatePDFMutation.isPending ? "📄 Profesyonel PDF Oluşturuluyor..." : "📥 Profesyonel PDF İndir"}
-                    </Button>
-                  </div>
+                    
+                  
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+            
+          
+        
 
         {/* Settings Panel */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Plotter Ayarları
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="sheetWidth" className="text-xs font-medium">Sayfa Genişlik (mm)</Label>
-                  <Input
-                    id="sheetWidth"
-                    type="number"
-                    value={plotterSettingsState.sheetWidth}
-                    onChange={(e) => setPlotterSettings(prev => ({
-                      ...prev,
-                      sheetWidth: Number(e.target.value)
-                    }))}
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="sheetHeight" className="text-xs font-medium">Sayfa Yükseklik (mm)</Label>
-                  <Input
-                    id="sheetHeight"
-                    type="number"
-                    value={plotterSettingsState.sheetHeight}
-                    onChange={(e) => setPlotterSettings(prev => ({
-                      ...prev,
-                      sheetHeight: Number(e.target.value)
-                    }))}
-                    className="text-sm"
-                  />
-                </div>
-              </div>
+        
+          
+            
+              
+                
+                 Plotter Ayarları
+                
+              
+            
+            
+              
+                
+                  
+                     Sayfa Genişlik (mm)
+                    
+                    
+                  
+                  
+                     Sayfa Yükseklik (mm)
+                    
+                    
+                  
+                
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="marginTop" className="text-xs font-medium">Üst Margin (mm)</Label>
-                  <Input
-                    id="marginTop"
-                    type="number"
-                    value={plotterSettingsState.marginTop}
-                    onChange={(e) => setPlotterSettings(prev => ({
-                      ...prev,
-                      marginTop: Number(e.target.value)
-                    }))}
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="marginBottom" className="text-xs font-medium">Alt Margin (mm)</Label>
-                  <Input
-                    id="marginBottom"
-                    type="number"
-                    value={plotterSettingsState.marginBottom}
-                    onChange={(e) => setPlotterSettings(prev => ({
-                      ...prev,
-                      marginBottom: Number(e.target.value)
-                    }))}
-                    className="text-sm"
-                  />
-                </div>
-              </div>
+                
+                  
+                     Üst Margin (mm)
+                    
+                    
+                  
+                  
+                     Alt Margin (mm)
+                    
+                    
+                  
+                
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="horizontalSpacing" className="text-xs font-medium">Yatay Aralık (mm)</Label>
-                  <Input
-                    id="horizontalSpacing"
-                    type="number"
-                    value={plotterSettingsState.horizontalSpacing}
-                    onChange={(e) => setPlotterSettings(prev => ({
-                      ...prev,
-                      horizontalSpacing: Number(e.target.value)
-                    }))}
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="verticalSpacing" className="text-xs font-medium">Dikey Aralık (mm)</Label>
-                  <Input
-                    id="verticalSpacing"
-                    type="number"
-                    value={plotterSettingsState.verticalSpacing}
-                    onChange={(e) => setPlotterSettings(prev => ({
-                      ...prev,
-                      verticalSpacing: Number(e.target.value)
-                    }))}
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                
+                  
+                     Yatay Aralık (mm)
+                    
+                    
+                  
+                  
+                     Dikey Aralık (mm)
+                    
+                    
+                  
+                
+              
+            
+          
 
           {/* System Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5" />
-                Sistem Durumu
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center">
-                  <span>📊 Dosya Analizi:</span>
-                  <Badge variant="outline" className="text-green-600 border-green-200">
-                    ✅ Aktif
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>🔒 İçerik Koruma:</span>
-                  <Badge variant="outline" className="text-green-600 border-green-200">
-                    ✅ Aktif
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>📄 PDF Üretimi:</span>
-                  <Badge variant="outline" className="text-green-600 border-green-200">
-                    ✅ Hazır
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>🤖 Akıllı Algoritma:</span>
-                  <Badge variant="outline" className="text-green-600 border-green-200">
-                    ✅ Optimized
-                  </Badge>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center font-medium">
-                  <span>📁 Yüklenen Dosya:</span>
-                  <span className="text-blue-600">{designs.length}</span>
-                </div>
-                <div className="flex justify-between items-center font-medium">
-                  <span>🎯 Seçili Dosya:</span>
-                  <span className="text-green-600">{selectedDesigns.length}</span>
-                </div>
-                {arrangements.length> 0 && (
-                  <div className="flex justify-between items-center font-medium">
-                    <span>✅ Yerleştirilen:</span>
-                    <span className="text-purple-600">{arrangements.length}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+          
+            
+              
+                
+                 Sistem Durumu
+                
+              
+            
+            
+              
+                
+                  
+                     Dosya Analizi:
+                    
+                    
+                      ✅ Aktif
+                    
+                  
+                  
+                     İçerik Koruma:
+                    
+                    
+                      ✅ Aktif
+                    
+                  
+                  
+                     PDF Üretimi:
+                    
+                    
+                      ✅ Hazır
+                    
+                  
+                  
+                     Akıllı Algoritma:
+                    
+                    
+                      ✅ Optimized
+                    
+                  
+                  
+                     Yüklenen Dosya:
+                    
+                    {designs.length}
+                  
+                  
+                     Seçili Dosya:
+                    
+                    {selectedDesigns.length}
+                  
+                  {arrangements.length> 0 && (
+                    
+                      
+                         Yerleştirilen:
+                        
+                        {arrangements.length}
+                      
+                    
+                  )}
+                
+              
+            
+          
+        
+      
+    
   );
 }

@@ -313,6 +313,10 @@ export class DatabaseStorage implements IStorage {
     return file;
   }
 
+  async deleteFile(id: string): Promise<void> {
+    await db.delete(files).where(eq(files.id, id));
+  }
+
   async deleteFilesByUserAndType(userId: string, fileType: string): Promise<number> {
     const result = await db
       .delete(files)

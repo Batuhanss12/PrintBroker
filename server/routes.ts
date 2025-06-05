@@ -365,6 +365,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete file endpoint
+  app.delete('/api/files/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const fileId = req.params.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      // Get file details
+      const file = await storage.getFileById(fileId);
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      // Check if user owns the file
+      if (file.uploadedBy !== userId) {
+        return res.status(403).json({ message: "Unauthorized to delete this file" });
+      }
+
+      // Delete physical file
+      const filePath = path.join(uploadDir, file.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+
+      // Delete thumbnail if exists
+      if (file.thumbnailPath && fs.existsSync(file.thumbnailPath)) {
+        fs.unlinkSync(file.thumbnailPath);
+      }
+
+      // Delete from database
+      await storage.deleteFile(fileId);
+
+      res.json({ message: "File deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      res.status(500).json({ message: "Failed to delete file" });
+    }
+  });
+
   // Quote routes
   app.post('/api/quotes', isAuthenticated, async (req: any, res) => {
     try {
