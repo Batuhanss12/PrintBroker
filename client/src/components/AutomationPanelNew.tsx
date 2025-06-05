@@ -431,7 +431,7 @@ export default function AutomationPanelNew() {
   });
 
   // File upload mutation
-  
+
 
   const uploadFile = async (file: File) => {
     try {
@@ -943,14 +943,236 @@ export default function AutomationPanelNew() {
       }
     } catch (error) {
       console.error('Tek tuş dizim hatası:', error);
-      ```text
-toast({
-        title: "Hata",
+      toast({        title: "Hata",
         description: error instanceof Error ? error.message : "Dizim işlemi başarısız oldu",
         variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleFileUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+
+    setIsGenerating(true);
+    const newDesigns: any[] = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        // Validate file type
+        const allowedTypes = ['application/pdf', 'image/svg+xml', 'application/postscript', 'image/jpeg', 'image/png'];
+        const allowedExtensions = ['pdf', 'svg', 'ai', 'eps', 'jpg', 'jpeg', 'png'];
+        const fileExt = file.name.toLowerCase().split('.').pop();
+
+        if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExt || '')) {
+          toast({
+            title: "Dosya Türü Hatası",
+            description: `${file.name} - Sadece PDF, SVG, AI, EPS, JPG, PNG dosyaları kabul edilir`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append('designs', file);
+
+        console.log(`📤 Uploading file: ${file.name}, type: ${file.type}, size: ${file.size}`);
+
+        const response = await fetch('/api/automation/plotter/upload-designs', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+
+        const result = await response.json();
+        console.log(`📥 Upload response for ${file.name}:`, result);
+
+        if (response.ok && result.success && result.design) {
+          newDesigns.push({
+            ...result.design,
+            id: result.design.id || `design_${Date.now()}_${i}`,
+            selected: false
+          });
+        } else {
+          console.error(`❌ Failed to upload ${file.name}:`, result.message);
+          toast({
+            title: "Yükleme Hatası",
+            description: `${file.name}: ${result.message || 'Yükleme başarısız'}`,
+            variant: "destructive",
+          });
+        }
+      }
+
+      if (newDesigns.length > 0) {
+        setDesigns(prev => [...prev, ...newDesigns]);
+
+        toast({
+          title: "Dosyalar Yüklendi",
+          description: `${newDesigns.length} dosya başarıyla yüklendi ve analiz edildi`,
+        });
+
+        // Auto-select uploaded designs
+        setTimeout(() => {
+          const newDesignIds = newDesigns.map(d => d.id);
+          setSelectedDesigns(prev => [...prev, ...newDesignIds]);
+        }, 500);
+      }
+    } catch (error) {
+      console.error('❌ Upload system error:', error);
+      toast({
+        title: "Sistem Hatası",
+        description: "Dosya yükleme sistemi hatası",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [activeStep, setActiveStep] = useState(1);
+
+  const handleGenerateLayout = async () => {
+    if (selectedDesigns.length === 0) {
+      toast({
+        title: "Tasarım Seçiniz",
+        description: "Lütfen en az bir tasarım seçin",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    setGenerationProgress(0);
+
+    try {
+      console.log('🚀 Starting layout generation with:', {
+        selectedDesigns: selectedDesigns.length,
+        plotterSettings
+      });
+
+      // Progress simulation
+      const progressInterval = setInterval(() => {
+        setGenerationProgress(prev => Math.min(prev + 8, 85));
+      }, 300);
+
+      // Try FastAPI microservice first, then fallback to Node.js
+      let response;
+      let usedService = 'fastapi';
+
+      try {
+        // Check FastAPI service health
+        const healthCheck = await fetch('/api/python/status', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (healthCheck.ok) {
+          // Use FastAPI microservice
+          response = await fetch('/api/python/arrange-designs', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              designs: selectedDesigns.map(id => {
+                const design = designs.find(d => d.id === id);
+                return {
+                  id: design?.id || id,
+                  filename: design?.name || design?.originalName || `Design_${id}`,
+                  width_mm: design?.dimensions ? 
+                    parseFloat(design.dimensions.split('x')[0]) || 50 : 50,
+                  height_mm: design?.dimensions ? 
+                    parseFloat(design.dimensions.split('x')[1]) || 30 : 30,
+                  copies: 1
+                };
+              }),
+              page_size: "A3",
+              orientation: plotterSettings.sheetWidth > plotterSettings.sheetHeight ? "landscape" : "portrait",
+              margin_mm: plotterSettings.marginMM || 10,
+              spacing_x_mm: plotterSettings.spacingX || 5,
+              spacing_y_mm: plotterSettings.spacingY || 5,
+              enable_rotation: true
+            }),
+          });
+        } else {
+          throw new Error('FastAPI service not available');
+        }
+      } catch (fastApiError) {
+        console.log('⚡ FastAPI not available, using Node.js service');
+        usedService = 'nodejs';
+
+        // Fallback to Node.js service
+        response = await fetch('/api/generate-layout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            designIds: selectedDesigns,
+            plotterSettings: {
+              sheetWidth: plotterSettings.sheetWidth,
+              sheetHeight: plotterSettings.sheetHeight,
+              margin: plotterSettings.marginMM,
+              bleedMargin: 3,
+              spacing: plotterSettings.spacingX
+            }
+          }),
+        });
+      }
+
+      clearInterval(progressInterval);
+      setGenerationProgress(100);
+
+      if (!response?.ok) {
+        const errorResult = await response?.json();
+        throw new Error(errorResult?.message || `HTTP ${response?.status}: Service unavailable`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ Layout generation successful using ${usedService}:`, result);
+
+      if (result.success) {
+        // Handle different response formats
+        const arrangements = result.arrangements || result.arrangement?.items || [];
+        const statistics = result.statistics || result.arrangement?.statistics || {
+          efficiency_percentage: 0,
+          total_items: arrangements.length
+        };
+
+        setArrangements(arrangements);
+        setLayoutResult({
+          ...result,
+          arrangements,
+          statistics,
+          service: usedService
+        });
+        setActiveStep(3);
+
+        toast({
+          title: "Dizilim Oluşturuldu",
+          description: `${arrangements.length} tasarım yerleştirildi (${usedService} servisi)`,
+        });
+      } else {
+        throw new Error(result.message || 'Layout generation failed');
+      }
+    } catch (error) {
+      console.error('❌ Layout generation error:', error);
+      toast({
+        title: "Dizilim Hatası",
+        description: error instanceof Error ? error.message : "Dizilim oluşturulamadı",
+        variant: "destructive",
+      });
+      setLayoutResult(null);
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress(0);
     }
   };
 
@@ -1001,101 +1223,78 @@ toast({
               </CardTitle>
             </CardHeader>
             <CardContent>
-
-
-
-
-
-
-
-
-
-                      Vektörel Dosyalarınızı Yükleyin
-
-
-                      PDF, SVG, AI, EPS, JPG, PNG formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
-
-
-
-
-
-
-
-                        🔄 Analiz Ediliyor...
-
-                     : uploadProgress > 0 ? (
-
-
-                        ✅ Yüklendi!
-
-                     : (
-
-
-                        📁 Dosya Seç ve Yükle
-
-                    )}
-
-
-                  {uploadProgress > 0 && uploadProgress < 100 && (
-
-
-
-
-
+              
+              
+              
+              
+                Vektörel Dosyalarınızı Yükleyin
+              
+              
+                PDF, SVG, AI, EPS, JPG, PNG formatları desteklenir. Dosya içeriği analiz edilir ve korunur.
+              
+              
+              
+              
+                
+                  {uploadProgress > 0 && uploadProgress < 100 ? (
+                    
+                      🔄 Analiz Ediliyor...
+                    
+                  ) : uploadProgress === 100 ? (
+                    
+                      ✅ Yüklendi!
+                    
+                  ) : (
+                    
+                      📁 Dosya Seç ve Yükle
+                    
+                  )}
+                
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  
+                    
+                      
+                        {uploadProgress < 25
                            ? '🔄 Dosya yükleniyor...' :
                            uploadProgress < 75 ? '🔍 İçerik analiz ediliyor...' :
                            '✨ Son işlemler tamamlanıyor...'}
+                      
+                      {uploadProgress.toFixed(0)}%
+                    
+                  
+                )}
 
+                {uploadProgress === 100 && (
+                  
+                    
+                      ✅ Dosya başarıyla yüklendi ve analiz edildi!
+                    
+                  
+                )}
 
-                          {uploadProgress.toFixed(0)}%
-
-
-
-                  )}
-
-                  {uploadProgress === 100 && (
-
-
-
-
-                          ✅ Dosya başarıyla yüklendi ve analiz edildi!
-
-
-
-                  )}
-
-                  {uploadDesignsMutation.isError && (
-
-
-
-
-
-
-
-                            Yükleme Başarısız
-
-
-                            Dosya formatını kontrol edin ve tekrar deneyin. Desteklenen formatlar: PDF, SVG, AI, EPS, JPG, PNG
-
-
-
-
-                  )}
-
-
-
-
-                        ✅ Maksimum dosya boyutu: 50MB
-                        ✅ İçerik analizi ve boyut tespiti
-
-
-                        ✅ Otomatik önizleme oluşturma
-                        ✅ Vektör kalitesi korunur
-
-
-
-
-
+                {uploadDesignsMutation.isError && (
+                  
+                    
+                      
+                        Yükleme Başarısız
+                      
+                      
+                        Dosya formatını kontrol edin ve tekrar deneyin. Desteklenen formatlar: PDF, SVG, AI, EPS, JPG, PNG
+                      
+                    
+                  
+                )}
+              
+              
+                
+                  ✅ Maksimum dosya boyutu: 50MB
+                  ✅ İçerik analizi ve boyut tespiti
+                
+                
+                  ✅ Otomatik önizleme oluşturma
+                  ✅ Vektör kalitesi korunur
+                
+              
             </CardContent>
           </Card>
 
@@ -1103,245 +1302,210 @@ toast({
           {designs.length > 0 && (
             <Card className="border-2 border-gradient-to-r from-purple-500 to-blue-600 bg-gradient-to-r from-purple-50 to-blue-50">
               <CardHeader>
-
-
+                
                   🚀 Tek Tuş Otomatik Dizim Sistemi
-
-
+                
+                
                   Yapay zeka destekli tam otomatik dizim: dosya analizi + yerleştirme + PDF üretimi
-
+                
               </CardHeader>
               <CardContent>
-
-
-
-
-
-
-                          🤖 AI analiz ediyor ve diziyor...
-
-                       : (
-
-
-                          🚀 Tek Tuş Otomatik Dizim ({selectedDesigns.length} dosya)
-
-                      )}
-
-
-
-
-                      Bu sistem otomatik olarak:
-
-
-                      • Dosya içeriğini analiz eder ve boyutları tespit eder
-                      • 3mm kesim payı ile optimal yerleştirme yapar
-                      • Profesyonel PDF çıktısını otomatik oluşturur
-                      • Maksimum verimlilik için rotation algoritması kullanır
-
-
-
-                  {arrangements.length > 0 && (
-
-
-
-
-
-
-                                {arrangements.length} Yerleştirilen
-
-
-
-
-                                {selectedDesigns.length} Seçilen
-
-
-
-
-                                {arrangements.length > 0 ? Math.round((arrangements.length / selectedDesigns.length) * 100) : 0}% Başarı
-
-
-
-
-
-
-
-                          {generatePDFMutation.isPending ? "📄 Profesyonel PDF Oluşturuluyor..." : "📥 Profesyonel PDF İndir"}
-
-
-
+                
+                
+                  {isProcessing ? (
+                    
+                      🤖 AI analiz ediyor ve diziyor...
+                    
+                  ) : (
+                    
+                      🚀 Tek Tuş Otomatik Dizim ({selectedDesigns.length} dosya)
+                    
                   )}
-
-              </CardContent>
-            </Card>
+                
+                
+                  Bu sistem otomatik olarak:
+                
+                
+                  • Dosya içeriğini analiz eder ve boyutları tespit eder
+                  • 3mm kesim payı ile optimal yerleştirme yapar
+                  • Profesyonel PDF çıktısını otomatik oluşturur
+                  • Maksimum verimlilik için rotation algoritması kullanır
+                
+                
+                {arrangements.length > 0 && (
+                  
+                    
+                      
+                        
+                          {arrangements.length} Yerleştirilen
+                        
+                      
+                      
+                        
+                          {selectedDesigns.length} Seçilen
+                        
+                      
+                      
+                        
+                          {arrangements.length > 0 ? Math.round((arrangements.length / selectedDesigns.length) * 100) : 0}% Başarı
+                        
+                      
+                    
+                    
+                      {generatePDFMutation.isPending ? "📄 Profesyonel PDF Oluşturuluyor..." : "📥 Profesyonel PDF İndir"}
+                    
+                  
+                )}
+              
+            </CardContent>
           )}
 
           {/* Design Management */}
-
-
-
-
-
-
-
-                      Tasarım Dosyaları ({designs.length})
-
-
-
-
-                          {selectedDesigns.length === designs.length ? "❌ Hiçbirini Seçme" : "✅ Tümünü Seç"}
-
-
-
-
-
-
-
-
-
-
-
-
-
-                {designsError ? (
-
-                    Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
-
-                 : (
-                  <>
-                    {selectedDesigns.length > 0 && (
-
-
-
-
-
-
-                            {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
-
-
-
-                    )}
-
-                  </>
-                )}
-
-
-
+          
+            
+              
+                
+                  Tasarım Dosyaları ({designs.length})
+                
+              
+              
+                
+                  {selectedDesigns.length === designs.length ? "❌ Hiçbirini Seçme" : "✅ Tümünü Seç"}
+                
+              
+            
+            
+              {designsError ? (
+                
+                  Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
+                
+              ) : (
+                <>
+                  {selectedDesigns.length > 0 && (
+                    
+                      
+                        {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
+                      
+                    
+                  )}
+                </>
+              )}
+            
+          
+        </div>
 
         {/* Settings Panel */}
-
-
-
-
-
-                  Plotter Ayarları
-
-
-
-
-
-
-
-
-                      Sayfa Genişlik (mm)
-
-
-
-
-
-                      Sayfa Yükseklik (mm)
-
-
-
-
-
-
-
-                      Üst Margin (mm)
-
-
-
-
-
-                      Alt Margin (mm)
-
-
-
-
-
-
-
-                      Yatay Aralık (mm)
-
-
-
-
-
-                      Dikey Aralık (mm)
-
-
-
-
-
-
-
-
-          {/* System Status */}
-
-
-
-
-                  Sistem Durumu
-
-
-
-
-
-
-
-
-                      Dosya Analizi:
-
-                        ✅ Aktif
-
-
-
-
-                      PDF Üretimi:
-
-                        ✅ Hazır
-
-
-
-
-
-
-                      Yüklenen Dosya:
-
-                        {designs.length}
-
-
-
-                      Seçili Dosya:
-
-                        {selectedDesigns.length}
-
-
-                    {arrangements.length > 0 && (
-
-
-                          Yerleştirilen:
-
-                            {arrangements.length}
-
-
-                    )}
-
-
-
-
-
-
-
-
+        
+          
+            
+              
+                Plotter Ayarları
+              
+            
+            
+              
+                
+                  Sayfa Genişlik (mm)
+                
+                
+                
+              
+              
+                
+                  Sayfa Yükseklik (mm)
+                
+                
+                
+              
+            
+            
+              
+                
+                  Üst Margin (mm)
+                
+                
+                
+              
+              
+                
+                  Alt Margin (mm)
+                
+                
+                
+              
+            
+            
+              
+                
+                  Yatay Aralık (mm)
+                
+                
+                
+              
+              
+                
+                  Dikey Aralık (mm)
+                
+                
+                
+              
+            
+          
+        
+
+        {/* System Status */}
+        
+          
+            
+              Sistem Durumu
+            
+            
+              
+                
+                  Dosya Analizi:
+                
+                
+                  ✅ Aktif
+                
+              
+              
+                
+                  PDF Üretimi:
+                
+                
+                  ✅ Hazır
+                
+              
+              
+                
+                  Yüklenen Dosya:
+                
+                
+                  {designs.length}
+                
+              
+              
+                
+                  Seçili Dosya:
+                
+                
+                  {selectedDesigns.length}
+                
+              
+              {arrangements.length > 0 && (
+                
+                  
+                    Yerleştirilen:
+                  
+                  
+                    {arrangements.length}
+                  
+                
+              )}
+            
+          
+        
+      </div>
+    </div>
   );
 }

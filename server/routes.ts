@@ -1777,6 +1777,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // Python Microservice Integration
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 
+// FastAPI Service Status Check
+app.get('/api/python/status', async (req, res) => {
+  try {
+    const response = await fetch(`${PYTHON_SERVICE_URL}/api/status`, {
+      method: 'GET',
+      timeout: 5000
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      res.json({
+        success: true,
+        status: result.status,
+        services: result.services,
+        message: 'FastAPI microservice is running'
+      });
+    } else {
+      throw new Error(`FastAPI returned ${response.status}`);
+    }
+  } catch (error) {
+    console.log('FastAPI service not available:', error.message);
+    res.json({
+      success: false,
+      status: 'unavailable',
+      message: 'FastAPI microservice not running',
+      fallback: 'Node.js service available'
+    });
+  }
+});
+
 // Enhanced PDF Analysis with Python Service
 app.post('/api/python/analyze-pdf', isAuthenticated, async (req: any, res) => {
   try {
