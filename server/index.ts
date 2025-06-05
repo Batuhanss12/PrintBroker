@@ -22,7 +22,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api") && res.statusCode !== 304) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      
+
       // Only log response for errors or slow requests
       if (res.statusCode >= 400 || duration > 1000) {
         if (capturedJsonResponse) {
@@ -44,7 +44,7 @@ app.use((req, res, next) => {
 // Python Analyzer Sistem Kontrolü
 async function initializePythonServices() {
   console.log('🐍 Python tabanlı analiz sistemi başlatılıyor...');
-  
+
   try {
     const environmentOK = await pythonAnalyzerService.testPythonEnvironment();
     if (environmentOK) {
@@ -83,7 +83,7 @@ async function initializePythonServices() {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = parseInt(process.env.PORT || "3000");
   server.listen({
     port,
     host: "0.0.0.0",
