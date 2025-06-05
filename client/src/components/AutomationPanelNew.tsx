@@ -127,6 +127,9 @@ export default function AutomationPanelNew() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+    // Upload state management
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadMessage, setUploadMessage] = useState<string>('');
 
   // API functions
   const apiRequest = async (method: string, url: string, data?: any) => {
@@ -428,40 +431,7 @@ export default function AutomationPanelNew() {
   });
 
   // File upload mutation
-  const uploadMutation = useMutation({
-    mutationFn: async (files: FileList): Promise<any> => {
-      const results: any = [];
-
-      for (let i = 0; < files.length; i++) {
-        const file = files[i];
-
-        const formData = new FormData();
-        formData.append('designs', file);
-
-        try {
-          const result = await apiRequest('POST', '/api/automation/plotter/upload-designs', formData);
-          results.push(result);
-        } catch (error) {
-          console.error(`File upload failed for ${file.name}:`, error);
-          throw error;
-        }
-      }
-
-      return results;
-    },
-    onSuccess: (results) => {
-      toast({
-        title: "Yükleme Başarılı",
-        description: `Dosyalar başarıyla yüklendi ve analiz edildi.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['automation-designs'] });
-      setUploadProgress(0);
-    },
-    onError: (error: unknown) => {
-      handleError(error, "Dosya yükleme başarısız");
-      setUploadProgress(0);
-    },
-  });
+  
 
   const uploadFile = async (file: File) => {
     try {
@@ -973,7 +943,8 @@ export default function AutomationPanelNew() {
       }
     } catch (error) {
       console.error('Tek tuş dizim hatası:', error);
-      toast({
+      ```text
+toast({
         title: "Hata",
         description: error instanceof Error ? error.message : "Dizim işlemi başarısız oldu",
         variant: "destructive"
