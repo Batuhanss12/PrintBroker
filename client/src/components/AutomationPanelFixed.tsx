@@ -218,6 +218,79 @@ export default function AutomationPanelFixed() {
     }
   }, [uploadDesignsMutation]);
 
+  const handleEnhancedAnalysis = useCallback((file: File) => {
+    enhancedAnalysisMutation.mutate(file);
+  }, [enhancedAnalysisMutation]);
+
+  const handleManualDimensions = useCallback(async (dimensions: { widthMM: number; heightMM: number; userNote?: string }) => {
+    try {
+      const response = await fetch('/api/apply-manual-dimensions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          analysisResult: analysisResults[analysisResults.length - 1]?.analysis,
+          manualDimensions: dimensions
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setAnalysisResults(prev => 
+          prev.map((item, index) => 
+            index === prev.length - 1 ? { ...item, analysis: result.analysis } : item
+          )
+        );
+        toast({
+          title: "Manual Dimensions Applied",
+          description: `Dimensions updated to ${dimensions.widthMM}x${dimensions.heightMM}mm`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Failed to apply manual dimensions",
+        variant: "destructive"
+      });
+    }
+  }, [analysisResults, toast]);
+
+  const handleRetryAnalysis = useCallback(async (method: string) => {
+    const lastResult = analysisResults[analysisResults.length - 1];
+    if (!lastResult) return;
+
+    try {
+      const response = await fetch('/api/retry-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filePath: lastResult.analysis?.filePath,
+          fileName: lastResult.file,
+          mimeType: lastResult.analysis?.mimeType || 'application/pdf',
+          method
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setAnalysisResults(prev => 
+          prev.map((item, index) => 
+            index === prev.length - 1 ? { ...item, analysis: result.analysis } : item
+          )
+        );
+        toast({
+          title: "Alternative Analysis Complete",
+          description: `Analysis retried with ${method} method`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Retry Failed",
+        description: "Alternative analysis method failed",
+        variant: "destructive"
+      });
+    }
+  }, [analysisResults, toast]);
+
   const handleDesignSelect = (designId: string) => {
     setSelectedDesigns(prev => 
       prev.includes(designId) 
@@ -464,6 +537,112 @@ export default function AutomationPanelFixed() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Enhanced Analysis Results Section */}
+      {showAnalysisResults && analysisResults.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5" />
+              Gelişmiş PDF Analiz Sonuçları
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {analysisResults.map((result, index) => (
+              <div key={index} className="border rounded-lg p-4">
+                <h4 className="font-medium mb-3">{result.file}</h4>
+                {result.analysis && (
+                  <AnalysisResultsDisplay
+                    result={result.analysis}
+                    onManualDimensions={handleManualDimensions}
+                    onRetryAnalysis={handleRetryAnalysis}
+                    isLoading={enhancedAnalysisMutation.isPending}
+                  />
+                )}
+              </div>
+            ))}
+            
+            <div className="flex gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setShowAnalysisResults(false)}
+              >
+                Analiz Sonuçlarını Gizle
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setAnalysisResults([])}
+              >
+                Sonuçları Temizle
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Enhanced File Upload with Analysis */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            Gelişmiş PDF Analizi
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              PDF dosyalarınızı yükleyerek MediaBox, TrimBox, ArtBox kontrolü ile çoklu analiz yöntemi uygulayın.
+            </p>
+            
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.svg,.ai,.eps"
+              multiple
+              onChange={(e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                  Array.from(files).forEach(file => {
+                    handleEnhancedAnalysis(file);
+                  });
+                }
+              }}
+              className="cursor-pointer"
+            />
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="p-3 bg-green-50 rounded-lg">
+                <h5 className="font-medium text-green-800">Desteklenen Özellikler:</h5>
+                <ul className="mt-2 space-y-1 text-green-700">
+                  <li>• PDF kutuları analizi (MediaBox, TrimBox, ArtBox)</li>
+                  <li>• Vektörel içerik tespiti</li>
+                  <li>• Otomatik boyut ölçekleme</li>
+                  <li>• Manuel boyut girişi</li>
+                </ul>
+              </div>
+              
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <h5 className="font-medium text-blue-800">Analiz Yöntemleri:</h5>
+                <ul className="mt-2 space-y-1 text-blue-700">
+                  <li>• Python tabanlı gelişmiş analiz</li>
+                  <li>• Görsel içerik analizi</li>
+                  <li>• Kontur tespiti</li>
+                  <li>• Alternatif yöntem desteği</li>
+                </ul>
+              </div>
+            </div>
+            
+            {enhancedAnalysisMutation.isPending && (
+              <Alert>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <AlertDescription>
+                  Gelişmiş analiz işlemi devam ediyor...
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
