@@ -91,8 +91,11 @@ class AdvancedDesignAnalyzer:
             height_pts = rect.height
             
             # Points'i mm'ye çevir
-            width_mm = round(width_pts * self.pts_to_mm)
-            height_mm = round(height_pts * self.pts_to_mm)
+            original_width_mm = round(width_pts * self.pts_to_mm)
+            original_height_mm = round(height_pts * self.pts_to_mm)
+            
+            # Büyük tasarımları otomatik ölçekle
+            width_mm, height_mm = self.scale_oversized_design(original_width_mm, original_height_mm)
             
             # İçerik analizi
             try:
@@ -130,7 +133,8 @@ class AdvancedDesignAnalyzer:
                 "hasImages": len(image_list) > 0,
                 "processingNotes": [
                     "PDF boyutları PyMuPDF ile tespit edildi",
-                    f"Sayfa boyutu: {width_mm}x{height_mm}mm",
+                    f"Orijinal boyut: {original_width_mm}x{original_height_mm}mm",
+                    f"Ölçeklenmiş boyut: {width_mm}x{height_mm}mm" if (width_mm != original_width_mm or height_mm != original_height_mm) else f"Boyut: {width_mm}x{height_mm}mm",
                     f"Kategori: {category}",
                     f"Metin blok sayısı: {len(text_blocks)}",
                     f"Görsel sayısı: {len(image_list)}",
@@ -416,6 +420,14 @@ class AdvancedDesignAnalyzer:
         """Tasarım kategorisini belirle"""
         name = file_name.lower()
         
+        # Maksimum baskı alanı kontrolü (33x48cm = 330x480mm)
+        max_sheet_width = 300  # Kesim payları ile birlikte güvenli alan
+        max_sheet_height = 450
+        
+        # Büyük tasarımlar için otomatik ölçekleme
+        if width_mm > max_sheet_width or height_mm > max_sheet_height:
+            return 'oversized_design'
+        
         # Dosya adından kategori
         if any(word in name for word in ['logo', 'marka', 'brand']):
             return 'logo'
@@ -438,6 +450,22 @@ class AdvancedDesignAnalyzer:
         else:
             return 'label'
     
+    def scale_oversized_design(self, width_mm, height_mm):
+        """Büyük tasarımları otomatik ölçekle"""
+        max_width = 300  # Güvenli baskı alanı genişliği
+        max_height = 450  # Güvenli baskı alanı yüksekliği
+        
+        if width_mm <= max_width and height_mm <= max_height:
+            return width_mm, height_mm
+        
+        # Ölçekleme faktörü hesapla
+        scale_factor = min(max_width / width_mm, max_height / height_mm)
+        
+        scaled_width = round(width_mm * scale_factor)
+        scaled_height = round(height_mm * scale_factor)
+        
+        return scaled_width, scaled_height
+
     def should_rotate(self, width_mm, height_mm, category):
         """Rotate önerisi"""
         aspect_ratio = width_mm / height_mm
