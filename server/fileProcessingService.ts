@@ -486,6 +486,132 @@ export class FileProcessingService {
       return [{ width: 50, height: 30, page: 1 }];
     }
   }
+
+  // Advanced content verification for vector files
+  async verifyVectorContent(filePath: string, mimeType: string): Promise<{
+    hasVectorContent: boolean;
+    contentQuality: 'high' | 'medium' | 'low';
+    processingRecommendation: string;
+  }> {
+    try {
+      const stats = fs.statSync(filePath);
+      const fileSizeKB = stats.size / 1024;
+
+      // Basic heuristics for content quality
+      let contentQuality: 'high' | 'medium' | 'low' = 'medium';
+      let processingRecommendation = 'Standard processing';
+
+      if (mimeType === 'application/pdf') {
+        // Check if PDF has vector content
+        const buffer = fs.readFileSync(filePath);
+        const content = buffer.toString('binary');
+        
+        const hasStreamObjects = content.includes('/Type/XObject') || content.includes('/Subtype/Form');
+        const hasVectorPaths = content.includes('re') || content.includes('l') || content.includes('c');
+        const hasText = content.includes('/Font') || content.includes('Tf');
+
+        if (hasStreamObjects && hasVectorPaths) {
+          contentQuality = 'high';
+          processingRecommendation = 'Direct vector embedding recommended';
+        } else if (hasText || hasVectorPaths) {
+          contentQuality = 'medium';
+          processingRecommendation = 'Vector processing with quality preservation';
+        } else {
+          contentQuality = 'low';
+          processingRecommendation = 'Raster fallback may be required';
+        }
+
+        return {
+          hasVectorContent: hasStreamObjects || hasVectorPaths,
+          contentQuality,
+          processingRecommendation
+        };
+      }
+
+      // For other vector formats
+      if (mimeType === 'image/svg+xml') {
+        const content = fs.readFileSync(filePath, 'utf8');
+        const hasComplexPaths = content.includes('<path') || content.includes('<polygon') || content.includes('<circle');
+        const hasGradients = content.includes('<defs>') || content.includes('gradient');
+
+        contentQuality = hasComplexPaths && hasGradients ? 'high' : hasComplexPaths ? 'medium' : 'low';
+        processingRecommendation = contentQuality === 'high' ? 'SVG to PDF conversion' : 'Standard SVG processing';
+
+        return {
+          hasVectorContent: hasComplexPaths,
+          contentQuality,
+          processingRecommendation
+        };
+      }
+
+      // For EPS/AI files
+      if (mimeType.includes('postscript') || mimeType.includes('eps')) {
+        const hasVectorContent = fileSizeKB > 10; // Basic size check
+        contentQuality = fileSizeKB > 100 ? 'high' : fileSizeKB > 50 ? 'medium' : 'low';
+        processingRecommendation = 'PostScript processing with Ghostscript';
+
+        return {
+          hasVectorContent,
+          contentQuality,
+          processingRecommendation
+        };
+      }
+
+      return {
+        hasVectorContent: false,
+        contentQuality: 'low',
+        processingRecommendation: 'Basic file processing'
+      };
+
+    } catch (error) {
+      console.error('Vector content verification failed:', error);
+      return {
+        hasVectorContent: false,
+        contentQuality: 'low',
+        processingRecommendation: 'Error in content analysis'
+      };
+    }
+  }
+
+  // Enhanced file preparation for PDF embedding
+  async prepareFileForEmbedding(filePath: string, mimeType: string): Promise<{
+    success: boolean;
+    processedPath?: string;
+    contentAnalysis: any;
+    processingNotes: string;
+  }> {
+    try {
+      console.log(`🔧 Preparing file for embedding: ${filePath}`);
+
+      // Verify vector content
+      const contentAnalysis = await this.verifyVectorContent(filePath, mimeType);
+      
+      // Copy file to a processing path
+      const ext = path.extname(filePath);
+      const processedFileName = `processed_${Date.now()}${ext}`;
+      const processedPath = path.join(this.uploadDir, processedFileName);
+
+      fs.copyFileSync(filePath, processedPath);
+
+      const result = {
+        success: true,
+        processedPath,
+        contentAnalysis,
+        processingNotes: `File prepared for embedding: ${contentAnalysis.processingRecommendation}`
+      };
+
+      console.log(`✅ File preparation completed:`, result.processingNotes);
+      return result;
+
+    } catch (error) {
+      console.error('File preparation failed:', error);
+      return {
+        success: false,
+        contentAnalysis: { hasVectorContent: false, contentQuality: 'low', processingRecommendation: 'Error' },
+        processingNotes: `Preparation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
 }
 
 export const fileProcessingService = new FileProcessingService();

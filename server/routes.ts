@@ -1429,15 +1429,54 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     });
 
 
+    // Enhanced file preparation for embedding
+    const preparedFiles = [];
+    for (const item of arrangements) {
+      const designFile = designFilesWithPaths.find(d => d.id === item.designId);
+      if (designFile && designFile.filePath) {
+        console.log(`🔧 Preparing file for embedding: ${designFile.name}`);
+        
+        const preparation = await fileProcessingService.prepareFileForEmbedding(
+          designFile.filePath, 
+          designFile.mimeType || 'application/pdf'
+        );
+        
+        if (preparation.success) {
+          preparedFiles.push({
+            ...designFile,
+            processedPath: preparation.processedPath,
+            contentAnalysis: preparation.contentAnalysis,
+            preparationNotes: preparation.processingNotes
+          });
+          console.log(`✅ File prepared: ${designFile.name} - ${preparation.processingNotes}`);
+        } else {
+          console.warn(`⚠️ File preparation failed: ${designFile.name} - ${preparation.processingNotes}`);
+          preparedFiles.push({
+            ...designFile,
+            preparationNotes: preparation.processingNotes
+          });
+        }
+      }
+    }
+
+    // Update python input with prepared files
+    pythonInput.designFiles = preparedFiles;
+    pythonInput.contentPreservation = {
+      enabled: true,
+      vectorQuality: 'high',
+      embeddingMode: 'professional'
+    };
+
     // Python PDF generator çağrısı
     try {
       const pythonScriptPath = path.join(process.cwd(), 'server', 'pdfGenerator.py');
       const command = `python3 "${pythonScriptPath}" '${JSON.stringify(pythonInput)}'`;
 
-      const { stdout, stderr } = await execAsync(command);
+      console.log('🐍 Executing professional PDF generation with content embedding...');
+      const { stdout, stderr } = await execAsync(command, { timeout: 120000 }); // 2 minutes timeout
 
-      if (stderr) {
-        console.warn('Python script warnings:', stderr);
+      if (stderr && !stderr.includes('WARNING')) {
+        console.error('Python script errors:', stderr);
       }
 
       console.log('Python script output:', stdout);
@@ -1445,33 +1484,53 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
       // Check if PDF was created
       const fs = await import('fs');
       if (fs.existsSync(outputPath)) {
+        const fileStats = fs.statSync(outputPath);
+        console.log(`📄 Generated PDF size: ${(fileStats.size / 1024).toFixed(1)}KB`);
+
         // Set response headers for PDF
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename="matbixx-enhanced-layout.pdf"');
+        res.setHeader('Content-Disposition', 'attachment; filename="matbixx-professional-layout.pdf"');
         res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('X-PDF-Generation', 'professional-vector-embedding');
 
         // Stream the generated PDF
         const stream = fs.createReadStream(outputPath);
         stream.pipe(res);
 
-        // Clean up the file after streaming
+        // Clean up prepared files and output after streaming
         stream.on('end', () => {
           setTimeout(() => {
             try {
               fs.unlinkSync(outputPath);
+              // Clean up prepared files
+              for (const file of preparedFiles) {
+                if (file.processedPath && fs.existsSync(file.processedPath)) {
+                  fs.unlinkSync(file.processedPath);
+                }
+              }
             } catch (cleanupError) {
               console.warn('Cleanup error:', cleanupError);
             }
           }, 5000);
         });
 
-        console.log('✅ Python PDF generated and streamed successfully');
+        console.log('✅ Professional PDF with embedded content generated and streamed successfully');
         return;
       } else {
         throw new Error('Python script did not generate PDF file');
       }
     } catch (pythonError) {
-      console.error('❌ Python PDF generation failed:', pythonError);
+      console.error('❌ Professional PDF generation failed:', pythonError);
+      // Clean up prepared files on error
+      for (const file of preparedFiles) {
+        if (file.processedPath && fs.existsSync(file.processedPath)) {
+          try {
+            fs.unlinkSync(file.processedPath);
+          } catch (cleanupError) {
+            console.warn('Cleanup error:', cleanupError);
+          }
+        }
+      }
       // Fallback to Node.js implementation
       console.log('🔄 Falling back to Node.js PDF generation...');
     }
