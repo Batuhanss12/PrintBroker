@@ -137,6 +137,8 @@ export class OneClickLayoutSystem {
       // 4. PDF oluştur
       let pdfPath: string | undefined;
       try {
+        console.log('📄 PDF oluşturuluyor...');
+        
         const pdfResult = await nodePDFGenerator.generateArrangementPDF({
           plotterSettings: {
             sheetWidth: settings.sheetSettings.width,
@@ -153,12 +155,15 @@ export class OneClickLayoutSystem {
           arrangements
         });
 
-        if (pdfResult.success) {
+        if (pdfResult && pdfResult.success && pdfResult.filePath) {
           pdfPath = pdfResult.filePath;
           console.log('✅ PDF başarıyla oluşturuldu:', pdfPath);
+        } else {
+          console.warn('⚠️ PDF oluşturulamadı, devam ediliyor...');
         }
       } catch (pdfError) {
-        console.warn('PDF oluşturma hatası:', pdfError);
+        console.error('❌ PDF oluşturma hatası:', pdfError);
+        // PDF hatası sistemin durmasına neden olmasın
       }
 
       const statistics = {
