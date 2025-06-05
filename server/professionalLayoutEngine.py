@@ -340,25 +340,39 @@ class ProfessionalLayoutEngine:
     
     def _render_pdf_design(self, canvas_obj, filepath, x, y, width, height):
         """PDF tasarımını render et"""
-        doc = fitz.open(filepath)
-        page = doc[0]
-        
-        # PDF'yi PNG'ye çevir
-        mat = fitz.Matrix(2, 2)  # 2x zoom for better quality
-        pix = page.get_pixmap(matrix=mat)
-        img_data = pix.tobytes("png")
-        
-        # Geçici dosya oluştur
-        temp_path = os.path.join(self.temp_dir, f"temp_{os.getpid()}.png")
-        with open(temp_path, "wb") as f:
-            f.write(img_data)
-        
-        # Canvas'a çiz
-        canvas_obj.drawImage(temp_path, x, y, width, height, preserveAspectRatio=True)
-        
-        doc.close()
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        try:
+            if not os.path.exists(filepath):
+                raise FileNotFoundError(f"Dosya bulunamadı: {filepath}")
+                
+            doc = fitz.open(filepath)
+            if len(doc) == 0:
+                raise ValueError(f"PDF boş: {filepath}")
+                
+            page = doc[0]
+            
+            # PDF'yi PNG'ye çevir - daha yüksek kalite
+            mat = fitz.Matrix(3, 3)  # 3x zoom for better quality
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            img_data = pix.tobytes("png")
+            
+            # Geçici dosya oluştur
+            temp_path = os.path.join(self.temp_dir, f"pdf_render_{os.getpid()}_{hash(filepath)}.png")
+            with open(temp_path, "wb") as f:
+                f.write(img_data)
+            
+            # Canvas'a çiz - preserveAspectRatio yerine mask kullan
+            canvas_obj.drawImage(temp_path, x, y, width, height, mask='auto')
+            
+            doc.close()
+            
+            # Temizlik
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+                
+        except Exception as e:
+            logger.error(f"PDF render hatası {filepath}: {e}")
+            # Hata durumunda placeholder çiz
+            self._draw_placeholder(canvas_obj, x, y, width, height, os.path.basename(filepath))
     
     def _render_svg_design(self, canvas_obj, filepath, x, y, width, height):
         """SVG tasarımını render et"""

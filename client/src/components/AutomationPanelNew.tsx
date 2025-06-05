@@ -460,6 +460,58 @@ export default function AutomationPanelNew() {
     },
   });
 
+  // Python Profesyonel Dizim mutation
+  const pythonLayoutMutation = useMutation({
+    mutationFn: async (): Promise<any> => {
+      if (!designs || designs.length === 0) {
+        throw new Error("Dizim için en az bir tasarım gerekli");
+      }
+
+      setIsArranging(true);
+      const designIds = designs.map((d: Design) => d.id);
+
+      const result = await apiRequest('POST', '/api/automation/plotter/python-layout', {
+        designIds,
+        pageWidth: plotterSettingsState.sheetWidth,
+        pageHeight: plotterSettingsState.sheetHeight,
+        cuttingSpace: 5
+      });
+
+      return result;
+    },
+    onSuccess: (data: any) => {
+      console.log('🐍 Python dizim tamamlandı:', data);
+      setIsArranging(false);
+
+      if (data.success) {
+        toast({
+          title: "🐍 Python Dizim Başarılı",
+          description: `${data.designs_placed}/${data.total_designs} tasarım yerleştirildi (${data.efficiency_percent}% verimlilik)`,
+        });
+
+        // PDF indirme
+        if (data.downloadUrl) {
+          const link = document.createElement('a');
+          link.href = data.downloadUrl;
+          link.download = `python-layout-${new Date().toISOString().split('T')[0]}.pdf`;
+          link.click();
+
+          toast({
+            title: "📄 Profesyonel PDF İndirildi",
+            description: "Vektörel kalitede PDF başarıyla oluşturuldu",
+          });
+        }
+      } else {
+        throw new Error(data.error || "Python dizim başarısız");
+      }
+    },
+    onError: (error: unknown) => {
+      setIsArranging(false);
+      console.error('🐍 Python dizim hatası:', error);
+      handleError(error, "Python profesyonel dizim başarısız. Kütüphaneler eksik olabilir.");
+    },
+  });
+
   // Tek tuş otomatik dizim mutation
   const [oneClickResult, setOneClickResult] = useState<ArrangementResult | null>(null);
   const oneClickLayoutMutation = useMutation({
@@ -1172,6 +1224,66 @@ export default function AutomationPanelNew() {
                   <DesignList designs={designs} />
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Python Profesyonel Dizim Sistemi */}
+          <Card className="border-2 border-green-500 bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-800">
+                <FileText className="h-6 w-6" />
+                🐍 Python Profesyonel Dizim Motoru
+              </CardTitle>
+              <p className="text-sm text-green-600 mt-2">
+                Firma kalitesinde vektörel dosya işleme ve PDF üretimi
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => pythonLayoutMutation.mutate()}
+                  disabled={designs.length === 0 || isArranging}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
+                  size="lg"
+                >
+                  {isArranging ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      🐍 Python Analiz Ediyor...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-5 w-5 mr-2" />
+                      🚀 Python Profesyonel Dizim
+                    </>
+                  )}
+                </Button>
+
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Python Sistem Özellikleri:
+                  </div>
+                  <div className="space-y-2 text-sm text-green-700">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>PyMuPDF ile gerçek PDF boyutları okur</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                      <span>ReportLab ile vektörel PDF oluşturur</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>CairoSVG ile SVG desteği</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                      <span>2D Bin Packing algoritması</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
