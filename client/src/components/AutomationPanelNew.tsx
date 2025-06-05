@@ -171,31 +171,31 @@ export default function AutomationPanelNew() {
   const uploadDesignsMutation = useMutation({
     mutationFn: async (formData: FormData): Promise<{ designs: Design[] }> => {
       console.log('🚀 Starting file upload...');
-      setUploadProgress(0);
+      setUploadProgress(10);
       
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 15, 90));
-      }, 300);
-
       try {
+        setUploadProgress(25);
+        
         const response = await fetch('/api/upload', {
           method: 'POST',
           credentials: 'include',
           body: formData,
         });
 
-        clearInterval(progressInterval);
+        setUploadProgress(75);
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Network error' }));
-          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+          const errorData = await response.json().catch(() => ({ message: 'Dosya yükleme başarısız' }));
+          throw new Error(errorData.message || `Yükleme hatası: ${response.status}`);
         }
 
         const result = await response.json();
         setUploadProgress(100);
-        setTimeout(() => setUploadProgress(0), 1500);
         
         console.log('✅ Upload successful:', result);
+        
+        // Reset progress after delay
+        setTimeout(() => setUploadProgress(0), 2000);
         
         // Convert single file response to designs array format
         if (result && !Array.isArray(result)) {
@@ -204,7 +204,6 @@ export default function AutomationPanelNew() {
         
         return result;
       } catch (error) {
-        clearInterval(progressInterval);
         setUploadProgress(0);
         console.error('❌ Upload error:', error);
         throw error;
@@ -449,37 +448,64 @@ export default function AutomationPanelNew() {
 
     console.log('📁 Files selected:', files.length);
 
-    // Validate files
-    const allowedTypes = ['application/pdf', 'image/svg+xml', 'application/postscript', 'application/illustrator', 'image/jpeg', 'image/png'];
-    const maxSize = 50 * 1024 * 1024; // 50MB
-
     const file = files[0]; // Upload one file at a time
     console.log(`📄 Validating file: ${file.name} (${file.type}, ${file.size} bytes)`);
     
-    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().match(/\.(pdf|svg|ai|eps|jpg|jpeg|png)$/)) {
+    // Enhanced file validation
+    const allowedExtensions = ['pdf', 'svg', 'ai', 'eps', 'jpg', 'jpeg', 'png'];
+    const allowedMimeTypes = [
+      'application/pdf',
+      'image/svg+xml', 
+      'application/postscript',
+      'application/illustrator',
+      'image/jpeg',
+      'image/png',
+      'image/eps',
+      'application/eps'
+    ];
+    
+    const fileExtension = file.name.toLowerCase().split('.').pop() || '';
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    
+    // Check file extension and mime type
+    if (!allowedExtensions.includes(fileExtension) && !allowedMimeTypes.includes(file.type)) {
       toast({
-        title: "❌ Dosya Hatası",
-        description: `${file.name}: Desteklenmeyen dosya türü. PDF, SVG, AI, EPS, JPG, PNG dosyaları desteklenir.`,
+        title: "🚫 Desteklenmeyen Dosya Türü",
+        description: `${file.name}: Sadece PDF, SVG, AI, EPS, JPG, PNG dosyaları yükleyebilirsiniz.`,
         variant: "destructive",
       });
       event.target.value = '';
       return;
     }
     
+    // Check file size
     if (file.size > maxSize) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
       toast({
-        title: "❌ Dosya Hatası",
-        description: `${file.name}: Dosya boyutu çok büyük (max 50MB)`,
+        title: "📏 Dosya Çok Büyük",
+        description: `${file.name}: ${sizeMB}MB boyutunda. Maksimum 50MB yükleyebilirsiniz.`,
         variant: "destructive",
       });
       event.target.value = '';
       return;
     }
     
+    // Check if file is empty
     if (file.size === 0) {
       toast({
-        title: "❌ Dosya Hatası",
-        description: `${file.name}: Dosya boş`,
+        title: "📄 Boş Dosya",
+        description: `${file.name}: Dosya içeriği boş görünüyor.`,
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
+    // Additional validation for PDF files
+    if (fileExtension === 'pdf' && file.size < 1024) {
+      toast({
+        title: "⚠️ PDF Uyarısı", 
+        description: `${file.name}: PDF dosyası çok küçük, içeriği kontrol edin.`,
         variant: "destructive",
       });
       event.target.value = '';
@@ -489,15 +515,20 @@ export default function AutomationPanelNew() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      console.log(`✅ Added file to FormData: ${file.name}`);
+      console.log(`✅ File validated and prepared: ${file.name} (${fileExtension.toUpperCase()})`);
 
-      console.log('🚀 Starting upload mutation');
+      // Show immediate feedback
+      toast({
+        title: "📤 Yükleme Başlıyor",
+        description: `${file.name} analiz edilmek üzere yükleniyor...`,
+      });
+
       uploadDesignsMutation.mutate(formData);
     } catch (error) {
       console.error('❌ Error preparing upload:', error);
       toast({
-        title: "❌ Yükleme Hazırlık Hatası",
-        description: "Dosya yükleme için hazırlanamadı",
+        title: "❌ Hazırlık Hatası",
+        description: "Dosya yükleme için hazırlanamadı. Lütfen tekrar deneyin.",
         variant: "destructive",
       });
     }
@@ -944,32 +975,66 @@ export default function AutomationPanelNew() {
                   }}
                   disabled={uploadDesignsMutation.isPending}
                   size="lg"
-                  className="mb-6"
+                  className="mb-6 transition-all duration-200 hover:scale-105"
                 >
                   {uploadDesignsMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       🔄 Analiz Ediliyor...
                     </>
+                  ) : uploadProgress > 0 ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                      ✅ Yüklendi!
+                    </>
                   ) : (
-                    "📁 Dosya Seç ve Yükle"
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      📁 Dosya Seç ve Yükle
+                    </>
                   )}
                 </Button>
 
-                {uploadProgress > 0 && (
+                {uploadProgress > 0 && uploadProgress < 100 && (
                   <div className="mt-4 mb-4">
-                    <Progress value={uploadProgress} className="w-full" />
-                    <p className="text-sm text-blue-600 mt-2">
-                      Yükleniyor ve analiz ediliyor: {uploadProgress.toFixed(0)}%
-                    </p>
+                    <Progress value={uploadProgress} className="w-full h-3" />
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-sm text-blue-600">
+                        {uploadProgress < 25 ? '🔄 Dosya yükleniyor...' :
+                         uploadProgress < 75 ? '🔍 İçerik analiz ediliyor...' :
+                         '✨ Son işlemler tamamlanıyor...'}
+                      </p>
+                      <p className="text-sm font-medium text-blue-700">
+                        {uploadProgress.toFixed(0)}%
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {uploadProgress === 100 && (
+                  <div className="mt-4 mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <p className="text-sm text-green-700 font-medium">
+                        ✅ Dosya başarıyla yüklendi ve analiz edildi!
+                      </p>
+                    </div>
                   </div>
                 )}
 
                 {uploadDesignsMutation.isError && (
-                  <div className="mt-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">
-                      ❌ Yükleme hatası: Lütfen dosyalarınızı kontrol edip tekrar deneyin
-                    </p>
+                  <div className="mt-4 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-red-800 mb-1">
+                          Yükleme Başarısız
+                        </p>
+                        <p className="text-sm text-red-600">
+                          Dosya formatını kontrol edin ve tekrar deneyin. Desteklenen formatlar: PDF, SVG, AI, EPS, JPG, PNG
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
