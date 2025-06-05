@@ -92,7 +92,7 @@ export default function AutomationPanelNew() {
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [arrangements, setArrangements] = useState<Arrangement[]>([]);
-  const [isArranging, setIsArranging] = useState(isArranging);
+  const [isArranging, setIsArranging] = useState(false);
   const [previewMode, setPreviewMode] = useState<'list' | 'grid'>('grid');
   const [plotterSettings, setPlotterSettings] = useState<PlotterSettings>({
     sheetWidth: 330,
@@ -482,107 +482,117 @@ export default function AutomationPanelNew() {
           const displayName = design.originalName || design.name || 'Adsız Dosya';
           const safeDimensions = design.realDimensionsMM || design.dimensions || 'Boyut bilinmiyor';
 
-          return (
-            <div
-              key={design.id}
-              className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                selectedDesigns.includes(design.id)
-                  ? 'border-blue-500 bg-blue-50 shadow-md'
-                  : 'border-gray-200 hover:border-gray-300 bg-white'
-              }`}
-              onClick={() => toggleDesignSelection(design.id)}
-            >
-              {/* Selection indicator */}
-              {selectedDesigns.includes(design.id) && (
-                <div className="absolute top-3 right-3 z-10">
-                  <CheckCircle className="h-6 w-6 text-blue-500 bg-white rounded-full shadow-sm" />
-                </div>
-              )}
+          try {
+            return (
+              <div
+                key={design.id}
+                className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                  selectedDesigns.includes(design.id)
+                    ? 'border-blue-500 bg-blue-50 shadow-md'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+                onClick={() => toggleDesignSelection(design.id)}
+              >
+                {/* Selection indicator */}
+                {selectedDesigns.includes(design.id) && (
+                  <div className="absolute top-3 right-3 z-10">
+                    <CheckCircle className="h-6 w-6 text-blue-500 bg-white rounded-full shadow-sm" />
+                  </div>
+                )}
 
-              {/* File preview */}
-              <div className="aspect-square mb-3 bg-gray-50 rounded-lg border overflow-hidden">
-                {design.mimeType === 'application/pdf' ? (
-                  <div className="w-full h-full flex items-center justify-center bg-red-50 relative">
-                    <div className="text-center">
-                      <div className="text-3xl mb-2">📄</div>
-                      <span className="text-xs text-red-600 font-semibold">PDF VEKTÖR</span>
+                {/* File preview */}
+                <div className="aspect-square mb-3 bg-gray-50 rounded-lg border overflow-hidden">
+                  {design.mimeType === 'application/pdf' ? (
+                    <div className="w-full h-full flex items-center justify-center bg-red-50 relative">
+                      <div className="text-center">
+                        <div className="text-3xl mb-2">📄</div>
+                        <span className="text-xs text-red-600 font-semibold">PDF VEKTÖR</span>
+                      </div>
+                      {safeDimensions && (
+                        <div className="absolute bottom-0 left-0 right-0 text-xs bg-red-600 bg-opacity-90 text-white p-1 text-center font-medium">
+                          {safeDimensions}
+                        </div>
+                      )}
                     </div>
-                    {safeDimensions && (
-                      <div className="absolute bottom-0 left-0 right-0 text-xs bg-red-600 bg-opacity-90 text-white p-1 text-center font-medium">
+                  ) : design.thumbnailPath ? (
+                    <img
+                      src={design.thumbnailPath}
+                      alt={displayName}
+                      className="w-full h-full object-contain"
+                      style={{ imageRendering: 'crisp-edges' }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-purple-50">
+                      <div className="text-center">
+                        <div className="text-2xl mb-2">🎨</div>
+                        <span className="text-xs text-purple-600 font-medium">
+                          {design.mimeType?.includes('svg') ? 'SVG' : 
+                           design.mimeType?.includes('eps') ? 'EPS' : 'VEKTÖR'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* File info */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm truncate" title={displayName}>
+                    {displayName}
+                  </h4>
+
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span>Boyut:</span>
+                      <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200">
                         {safeDimensions}
+                      </Badge>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>Dosya:</span>
+                      <span className="font-medium">{design.fileSize || 'Bilinmiyor'}</span>
+                    </div>
+
+                    {design.colorProfile && (
+                      <div className="flex justify-between">
+                        <span>Renk:</span>
+                        <span className="font-medium">{design.colorProfile}</span>
+                      </div>
+                    )}
+
+                    {design.processingStatus && (
+                      <div className="flex justify-between items-center">
+                        <span>Durum:</span>
+                        <Badge 
+                          variant={design.processingStatus === 'success' ? 'default' : 'destructive'} 
+                          className="text-xs"
+                        >
+                          {design.processingStatus === 'success' ? '✅ Hazır' : '❌ Hata'}
+                        </Badge>
                       </div>
                     )}
                   </div>
-                ) : design.thumbnailPath ? (
-                  <img
-                    src={design.thumbnailPath}
-                    alt={displayName}
-                    className="w-full h-full object-contain"
-                    style={{ imageRendering: 'crisp-edges' }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-purple-50">
-                    <div className="text-center">
-                      <div className="text-2xl mb-2">🎨</div>
-                      <span className="text-xs text-purple-600 font-medium">
-                        {design.mimeType?.includes('svg') ? 'SVG' : 
-                         design.mimeType?.includes('eps') ? 'EPS' : 'VEKTÖR'}
-                      </span>
-                    </div>
+                </div>
+
+                {/* Content preservation indicator */}
+                {design.contentPreserved && (
+                  <div className="absolute top-3 left-3">
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      ✅ İçerik Korundu
+                    </Badge>
                   </div>
                 )}
               </div>
-
-              {/* File info */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-sm truncate" title={displayName}>
-                  {displayName}
-                </h4>
-
-                <div className="text-xs text-gray-600 space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span>Boyut:</span>
-                    <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200">
-                      {safeDimensions}
-                    </Badge>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Dosya:</span>
-                    <span className="font-medium">{design.fileSize || 'Bilinmiyor'}</span>
-                  </div>
-
-                  {design.colorProfile && (
-                    <div className="flex justify-between">
-                      <span>Renk:</span>
-                      <span className="font-medium">{design.colorProfile}</span>
-                    </div>
-                  )}
-
-                  {design.processingStatus && (
-                    <div className="flex justify-between items-center">
-                      <span>Durum:</span>
-                      <Badge 
-                        variant={design.processingStatus === 'success' ? 'default' : 'destructive'} 
-                        className="text-xs"
-                      >
-                        {design.processingStatus === 'success' ? '✅ Hazır' : '❌ Hata'}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
+            );
+          } catch (error) {
+            console.error('Error rendering design:', design.id, error);
+            return (
+              <div key={design.id} className="p-4 border-2 border-red-200 rounded-xl bg-red-50">
+                <p className="text-red-600 text-sm">Tasarım yüklenirken hata oluştu</p>
+                <p className="text-xs text-red-500">{displayName}</p>
               </div>
-
-              {/* Content preservation indicator */}
-              {design.contentPreserved && (
-                <div className="absolute top-3 left-3">
-                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                    ✅ İçerik Korundu
-                  </Badge>
-                </div>
-              )}
-            </div>
-          );
+            );
+          }
         })}
       </div>
     );
