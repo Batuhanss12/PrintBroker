@@ -12,6 +12,8 @@ import { insertQuoteSchema, insertPrinterQuoteSchema, insertRatingSchema, insert
 import { z } from "zod";
 import { ideogramService } from "./ideogramApi";
 import { nodePDFGenerator } from "./pdfGeneratorJS";
+import { advancedLayoutEngine } from "./advancedLayoutEngine";
+import { professionalPDFProcessor } from "./professionalPDFProcessor";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -1984,20 +1986,62 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
         dimensions: d.dimensions
       })));
 
-      // Enhanced auto-arrangement algorithm with intelligent design handling
+      // Professional advanced layout algorithm for maximum efficiency
       const sheetWidth = plotterSettings?.sheetWidth || 330; // mm
       const sheetHeight = plotterSettings?.sheetHeight || 480; // mm
-      const margin = plotterSettings?.margin || 3; // Reduced margin for better efficiency
-      const spacing = plotterSettings?.spacing || 1; // Reduced spacing for better packing
-      const verticalSpacing = plotterSettings?.verticalSpacing || spacing;
+      const margin = plotterSettings?.margin || 3;
+      const spacing = plotterSettings?.spacing || 1;
 
-      const arrangements = [];
-      let currentX = margin;
-      let currentY = margin;
-      let rowHeight = 0;
-      let arranged = 0;
-      const availableWidth = sheetWidth - 2 * margin;
-      const availableHeight = sheetHeight - 2 * margin;
+      // Convert designs to advanced layout format
+      const layoutDesigns = designs.map(design => {
+        let width = 50;
+        let height = 30;
+
+        if (design.realDimensionsMM && design.realDimensionsMM !== 'Boyut tespit edilemedi') {
+          const dimensionMatch = design.realDimensionsMM.match(/(\d+)x(\d+)mm/i);
+          if (dimensionMatch) {
+            width = parseInt(dimensionMatch[1]);
+            height = parseInt(dimensionMatch[2]);
+          }
+        }
+
+        return {
+          id: design.id,
+          width,
+          height,
+          name: design.originalName,
+          canRotate: true
+        };
+      });
+
+      // Generate optimal layout using advanced algorithm
+      const layoutResult = advancedLayoutEngine.optimizeLayout(layoutDesigns, {
+        sheetWidth,
+        sheetHeight,
+        margin,
+        spacing,
+        allowRotation: true,
+        optimizeForWaste: true
+      });
+
+      // Convert to arrangements format
+      const arrangements = layoutResult.arrangements.map(item => ({
+        designId: item.id,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        rotation: item.rotation,
+        designName: item.rotation === 90 ? `${item.name} (döndürülmüş)` : item.name,
+        withMargins: {
+          width: item.width + 2,
+          height: item.height + 6
+        }
+      }));
+
+      console.log(`🎯 Advanced layout: ${arrangements.length}/${designs.length} designs, ${layoutResult.efficiency}% efficiency`);
+      
+      let arranged = arrangements.length;
 
       for (const design of designs) {
         console.log('📐 Processing design:', design.originalName);
