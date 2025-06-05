@@ -2292,6 +2292,47 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     }
   });
 
+  // Clear plotter designs endpoint
+  app.delete('/api/automation/plotter/designs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const files = await storage.getFilesByUser(userId);
+      const designFiles = files.filter(f => f.fileType === 'design');
+
+      for (const file of designFiles) {
+        try {
+          // Delete physical file
+          const filePath = path.join(uploadDir, file.filename);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+
+          // Delete thumbnail if exists
+          if (file.thumbnailPath && fs.existsSync(file.thumbnailPath)) {
+            fs.unlinkSync(file.thumbnailPath);
+          }
+
+          // Delete from database
+          await storage.deleteFile(file.id);
+        } catch (deleteError) {
+          console.error(`Error deleting file ${file.filename}:`, deleteError);
+        }
+      }
+
+      console.log(`🗑️ Cleared ${designFiles.length} design files for user ${userId}`);
+      res.json({ message: `${designFiles.length} design files cleared successfully` });
+    } catch (error) {
+      console.error("Error clearing plotter designs:", error);
+      res.status(500).json({ message: "Failed to clear designs" });
+    }
+  });
+
   // Tek tuş otomatik dizim endpoint'i
   app.post('/api/automation/plotter/one-click-layout', isAuthenticated, async (req: any, res) => {
     try {

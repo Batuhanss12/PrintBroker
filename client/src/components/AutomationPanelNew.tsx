@@ -1,7 +1,3 @@
-` tags. I will pay close attention to preserving the original structure, indentation, and functionality, and avoiding any forbidden words or placeholders.
-
-```
-<replit_final_file>
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -172,10 +168,10 @@ export default function AutomationPanelNew() {
     mutationFn: async (formData: FormData): Promise<{ designs: Design[] }> => {
       console.log('🚀 Starting file upload...');
       setUploadProgress(10);
-      
+
       try {
         setUploadProgress(25);
-        
+
         const response = await fetch('/api/upload', {
           method: 'POST',
           credentials: 'include',
@@ -191,17 +187,17 @@ export default function AutomationPanelNew() {
 
         const result = await response.json();
         setUploadProgress(100);
-        
+
         console.log('✅ Upload successful:', result);
-        
+
         // Reset progress after delay
         setTimeout(() => setUploadProgress(0), 2000);
-        
+
         // Convert single file response to designs array format
         if (result && !Array.isArray(result)) {
           return { designs: [result] };
         }
-        
+
         return result;
       } catch (error) {
         setUploadProgress(0);
@@ -450,7 +446,7 @@ export default function AutomationPanelNew() {
 
     const file = files[0]; // Upload one file at a time
     console.log(`📄 Validating file: ${file.name} (${file.type}, ${file.size} bytes)`);
-    
+
     // Enhanced file validation
     const allowedExtensions = ['pdf', 'svg', 'ai', 'eps', 'jpg', 'jpeg', 'png'];
     const allowedMimeTypes = [
@@ -463,10 +459,10 @@ export default function AutomationPanelNew() {
       'image/eps',
       'application/eps'
     ];
-    
+
     const fileExtension = file.name.toLowerCase().split('.').pop() || '';
     const maxSize = 50 * 1024 * 1024; // 50MB
-    
+
     // Check file extension and mime type
     if (!allowedExtensions.includes(fileExtension) && !allowedMimeTypes.includes(file.type)) {
       toast({
@@ -477,7 +473,7 @@ export default function AutomationPanelNew() {
       event.target.value = '';
       return;
     }
-    
+
     // Check file size
     if (file.size > maxSize) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
@@ -489,7 +485,7 @@ export default function AutomationPanelNew() {
       event.target.value = '';
       return;
     }
-    
+
     // Check if file is empty
     if (file.size === 0) {
       toast({
@@ -1301,7 +1297,7 @@ export default function AutomationPanelNew() {
                     ✅ Aktif
                   </Badge>
                 </div>
-               
+
                 <div className="flex justify-between items-center">
                   <span>PDF Üretimi:</span>
                   <Badge variant="outline" className="text-green-600 border-green-200">
