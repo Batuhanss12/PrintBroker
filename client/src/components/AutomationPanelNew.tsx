@@ -1079,22 +1079,22 @@ export default function AutomationPanelNew() {
   };
 
   return (
-    
-      
-        
-          
-            Profesyonel Otomatik Dizilim Sistemi
-          
-          
-            Vektörel dosyalarınızı yükleyin, akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
-          
-        
-      
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3 flex items-center gap-3">
+          <Layout className="h-10 w-10 text-blue-600" />
+          Profesyonel Otomatik Dizilim Sistemi
+        </h1>
+        <p className="text-lg text-gray-600">
+          Vektörel dosyalarınızı yükleyin, akıllı algoritma ile otomatik yerleştirin ve profesyonel PDF çıktısı alın
+        </p>
+      </div>
 
-      
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Main Content */}
-        
-          {/* File Upload Section */}
+        <div className="xl:col-span-2 space-y-6">
+          {/* File Upload Section */}</div>
           
             
               
@@ -1452,5 +1452,8 @@ export default function AutomationPanelNew() {
         
       
     
+  </div>
+      </div>
+    </div>
   );
 }
