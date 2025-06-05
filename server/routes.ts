@@ -76,16 +76,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Multer error handling middleware
   app.use((error: any, req: any, res: any, next: any) => {
     if (error instanceof multer.MulterError) {
+      console.error('Multer error:', error);
       if (error.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'Dosya boyutu çok büyük (maksimum 100MB)' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'Dosya boyutu çok büyük (maksimum 100MB)' 
+        });
       }
       if (error.code === 'LIMIT_FILE_COUNT') {
-        return res.status(400).json({ message: 'Çok fazla dosya (maksimum 10 dosya)' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'Çok fazla dosya (maksimum 10 dosya)' 
+        });
       }
-      return res.status(400).json({ message: 'Dosya yükleme hatası: ' + error.message });
+      if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Beklenmeyen dosya alanı' 
+        });
+      }
+      return res.status(400).json({ 
+        success: false,
+        message: 'Dosya yükleme hatası: ' + error.message 
+      });
     }
-    if (error.message.includes('Invalid file type')) {
-      return res.status(400).json({ message: error.message });
+    if (error.message && error.message.includes('Desteklenmeyen dosya türü')) {
+      return res.status(400).json({ 
+        success: false,
+        message: error.message 
+      });
     }
     next(error);
   });

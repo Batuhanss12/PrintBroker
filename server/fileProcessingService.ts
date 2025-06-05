@@ -213,16 +213,28 @@ export class FileProcessingService {
     try {
       const thumbnailPath = path.join(this.thumbnailDir, `thumb_${filename}.png`);
 
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        console.log('File not found for thumbnail generation:', filePath);
+        return '';
+      }
+
       if (filePath.toLowerCase().endsWith('.pdf')) {
         return await this.generatePDFThumbnail(filePath, filename);
       }
 
-      await sharp(filePath)
-        .resize(200, 150, { fit: 'inside' })
-        .png()
-        .toFile(thumbnailPath);
+      // For image files, use Sharp with better error handling
+      try {
+        await sharp(filePath)
+          .resize(200, 150, { fit: 'inside' })
+          .png()
+          .toFile(thumbnailPath);
 
-      return thumbnailPath;
+        return thumbnailPath;
+      } catch (sharpError) {
+        console.log('Sharp processing failed, file may be corrupted:', sharpError);
+        return '';
+      }
     } catch (error) {
       console.error('Thumbnail generation error:', error);
       return '';
@@ -234,32 +246,68 @@ export class FileProcessingService {
       const thumbnailPath = path.join(this.thumbnailDir, `thumb_${filename}.png`);
       
       // Python ile PDF thumbnail oluştur
-      const { exec } = await import('child_process');
-      const { promisify } = await import('util');
-      const execAsync = promisify(exec);
+      const { spawn } = await import('child_process');
       
-      const command = `python3 -c "
+      return new Promise((resolve) => {
+        const pythonProcess = spawn('python3', ['-c', `
 import fitz
 import sys
+import os
 try:
+    if not os.path.exists('${filePath}'):
+        print('error: file not found')
+        sys.exit(1)
+    
     doc = fitz.open('${filePath}')
+    if len(doc) == 0:
+        print('error: no pages')
+        sys.exit(1)
+        
     page = doc[0]
-    pix = page.get_pixmap(matrix=fitz.Matrix(0.75, 0.75))
+    pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+    
+    # Ensure thumbnail directory exists
+    os.makedirs('${this.thumbnailDir}', exist_ok=True)
+    
     pix.save('${thumbnailPath}')
     doc.close()
     print('success')
 except Exception as e:
     print(f'error: {e}')
-"`;
-      
-      const { stdout } = await execAsync(command, { timeout: 15000 });
-      
-      if (stdout.includes('success')) {
-        return thumbnailPath;
-      } else {
-        console.log('PDF thumbnail generation failed, creating placeholder');
-        return '';
-      }
+    sys.exit(1)
+`]);
+
+        let output = '';
+        let error = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+          output += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+          error += data.toString();
+        });
+
+        pythonProcess.on('close', (code) => {
+          if (code === 0 && output.includes('success')) {
+            resolve(thumbnailPath);
+          } else {
+            console.log('PDF thumbnail generation failed:', error || output);
+            resolve('');
+          }
+        });
+
+        pythonProcess.on('error', (err) => {
+          console.error('Python process error:', err);
+          resolve('');
+        });
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          pythonProcess.kill();
+          resolve('');
+        }, 10000);
+      });
     } catch (error) {
       console.error('PDF thumbnail error:', error);
       return '';
