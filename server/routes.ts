@@ -922,7 +922,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { timeRange } = req.params;
-      
+
       // Mock veriler - gerçek implementasyonda storage'dan gelecek
       const metrics = {
         revenue: {
@@ -1021,14 +1021,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // PDF rapor oluştur
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="business-report-${timeRange}.pdf"`);
-        
+
         // Mock PDF içeriği
         res.send(Buffer.from('Mock PDF Report Content'));
       } else if (format === 'excel') {
         // Excel rapor oluştur
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="business-report-${timeRange}.xlsx"`);
-        
+
         // Mock Excel içeriği
         res.send(Buffer.from('Mock Excel Report Content'));
       } else {
@@ -1045,7 +1045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { dataProtectionManager } = await import('./dataProtection');
-      
+
       const result = await dataProtectionManager.processDataDeletionRequest(userId);
       res.json(result);
     } catch (error) {
@@ -1058,9 +1058,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { dataProtectionManager } = await import('./dataProtection');
-      
+
       const result = await dataProtectionManager.exportUserData(userId);
-      
+
       if (result.success) {
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', `attachment; filename="user-data-${userId}.json"`);
@@ -2431,7 +2431,7 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     }
   });
 
-  
+
 
   // Extended Plotter Data Service API Endpoints
 
@@ -2569,6 +2569,129 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
     } catch (error) {
       console.error("Cutting path generation error:", error);
       res.status(500).json({ message: "Kesim yolu oluşturulamadı" });
+    }
+  });
+
+// Python ile profesyonel dizim motoru
+  app.post('/api/automation/plotter/python-layout', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.user?.id;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { designIds, pageWidth, pageHeight, cuttingSpace } = req.body;
+
+      if (!designIds || !Array.isArray(designIds) || designIds.length === 0) {
+        return res.status(400).json({ message: "En az bir tasarım ID'si gerekli" });
+      }
+
+      // Get design files
+      const files = await storage.getFilesByUser(userId);
+      const designs = files.filter(f => designIds.includes(f.id) && f.fileType === 'design');
+
+      if (designs.length === 0) {
+        return res.status(404).json({ message: "Geçerli tasarım bulunamadı" });
+      }
+
+      // Convert design IDs to file paths
+      const filePaths = designs.map(design => path.join(process.cwd(), 'uploads', design.filename));
+
+      // Create output path
+      const outputPath = path.join(process.cwd(), 'uploads', `professional-layout-${Date.now()}.pdf`);
+
+      console.log('🐍 Python dizim motoru başlatılıyor...');
+      console.log('📁 Dosyalar:', filePaths);
+      console.log('📄 Sayfa boyutu:', `${pageWidth || 330}x${pageHeight || 480}mm`);
+
+      // Python script'ini çağır
+      const { spawn } = require('child_process');
+      const pythonProcess = spawn('python3', [
+        path.join(process.cwd(), 'server', 'professionalLayoutEngine.py'),
+        JSON.stringify({
+          files: filePaths,
+          pageWidth: pageWidth || 330,
+          pageHeight: pageHeight || 480,
+          cuttingSpace: cuttingSpace || 5,
+          outputPath
+        })
+      ], {
+        cwd: process.cwd(),
+        env: { ...process.env, PYTHONPATH: process.cwd() }
+      });
+
+      let result = '';
+      let error = '';
+
+      pythonProcess.stdout.on('data', (data) => {
+        const output = data.toString();
+        console.log('🐍 Python output:', output);
+        result += output;
+      });
+
+      pythonProcess.stderr.on('data', (data) => {
+        const errorOutput = data.toString();
+        console.error('🐍 Python error:', errorOutput);
+        error += errorOutput;
+      });
+
+      pythonProcess.on('close', (code) => {
+        console.log('🐍 Python process exited with code:', code);
+
+        if (code !== 0) {
+          console.error('❌ Python script failed:', error);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Python dizim motoru hatası. Kütüphaneler eksik olabilir.',
+            error: error,
+            code 
+          });
+        }
+
+        try {
+          // Parse last line which should be JSON result
+          const lines = result.trim().split('\n');
+          const lastLine = lines[lines.length - 1];
+          const pythonResult = JSON.parse(lastLine);
+
+          if (pythonResult.success) {
+            console.log('✅ Python dizim başarılı:', pythonResult);
+
+            // Return relative path for download
+            const relativePath = path.relative(path.join(process.cwd(), 'uploads'), pythonResult.output_path);
+            pythonResult.downloadUrl = `/uploads/${relativePath}`;
+          }
+
+          res.json(pythonResult);
+        } catch (parseError) {
+          console.error('❌ Python result parse error:', parseError);
+          console.log('Raw result:', result);
+          res.status(500).json({ 
+            success: false, 
+            message: 'Python sonuç ayrıştırma hatası',
+            rawOutput: result,
+            error: parseError.message
+          });
+        }
+      });
+
+      // Set timeout for long running processes
+      setTimeout(() => {
+        pythonProcess.kill();
+        res.status(408).json({
+          success: false,
+          message: 'Python dizim işlemi zaman aşımı (60s)'
+        });
+      }, 60000);
+
+    } catch (error) {
+      console.error("❌ Python layout error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Python dizim başarısız: " + (error as Error).message 
+      });
     }
   });
 
