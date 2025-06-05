@@ -72,7 +72,7 @@ export default function Navigation() {
             active: location.startsWith("/quote")
           },
         ];
-      
+
       case 'printer':
         return [
           ...baseItems,
@@ -83,7 +83,7 @@ export default function Navigation() {
             active: location === "/dashboard"
           },
         ];
-      
+
       case 'admin':
         return [
           ...baseItems,
@@ -94,7 +94,7 @@ export default function Navigation() {
             active: location === "/dashboard"
           },
         ];
-      
+
       default:
         return baseItems;
     }
@@ -220,7 +220,7 @@ export default function Navigation() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                
+
                 {user.role === 'customer' && (
                   <>
                     <DropdownMenuItem>

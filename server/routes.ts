@@ -848,6 +848,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/payment?error=payment_failed');
   });
 
+  // System monitoring routes
+  app.get('/api/admin/system/health', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { uptimeMonitor } = await import('./errorHandling');
+      const health = await uptimeMonitor.performHealthCheck();
+      res.json(health);
+    } catch (error) {
+      console.error("Error fetching system health:", error);
+      res.status(500).json({ message: "Failed to fetch system health" });
+    }
+  });
+
+  app.get('/api/admin/system/errors', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { errorManager } = await import('./errorHandling');
+      const stats = errorManager.getErrorStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching error stats:", error);
+      res.status(500).json({ message: "Failed to fetch error stats" });
+    }
+  });
+
+  app.get('/api/admin/system/metrics', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Sistem metrikleri
+      const metrics = {
+        activeUsers: await storage.getActiveUserCount(),
+        totalUploads: await storage.getTotalUploadsCount(),
+        processedJobs: await storage.getProcessedJobsCount(),
+        avgResponseTime: 150, // Bu gerçek metriklerden gelecek
+        errorRate: 0.5
+      };
+
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching system metrics:", error);
+      res.status(500).json({ message: "Failed to fetch system metrics" });
+    }
+  });
+
+  // Business intelligence routes
+  app.get('/api/business/metrics/:timeRange', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { timeRange } = req.params;
+      
+      // Mock veriler - gerçek implementasyonda storage'dan gelecek
+      const metrics = {
+        revenue: {
+          total: 125000,
+          monthly: 28000,
+          growth: 15.2,
+          trending: 'up' as const
+        },
+        customers: {
+          total: 156,
+          active: 89,
+          new: 12,
+          retention: 78.5
+        },
+        orders: {
+          total: 234,
+          completed: 189,
+          pending: 25,
+          conversion: 67.8
+        },
+        performance: {
+          avgOrderValue: 1580,
+          avgProcessingTime: 45,
+          customerSatisfaction: 92.5,
+          repeatCustomerRate: 68.3
+        }
+      };
+
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching business metrics:", error);
+      res.status(500).json({ message: "Failed to fetch business metrics" });
+    }
+  });
+
+  app.get('/api/business/timeseries/:timeRange/:metric', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      // Mock zaman serisi verisi
+      const timeSeriesData = Array.from({ length: 30 }, (_, i) => ({
+        date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        revenue: Math.floor(Math.random() * 5000) + 1000,
+        orders: Math.floor(Math.random() * 20) + 5,
+        customers: Math.floor(Math.random() * 10) + 2
+      }));
+
+      res.json(timeSeriesData);
+    } catch (error) {
+      console.error("Error fetching time series data:", error);
+      res.status(500).json({ message: "Failed to fetch time series data" });
+    }
+  });
+
+  app.get('/api/business/categories/:timeRange', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      // Mock kategori analizi
+      const categories = [
+        { category: 'Etiket Baskı', orders: 89, revenue: 45000, growth: 12.5, marketShare: 45 },
+        { category: 'Kartvizit', orders: 67, revenue: 28000, growth: 8.2, marketShare: 28 },
+        { category: 'Broşür', orders: 45, revenue: 35000, growth: -2.1, marketShare: 18 },
+        { category: 'Poster', orders: 33, revenue: 17000, growth: 15.8, marketShare: 9 }
+      ];
+
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching category analysis:", error);
+      res.status(500).json({ message: "Failed to fetch category analysis" });
+    }
+  });
+
+  app.post('/api/business/export', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || user.role !== 'printer') {
+        return res.status(403).json({ message: "Printer access required" });
+      }
+
+      const { format, timeRange, metrics, timeSeries, categories } = req.body;
+
+      if (format === 'pdf') {
+        // PDF rapor oluştur
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="business-report-${timeRange}.pdf"`);
+        
+        // Mock PDF içeriği
+        res.send(Buffer.from('Mock PDF Report Content'));
+      } else if (format === 'excel') {
+        // Excel rapor oluştur
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="business-report-${timeRange}.xlsx"`);
+        
+        // Mock Excel içeriği
+        res.send(Buffer.from('Mock Excel Report Content'));
+      } else {
+        res.status(400).json({ message: "Unsupported format" });
+      }
+    } catch (error) {
+      console.error("Error exporting business report:", error);
+      res.status(500).json({ message: "Failed to export business report" });
+    }
+  });
+
+  // GDPR data protection routes
+  app.post('/api/data-protection/delete-request', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { dataProtectionManager } = await import('./dataProtection');
+      
+      const result = await dataProtectionManager.processDataDeletionRequest(userId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error processing data deletion:", error);
+      res.status(500).json({ message: "Failed to process data deletion request" });
+    }
+  });
+
+  app.get('/api/data-protection/export', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { dataProtectionManager } = await import('./dataProtection');
+      
+      const result = await dataProtectionManager.exportUserData(userId);
+      
+      if (result.success) {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="user-data-${userId}.json"`);
+        res.json(result.data);
+      } else {
+        res.status(500).json({ message: result.error });
+      }
+    } catch (error) {
+      console.error("Error exporting user data:", error);
+      res.status(500).json({ message: "Failed to export user data" });
+    }
+  });
+
   // Admin routes
   app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
     try {
