@@ -16,6 +16,7 @@ import { advancedLayoutEngine } from "./advancedLayoutEngine";
 import { professionalPDFProcessor } from "./professionalPDFProcessor";
 import { oneClickLayoutSystem } from "./oneClickLayoutSystem";
 import { aiDesignAnalyzer } from "./aiDesignAnalyzer";
+import { professionalDesignAnalyzer } from "./professionalDesignAnalyzer";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -1240,22 +1241,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             processingNotes: metadata.processingNotes
           });
 
-          // AI-powered design analysis
-          let aiAnalysisResult = null;
+          // Profesyonel dosya analizi
+          let designAnalysisResult = null;
           try {
-            console.log(`🤖 AI analizi başlatılıyor: ${file.originalname}`);
-            aiAnalysisResult = await aiDesignAnalyzer.analyzeDesignFile(
+            console.log(`🔍 Profesyonel analiz başlatılıyor: ${file.originalname}`);
+            designAnalysisResult = await professionalDesignAnalyzer.analyzeDesignFile(
               file.path, 
               file.originalname, 
               file.mimetype
             );
-            console.log(`✅ AI analizi tamamlandı:`, {
-              success: aiAnalysisResult.success,
-              designsDetected: aiAnalysisResult.totalDesignsDetected,
-              analysis: aiAnalysisResult.aiAnalysis
+            console.log(`✅ Profesyonel analiz tamamlandı:`, {
+              success: designAnalysisResult.success,
+              dimensions: `${designAnalysisResult.dimensions.widthMM}x${designAnalysisResult.dimensions.heightMM}mm`,
+              category: designAnalysisResult.dimensions.category,
+              confidence: designAnalysisResult.dimensions.confidence
             });
-          } catch (aiError) {
-            console.warn("AI analizi başarısız:", aiError);
+          } catch (analysisError) {
+            console.warn("Profesyonel analiz başarısız:", analysisError);
           }
 
           // Enhanced thumbnail generation
@@ -1311,15 +1313,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             resolution: metadata.resolution,
             userId,
             uploadedAt: new Date().toISOString(),
-            // AI Analysis Results
-            aiAnalysis: aiAnalysisResult || null,
-            detectedDesigns: aiAnalysisResult?.designs || [],
-            aiProcessed: !!aiAnalysisResult?.success,
-            smartDimensions: aiAnalysisResult?.designs?.[0] ? {
-              width: aiAnalysisResult.designs[0].width,
-              height: aiAnalysisResult.designs[0].height,
-              category: aiAnalysisResult.designs[0].contentType,
-              confidence: aiAnalysisResult.designs[0].aiConfidence
+            // Profesyonel Analiz Sonuçları
+            designAnalysis: designAnalysisResult || null,
+            detectedDesigns: designAnalysisResult?.success ? [designAnalysisResult.dimensions] : [],
+            professionallyAnalyzed: !!designAnalysisResult?.success,
+            smartDimensions: designAnalysisResult?.success ? {
+              width: designAnalysisResult.dimensions.widthMM,
+              height: designAnalysisResult.dimensions.heightMM,
+              category: designAnalysisResult.dimensions.category,
+              confidence: designAnalysisResult.dimensions.confidence
             } : null
           };
 
