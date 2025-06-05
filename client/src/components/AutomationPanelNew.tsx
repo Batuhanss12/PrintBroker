@@ -1118,12 +1118,9 @@ export default function AutomationPanelNew() {
                   
 
                   {uploadProgress > 0 && (
-                    
-                      
-                      
-                        📊 Yükleniyor ve analiz ediliyor: %{uploadProgress.toFixed(0)}
-                      
-                    
+                    <div className="text-sm text-blue-600">
+                      Yükleniyor ve analiz ediliyor: {uploadProgress.toFixed(0)}%
+                    </div>
                   )}
 
                   
@@ -1174,14 +1171,12 @@ export default function AutomationPanelNew() {
             
             
               {designsError ? (
-                 Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
+                <div className="text-red-600">Tasarım dosyaları yüklenirken hata oluştu. Lütfen sayfayı yenileyin.</div>
               ) : (
                 <>
                   {selectedDesigns.length > 0 && (
-                     {selectedDesigns.length} tasarım seçildi ve dizilim için hazır
+                    <div className="text-green-600">{selectedDesigns.length} tasarım seçildi ve dizilim için hazır</div>
                   )}
-
-                  
                 </>
               )}
             

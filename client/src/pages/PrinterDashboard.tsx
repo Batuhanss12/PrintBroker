@@ -9,7 +9,7 @@ import Navigation from "@/components/Navigation";
 import StatsCard from "@/components/StatsCard";
 import ContractManager from "@/components/ContractManager";
 import ReportsAndAnalytics from "@/components/ReportsAndAnalytics";
-import AutomationPanelNew from "@/components/AutomationPanelNew";
+import AutomationPanelFixed from "@/components/AutomationPanelFixed";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
