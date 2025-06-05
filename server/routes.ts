@@ -18,6 +18,7 @@ import { oneClickLayoutSystem } from "./oneClickLayoutSystem";
 import { aiDesignAnalyzer } from "./aiDesignAnalyzer";
 import { professionalDesignAnalyzer } from "./professionalDesignAnalyzer";
 import { pythonAnalyzerService } from "./pythonAnalyzerService";
+import { multiMethodAnalyzer } from "./multiMethodAnalyzer";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -1519,14 +1520,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           validateContent: true
         });
 
-        // Advanced Python-based analysis for accuracy  
-        let pythonAnalysis;
+        // Enhanced multi-method analysis
+        let enhancedAnalysis;
         try {
-          pythonAnalysis = await pythonAnalyzerService.analyzeSingleFile(file.path, file.mimetype);
-          console.log('🐍 Python analiz sonucu:', pythonAnalysis);
-        } catch (pythonError) {
-          console.warn('⚠️ Python analiz hatası:', pythonError);
-          pythonAnalysis = null;
+          enhancedAnalysis = await multiMethodAnalyzer.analyzeDesignFile(file.path, file.originalname, file.mimetype);
+          console.log('Enhanced analysis result:', enhancedAnalysis);
+        } catch (analysisError) {
+          console.warn('Enhanced analysis failed:', analysisError);
+          enhancedAnalysis = null;
         }
 
         // Create comprehensive design object
