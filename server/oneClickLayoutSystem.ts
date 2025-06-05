@@ -114,20 +114,25 @@ export class OneClickLayoutSystem {
       }
 
       // 3. Düzenleme formatını dönüştür
-      const arrangements = layoutResult.arrangements.map(item => ({
-        designId: item.id || item.designId,
-        x: item.x,
-        y: item.y,
-        width: item.width,
-        height: item.height,
-        rotation: item.rotation,
-        designName: item.rotation === 90 ? `${item.name || item.designName} (döndürülmüş)` : (item.name || item.designName),
-        withCuttingMarks: settings.cuttingSettings.enabled,
-        withMargins: {
+      const arrangements = layoutResult.arrangements.map(item => {
+        const designData = processedDesigns.find(d => d.id === (item.id || item.designId));
+        const designName = designData?.name || item.name || item.designName || `Design_${(item.id || item.designId || '').slice(0,8)}`;
+        
+        return {
+          designId: item.id || item.designId,
+          x: item.x,
+          y: item.y,
           width: item.width,
-          height: item.height
-        }
-      }));
+          height: item.height,
+          rotation: item.rotation,
+          designName: item.rotation === 90 ? `${designName} (döndürülmüş)` : designName,
+          withCuttingMarks: settings.cuttingSettings.enabled,
+          withMargins: {
+            width: item.width,
+            height: item.height
+          }
+        };
+      });
 
       // 4. PDF oluştur
       let pdfPath: string | undefined;
@@ -227,7 +232,7 @@ export class OneClickLayoutSystem {
 
         processed.push({
           id: design.id,
-          name: design.name || design.originalName,
+          name: design.originalName || design.name || design.filename || `Design_${design.id.slice(0,8)}`,
           width,
           height,
           filePath: design.filePath,

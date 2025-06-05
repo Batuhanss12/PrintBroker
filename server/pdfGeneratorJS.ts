@@ -55,7 +55,7 @@ export class NodePDFGenerator {
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
       const { width, height } = page.getSize();
 
-      // Load font
+      // Load font with Unicode support
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
       console.log(`📐 Page size: ${width}x${height} points (${data.plotterSettings.sheetWidth}x${data.plotterSettings.sheetHeight}mm)`);
@@ -135,9 +135,12 @@ export class NodePDFGenerator {
           });
         }
 
-        // Add text labels
+        // Add text labels with safe encoding
         const fontSize = 8;
-        page.drawText(`Design ${i + 1}`, {
+        const safeText1 = `Design ${i + 1}`;
+        const safeText2 = `${arrangement.width}x${arrangement.height}mm`;
+        
+        page.drawText(safeText1, {
           x: x + 5,
           y: y + rectHeight - 15,
           size: fontSize,
@@ -145,7 +148,7 @@ export class NodePDFGenerator {
           color: rgb(0.1, 0.1, 0.1),
         });
 
-        page.drawText(`${arrangement.width}×${arrangement.height}mm`, {
+        page.drawText(safeText2, {
           x: x + 5,
           y: y + rectHeight - 30,
           size: fontSize,
@@ -154,9 +157,9 @@ export class NodePDFGenerator {
         });
       }
 
-      // Add header information
+      // Add header information with safe encoding
       const headerFontSize = 12;
-      page.drawText('Matbixx Otomatik Tasarım Dizimi', {
+      page.drawText('Matbixx Otomatik Tasarim Dizimi', {
         x: 20,
         y: height - 30,
         size: headerFontSize,
@@ -164,7 +167,7 @@ export class NodePDFGenerator {
         color: rgb(0.1, 0.1, 0.1),
       });
 
-      page.drawText(`Sayfa: ${data.plotterSettings.sheetWidth}×${data.plotterSettings.sheetHeight}mm`, {
+      page.drawText(`Sayfa: ${data.plotterSettings.sheetWidth}x${data.plotterSettings.sheetHeight}mm`, {
         x: 20,
         y: height - 50,
         size: 10,
@@ -172,7 +175,7 @@ export class NodePDFGenerator {
         color: rgb(0.3, 0.3, 0.3),
       });
 
-      page.drawText(`Tasarım Sayısı: ${data.arrangements.length}`, {
+      page.drawText(`Tasarim Sayisi: ${data.arrangements.length}`, {
         x: 20,
         y: height - 70,
         size: 10,
