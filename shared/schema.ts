@@ -116,7 +116,7 @@ export const files = pgTable("files", {
   status: varchar("status", { enum: ["uploading", "processing", "ready", "error", "warning"] }).notNull().default("uploading"),
   thumbnailPath: varchar("thumbnail_path"),
   dimensions: varchar("dimensions"), // width x height for images
-  realDimensionsMM: varchar("real_dimensions_mm"), // Real dimensions in mm
+
   colorProfile: varchar("color_profile"), // RGB, CMYK, etc.
   resolution: integer("resolution"), // DPI
   hasTransparency: boolean("has_transparency").default(false),
