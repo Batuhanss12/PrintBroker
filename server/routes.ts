@@ -1535,9 +1535,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let width = 50;  // fallback
           let height = 30; // fallback
           
-          if (design.smartDimensions?.width && design.smartDimensions?.height) {
-            width = design.smartDimensions.width;
-            height = design.smartDimensions.height;
+          if (design.dimensions && typeof design.dimensions === 'string') {
+            const match = design.dimensions.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)mm/);
+            if (match) {
+              width = parseFloat(match[1]);
+              height = parseFloat(match[2]);
+            }
           } else if (design.realDimensionsMM && typeof design.realDimensionsMM === 'string') {
             const match = design.realDimensionsMM.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)mm/);
             if (match) {
@@ -1548,7 +1551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           designs.push({
             id: design.id,
-            name: design.name || design.originalName || `Design_${design.id}`,
+            name: design.originalName || `Design_${design.id}`,
             width,
             height,
             filePath: design.filePath,
@@ -1868,14 +1871,14 @@ app.post('/api/automation/plotter/generate-enhanced-pdf', isAuthenticated, async
             ...designFile,
             processedPath: preparation.processedPath,
             contentAnalysis: preparation.contentAnalysis,
-            preparationNotes: preparation.processingNotes
+            preparationNotes: preparation.preparationNotes
           });
-          console.log(`✅ File prepared: ${designFile.name} - ${preparation.processingNotes}`);
+          console.log(`✅ File prepared: ${designFile.name} - ${preparation.preparationNotes}`);
         } else {
-          console.warn(`⚠️ File preparation failed: ${designFile.name} - ${designFile.preparationNotes}`);
+          console.warn(`⚠️ File preparation failed: ${designFile.name} - ${preparation.preparationNotes}`);
           preparedFiles.push({
             ...designFile,
-            preparationNotes: preparation.processingNotes
+            preparationNotes: preparation.preparationNotes
           });
         }
       }

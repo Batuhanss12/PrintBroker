@@ -1,0 +1,106 @@
+Mevcut PDF yükleme ve dizilim sistemimizi geliştirmek için Python tabanlı bir mikroservis eklememiz gerekiyor. Aşağıdaki yapıyı oluşturmanı istiyorum:
+
+1. Python FastAPI Mikroservis Yapısı:
+Klasör yapısı şu şekilde olmalı:
+
+python_service/
+├── app/
+│   ├── main.py
+│   ├── config.py
+│   ├── services/
+│   │   ├── pdf_analyzer.py
+│   │   ├── design_extractor.py
+│   │   └── arranger.py
+│   ├── models/
+│   │   ├── design.py
+│   │   └── arrangement.py
+│   └── utils/
+│       ├── pdf_utils.py
+│       └── vector_utils.py
+├── tests/
+└── requirements.txt
+
+2. Ana Özellikler:
+
+a) PDF Analiz Sistemi:
+- PDF dosyasını yükleme ve açma
+- Sayfa boyutlarını tespit etme
+- İçerideki tasarım alanını bulma
+- Vektörel içeriği analiz etme
+- Kesim paylarını hesaplama
+
+b) Tasarım Çıkarma Sistemi:
+- PDF içindeki aktif tasarım alanını tespit etme
+- Boş alanları temizleme
+- Vektörel içeriği koruma
+- Boyutları doğru şekilde çıkarma
+
+c) Dizilim Sistemi:
+- Optimal yerleştirme algoritması
+- Rotasyon desteği
+- Boşluk kontrolü
+- Verimlilik hesaplama
+- Kesim payı ekleme
+
+3. API Endpoint'leri:
+
+Aşağıdaki endpoint'leri oluştur:
+- POST /api/analyze-pdf: PDF analizi
+- POST /api/extract-design: Tasarım çıkarma
+- POST /api/arrange-designs: Dizilim oluşturma
+- GET /api/status: Servis durumu
+
+4. Gerekli Özellikler:
+
+- PDF dosya yükleme ve işleme
+- Vektörel içerik analizi
+- Boyut tespiti (MediaBox, TrimBox, ArtBox)
+- İçerik alanı tespiti
+- Otomatik dizilim
+- PDF oluşturma
+- Hata yönetimi
+- CORS desteği
+- Dosya boyutu limitleri
+- Önbellekleme
+
+5. Kullanılacak Kütüphaneler:
+- FastAPI
+- PyMuPDF (fitz)
+- OpenCV
+- NumPy
+- pdf2image
+- svgwrite
+
+6. Güvenlik Özellikleri:
+- Dosya tipi kontrolü
+- Boyut limitleri
+- Hata yakalama
+- Input validasyonu
+- CORS yapılandırması
+
+7. Performans Gereksinimleri:
+- Hızlı PDF analizi
+- Optimize edilmiş dizilim algoritması
+- Önbellekleme desteği
+- Asenkron işlem yapısı
+
+8. Entegrasyon:
+Mevcut React uygulamasıyla entegrasyon için gerekli API çağrılarını ve veri yapılarını oluştur.
+
+Önemli Notlar:
+1. Kod modüler ve bakımı kolay olmalı
+2. Her fonksiyon için hata yönetimi ekle
+3. Tüm işlemler asenkron olmalı
+4. Detaylı log sistemi ekle
+5. Her modül için test yazılmalı
+
+Çıktıda şunlar olmalı:
+1. Tam çalışan bir Python mikroservis
+2. API dokümantasyonu
+3. Kurulum talimatları
+4. Test senaryoları
+5. Örnek kullanım kodları
+6. Hata senaryoları
+7. Performans önerileri
+
+Lütfen her bir bileşeni detaylı açıklamalarla ve kod örnekleriyle oluştur. Özellikle PDF analizi ve tasarım çıkarma kısmına özen göster.
