@@ -481,6 +481,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Live feed endpoint - hem gerçek veriler hem mock veriler
+  app.get('/api/quotes/live-feed', async (req, res) => {
+    try {
+      // Gerçek sisteme verilerini çek
+      const realQuotes = await storage.getRecentQuotes ? await storage.getRecentQuotes(10) : [];
+      
+      // Mock işler oluştur (5 dakikada bir değişen)
+      const now = new Date();
+      const fiveMinuteSlot = Math.floor(now.getTime() / (5 * 60 * 1000));
+      
+      const mockJobs = [
+        {
+          id: `mock_${fiveMinuteSlot}_1`,
+          title: 'Etiket Baskı Projesi',
+          type: 'Etiket Baskı',
+          location: 'İstanbul',
+          amount: `₺${(Math.random() * 2000 + 500).toFixed(0)}`,
+          status: Math.random() > 0.5 ? 'Teklif aşamasında' : 'Üretimde',
+          time: `${Math.floor(Math.random() * 59) + 1} dk önce`,
+          estimatedBudget: Math.random() * 2000 + 500,
+          isGenerated: true
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_2`,
+          title: 'Kartvizit Tasarım ve Baskı',
+          type: 'Kartvizit',
+          location: 'Ankara',
+          amount: `₺${(Math.random() * 1500 + 300).toFixed(0)}`,
+          status: Math.random() > 0.3 ? 'Tamamlandı' : 'Kalite Kontrolde',
+          time: `${Math.floor(Math.random() * 120) + 5} dk önce`,
+          estimatedBudget: Math.random() * 1500 + 300,
+          isGenerated: true
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_3`,
+          title: 'Broşür ve Katalog Baskısı',
+          type: 'Broşür',
+          location: 'İzmir',
+          amount: `₺${(Math.random() * 3000 + 800).toFixed(0)}`,
+          status: Math.random() > 0.6 ? 'Teklif aşamasında' : 'Üretimde',
+          time: `${Math.floor(Math.random() * 180) + 10} dk önce`,
+          estimatedBudget: Math.random() * 3000 + 800,
+          isGenerated: true
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_4`,
+          title: 'Poster ve Afiş Baskı',
+          type: 'Poster',
+          location: 'Bursa',
+          amount: `₺${(Math.random() * 1200 + 400).toFixed(0)}`,
+          status: Math.random() > 0.4 ? 'Tamamlandı' : 'Üretimde',
+          time: `${Math.floor(Math.random() * 240) + 15} dk önce`,
+          estimatedBudget: Math.random() * 1200 + 400,
+          isGenerated: true
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_5`,
+          title: 'Ambalaj Etiketi Üretim',
+          type: 'Etiket',
+          location: 'Antalya',
+          amount: `₺${(Math.random() * 2500 + 600).toFixed(0)}`,
+          status: Math.random() > 0.7 ? 'Teklif aşamasında' : 'Kalite Kontrolde',
+          time: `${Math.floor(Math.random() * 300) + 20} dk önce`,
+          estimatedBudget: Math.random() * 2500 + 600,
+          isGenerated: true
+        }
+      ];
+
+      // Gerçek ve mock verileri birleştir
+      const combinedQuotes = [
+        ...realQuotes.map(quote => ({
+          id: quote.id,
+          title: quote.title || quote.type || 'Baskı Projesi',
+          type: quote.type || 'Genel Baskı',
+          location: quote.location || 'Türkiye',
+          amount: quote.amount || `₺${quote.estimatedBudget || '500'}`,
+          status: quote.status === 'pending' ? 'Teklif aşamasında' :
+                  quote.status === 'in_progress' ? 'Üretimde' :
+                  quote.status === 'completed' ? 'Tamamlandı' :
+                  quote.status === 'approved' ? 'Kalite Kontrolde' : 'Teklif aşamasında',
+          time: quote.createdAt ? `${Math.floor((Date.now() - new Date(quote.createdAt).getTime()) / (1000 * 60))} dk önce` : 'Yeni',
+          estimatedBudget: quote.estimatedBudget || 500,
+          isGenerated: false
+        })),
+        ...mockJobs
+      ];
+
+      // Son 8 işi göster (gerçek + mock karışık)
+      const shuffled = combinedQuotes.sort(() => Math.random() - 0.5);
+      const displayQuotes = shuffled.slice(0, 8);
+
+      res.json({ 
+        quotes: displayQuotes,
+        totalReal: realQuotes.length,
+        totalMock: mockJobs.length,
+        lastUpdated: now.toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching live feed:", error);
+      res.status(500).json({ message: "Failed to fetch live feed" });
+    }
+  });
+
   // Get user files
   app.get('/api/files', isAuthenticated, async (req: any, res) => {
     try {

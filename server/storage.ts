@@ -97,7 +97,7 @@ export interface IStorage {
   getChatRoom(id: string): Promise<ChatRoom | undefined>;
   getChatRoomByQuote(quoteId: string, customerId: string, printerId: string): Promise<ChatRoom | undefined>;
   getChatRoomsByUser(userId: string): Promise<ChatRoom[]>;
-  
+
   sendMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getMessages(roomId: string, limit?: number): Promise<ChatMessage[]>;
   markMessagesAsRead(roomId: string, userId: string): Promise<void>;
@@ -573,7 +573,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(chatMessages.roomId, roomId))
       .orderBy(desc(chatMessages.createdAt))
       .limit(limit);
-    
+
     return messages.reverse(); // Return in chronological order
   }
 
@@ -671,7 +671,7 @@ export class DatabaseStorage implements IStorage {
     if (!contract) return;
 
     const updateData: any = { updatedAt: new Date() };
-    
+
     if (contract.customerId === userId) {
       updateData.customerSignature = signature;
       updateData.customerSignedAt = new Date();

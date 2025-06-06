@@ -52,7 +52,7 @@ export default function Landing() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Canlı iş takibi - gerçek sistem verilerini çek
+  // Canlı iş takibi - hem gerçek sistem verileri hem otomatik mock veriler
   useEffect(() => {
     const fetchLiveJobs = async () => {
       try {
@@ -60,17 +60,47 @@ export default function Landing() {
         if (response.ok) {
           const data = await response.json();
           setLiveJobs(data.quotes || []);
+          console.log(`🔴 Canlı takip güncellendi: ${data.totalReal} gerçek + ${data.totalMock} otomatik iş`);
         }
       } catch (error) {
         console.error('Live jobs fetch error:', error);
+        // Hata durumunda fallback mock veriler
+        const fallbackJobs = [
+          {
+            id: 'fallback_1',
+            title: 'Etiket Baskı Sistemi',
+            type: 'Etiket',
+            location: 'İstanbul',
+            amount: '₺1,250',
+            status: 'Üretimde',
+            time: '15 dk önce',
+            estimatedBudget: 1250,
+            isGenerated: true
+          },
+          {
+            id: 'fallback_2',
+            title: 'Kartvizit Tasarım',
+            type: 'Kartvizit',
+            location: 'Ankara',
+            amount: '₺680',
+            status: 'Teklif aşamasında',
+            time: '28 dk önce',
+            estimatedBudget: 680,
+            isGenerated: true
+          }
+        ];
+        setLiveJobs(fallbackJobs);
       }
     };
 
     // İlk yükleme
     fetchLiveJobs();
 
-    // Her 30 saniyede bir güncelle
+    // Her 30 saniyede bir güncelle (gerçek veriler için)
     const refreshInterval = setInterval(fetchLiveJobs, 30000);
+
+    // Her 5 dakikada bir mock veriler değişir (otomatik)
+    const mockUpdateInterval = setInterval(fetchLiveJobs, 5 * 60 * 1000);
 
     // Animasyon için index güncelleme
     const animationInterval = setInterval(() => {
@@ -79,6 +109,7 @@ export default function Landing() {
 
     return () => {
       clearInterval(refreshInterval);
+      clearInterval(mockUpdateInterval);
       clearInterval(animationInterval);
     };
   }, [liveJobs.length]);
@@ -418,9 +449,16 @@ export default function Landing() {
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
               🔴 Canlı İş Takibi
             </h2>
-            <p className="text-lg sm:text-xl text-gray-300 px-4">
+            <p className="text-lg sm:text-xl text-gray-300 px-4 mb-2">
               Platformda gerçek zamanlı olarak devam eden işler
             </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span>Gerçek sistem verileri</span>
+              <div className="w-1 h-1 bg-gray-500 rounded-full mx-2"></div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span>Demo aktivite (5dk'da bir güncellenir)</span>
+            </div>
           </div>
 
           <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4 sm:p-6 lg:p-8 border border-white/10">
@@ -446,11 +484,24 @@ export default function Landing() {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center space-x-3 min-w-0 flex-1">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        job.isGenerated 
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500' 
+                          : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                      }`}>
                         <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-white font-medium text-sm sm:text-base truncate">{job.title || job.type}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-white font-medium text-sm sm:text-base truncate">
+                            {job.title || job.type}
+                          </div>
+                          {job.isGenerated && (
+                            <Badge className="text-[10px] px-1 py-0 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                              DEMO
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-gray-400 text-xs sm:text-sm">{job.location || 'Türkiye'}</div>
                       </div>
                     </div>
@@ -458,7 +509,8 @@ export default function Landing() {
                       <div className="text-green-400 font-bold text-sm sm:text-lg">{job.amount}</div>
                       <div className={`text-xs sm:text-sm font-medium ${
                         job.status === 'Tamamlandı' ? 'text-green-400' :
-                        job.status === 'Üretimde' ? 'text-blue-400' : 'text-yellow-400'
+                        job.status === 'Üretimde' ? 'text-blue-400' : 
+                        job.status === 'Kalite Kontrolde' ? 'text-purple-400' : 'text-yellow-400'
                       }`}>
                         {job.status}
                       </div>
