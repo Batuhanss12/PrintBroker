@@ -411,11 +411,11 @@ export default function Landing() {
               </Button>
               <Button 
                 size="lg" 
-                onClick={() => handleShowLogin('printer')}
+                onClick={() => window.location.href = '/printer-register'}
                 className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-6 sm:px-8 py-3 w-full sm:w-auto"
               >
                 <Building2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                Firma Girişi
+                Firma Kaydı
               </Button>
             </div>
 
