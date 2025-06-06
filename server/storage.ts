@@ -129,21 +129,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: any): Promise<User> {
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const [user] = await db
       .insert(users)
       .values({
-        id: userData.id || `user_${Date.now()}`,
+        id: userId,
         email: userData.email,
         password: userData.password,
         firstName: userData.firstName,
         lastName: userData.lastName,
         role: userData.role || 'customer',
-        company: userData.company,
         phone: userData.phone,
-        address: userData.address,
-        profileImageUrl: userData.profileImageUrl,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        companyName: userData.company,
+        companyAddress: userData.address,
+        profileImageUrl: userData.profileImageUrl
       })
       .returning();
     return user;
@@ -726,17 +725,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(contracts.id, id));
   }
 
-  async createUser(userData: InsertUser): Promise<User> {
-    try {
-      console.log("Inserting user data to database:", userData);
-      const [newUser] = await db.insert(users).values(userData).returning();
-      console.log("User inserted successfully:", newUser);
-      return newUser;
-    } catch (error) {
-      console.error("Database insert error:", error);
-      throw new Error(`Kullanıcı oluşturma hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
-    }
-  }
+
 }
 
 export const storage = new DatabaseStorage();

@@ -424,6 +424,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register endpoint
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, role, phone, company, address } = req.body;
+      
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ success: false, message: "Gerekli alanlar eksik" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: "Bu email adresi zaten kayıtlı" });
+      }
+
+      // Create new user
+      const userData = {
+        email,
+        password, // In production, hash with bcrypt
+        firstName,
+        lastName,
+        role: role || 'customer',
+        phone,
+        company,
+        address
+      };
+
+      const newUser = await storage.createUser(userData);
+
+      // Set session
+      req.session.user = {
+        id: newUser.id.toString(),
+        email: newUser.email,
+        role: newUser.role,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        profileImageUrl: newUser.profileImageUrl
+      };
+
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ success: false, message: "Kayıt başarısız" });
+        }
+        
+        res.json({ 
+          success: true, 
+          user: req.session.user,
+          redirectUrl: newUser.role === 'admin' ? '/admin-dashboard' : 
+                      newUser.role === 'printer' ? '/printer-dashboard' : '/customer-dashboard'
+        });
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ success: false, message: "Kayıt hatası" });
+    }
+  });
+
+  // Login endpoint
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ success: false, message: "Email ve şifre gerekli" });
+      }
+
+      // Get user from database
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(401).json({ success: false, message: "Kullanıcı bulunamadı" });
+      }
+
+      // In production, use proper password hashing (bcrypt)
+      if (user.password !== password) {
+        return res.status(401).json({ success: false, message: "Hatalı şifre" });
+      }
+
+      // Set session
+      req.session.user = {
+        id: user.id.toString(),
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl
+      };
+
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ success: false, message: "Giriş başarısız" });
+        }
+        
+        res.json({ 
+          success: true, 
+          user: req.session.user,
+          redirectUrl: user.role === 'admin' ? '/admin-dashboard' : 
+                      user.role === 'printer' ? '/printer-dashboard' : '/customer-dashboard'
+        });
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ success: false, message: "Giriş hatası" });
+    }
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
