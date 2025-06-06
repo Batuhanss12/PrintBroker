@@ -62,7 +62,7 @@ const ProfessionalQuoteDialog = ({ category }: { category: any }) => {
     e.preventDefault();
     
     try {
-      const response = await fetch('/api/quotes', {
+      const response = await fetch('/api/quotes/public', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
