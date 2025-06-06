@@ -489,11 +489,15 @@ export default function Landing() {
                         <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-3">
                           <div className="text-white font-medium text-sm sm:text-base truncate">
                             {job.title || job.type}
                           </div>
-                          
+                          {job.quantity && (
+                            <div className="text-emerald-400 text-xs font-medium bg-emerald-500/20 px-2 py-1 rounded">
+                              {job.quantity} adet
+                            </div>
+                          )}
                         </div>
                         <div className="text-gray-400 text-xs sm:text-sm">{job.location || 'Türkiye'}</div>
                       </div>
@@ -524,26 +528,26 @@ export default function Landing() {
                       const amount = job.estimatedBudget || parseFloat((job.amount || '0').replace(/[₺,]/g, '')) || 0;
                       return sum + (typeof amount === 'number' ? amount : 0);
                     }, 0);
-                    
+
                     // Mock tutarları hesapla
                     const mockTotal = liveJobs.filter(job => job.isGenerated).reduce((sum, job) => {
                       const amount = job.estimatedBudget || parseFloat((job.amount || '0').replace(/[₺,]/g, '')) || 0;
                       return sum + (typeof amount === 'number' ? amount : 0);
                     }, 0);
-                    
+
                     // Toplam tutarı 200-300k arasında tut
                     let totalAmount = realTotal + mockTotal;
-                    
+
                     // Eğer toplam 200k'dan azsa, ek mock tutar ekle
                     if (totalAmount < 200000) {
                       totalAmount += (200000 - totalAmount) + (Math.random() * 100000);
                     }
-                    
+
                     // Eğer toplam 300k'dan fazlaysa, 250-300k arasına çek
                     if (totalAmount > 300000) {
                       totalAmount = 250000 + (Math.random() * 50000);
                     }
-                    
+
                     return Math.round(totalAmount).toLocaleString();
                   })()}
                 </div>
@@ -652,7 +656,8 @@ export default function Landing() {
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <User className="h-8 w-8 text-blue-400" />
                 </div>
-                <CardTitle className="text-2xl font-bold text-white mb-2">
+                <CardTitle className="text-2xl font-bold text-white mb-2Analysis: The code modification involves updating the live jobs section to display the quantity of label jobs, and ensuring completeness of the code.
+
                   Müşteri Paketi
                 </CardTitle>
                 <div className="text-3xl font-bold text-blue-400 mb-2">
@@ -871,8 +876,8 @@ export default function Landing() {
                   <a href="#" className="block hover:text-white transition-colors">Basın Kiti</a>
                 </div>
                 <div className="pt-4 border-t border-white/10">
-                  <p className="text-sm text-gray-400">ISO 27001 Sertifikalı</p>```text
-              <p className="text-sm text-gray-400">SSL Güvenlik Sertifikası</p>
+                  <p className="text-sm text-gray-400">ISO 27001 Sertifikalı</p>
+                  <p className="text-sm text-gray-400">SSL Güvenlik Sertifikası</p>
                 </div>
               </div>
             </div>
@@ -976,7 +981,7 @@ export default function Landing() {
                     {feature}
                   </div>
                 ))}
-                
+
                 {loginRole === 'printer' && [
                   'Geniş müşteri ağına erişim',
                   'Gelişmiş analitik dashboard',
@@ -1099,7 +1104,7 @@ export default function Landing() {
                   </div>
                 )}
               </Button>
-              
+
               <Button 
                 type="button" 
                 variant="outline" 
