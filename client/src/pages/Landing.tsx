@@ -40,7 +40,8 @@ import {
   Shirt,
   Package,
   CreditCard,
-  Brain
+  Brain,
+  Printer
 } from "lucide-react";
 
 export default function Landing() {
