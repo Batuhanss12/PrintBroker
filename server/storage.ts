@@ -34,6 +34,8 @@ import { eq, desc, and, or, sql } from "drizzle-orm";
 export interface IStorage {
   // User operations (IMPORTANT: mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: any): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserRole(id: string, role: string): Promise<void>;
   updateUserCreditBalance(id: string, newBalance: string): Promise<void>;
@@ -111,13 +113,39 @@ export interface IStorage {
   updateContractStatus(id: string, status: string): Promise<void>;
   signContract(id: string, userId: string, signature: string): Promise<void>;
 
-  createUser(userData: InsertUser): Promise<User>;
+  createUser(userData: any): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
   // User operations (IMPORTANT: mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: any): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userData.id || `user_${Date.now()}`,
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role || 'customer',
+        company: userData.company,
+        phone: userData.phone,
+        address: userData.address,
+        profileImageUrl: userData.profileImageUrl,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
     return user;
   }
 
