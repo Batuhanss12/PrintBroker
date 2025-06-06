@@ -204,7 +204,7 @@ export default function ProductCategories() {
             Uzman ekibimizle iletişime geçin, size özel çözümler geliştirelim
           </p>
           <div className="flex gap-4 justify-center">
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-blue-600">
+            <Button size="lg" className="bg-white text-blue-600 border-white hover:bg-blue-50 hover:text-blue-700">
               <FileText className="w-5 h-5 mr-2" />
               Hızlı Teklif Al
             </Button>
