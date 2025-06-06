@@ -1,78 +1,58 @@
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { 
-  Check, 
-  ArrowRight, 
-  Star, 
+  CheckCircle, 
+  Clock, 
+  FileText, 
   Users, 
   Building2, 
-  Zap, 
-  Shield, 
-  Clock, 
-  Target, 
-  TrendingUp, 
-  Award,
-  UserCheck,
-  Crown,
-  Settings,
-  BarChart3,
+  BarChart3, 
+  Star, 
+  ArrowRight,
   LogIn,
-  Menu,
-  X,
   User,
-  FileText,
-  CheckCircle,
-  CreditCard,
-  Globe,
-  Smartphone,
-  Monitor,
-  Tablet,
+  Crown,
   Home,
-  Phone,
-  Mail,
-  MapPin,
+  Target,
   DollarSign,
   Truck,
-  Palette,
-  PrinterIcon,
-  Briefcase,
-  Calendar,
+  Shield,
   MessageSquare,
-  HeadphonesIcon
+  TrendingUp,
+  Award,
+  Menu,
+  X
 } from "lucide-react";
 
 export default function Landing() {
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState<'customer' | 'printer' | 'admin' | 'login' | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [liveJobs, setLiveJobs] = useState([
+    { id: 1, type: "Etiket Baskısı", location: "İstanbul", status: "Teklif aşamasında", time: "2 dk önce" },
+    { id: 2, type: "Kartvizit", location: "Ankara", status: "Üretimde", time: "5 dk önce" },
+    { id: 3, type: "Broşür", location: "İzmir", status: "Tamamlandı", time: "8 dk önce" },
+    { id: 4, type: "Sticker", location: "Bursa", status: "Teklif aşamasında", time: "12 dk önce" },
+    { id: 5, type: "Katalog", location: "Antalya", status: "Üretimde", time: "15 dk önce" }
+  ]);
+  
+  const [currentJobIndex, setCurrentJobIndex] = useState(0);
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Check for URL parameters on component mount
-  useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const error = urlParams.get('error');
-    const existingRole = urlParams.get('existing_role');
-    
-    if (error && existingRole) {
-      // Show appropriate error to user
-      console.warn('Registration error:', error, 'with existing role:', existingRole);
-    }
-  });
+  // Canlı iş takibi animasyonu
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentJobIndex((prev) => (prev + 1) % liveJobs.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [liveJobs.length]);
 
-  const { toast } = useToast();
-
-  const handleRoleSelection = (role: 'customer' | 'printer' | 'admin') => {
-    setShowLoginForm(role);
-    setIsLoginModalOpen(true);
+  const handleRoleSelection = (role: string) => {
+    setSelectedRole(role);
+    setShowRoleSelection(true);
   };
 
   const handleLogin = () => {
@@ -80,11 +60,14 @@ export default function Landing() {
   };
 
   const handleGoHome = () => {
-    setIsLoginModalOpen(false);
-    setShowLoginForm(null);
+    setShowRoleSelection(false);
+    setSelectedRole('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const currentJob = liveJobs[currentJobIndex];
+
+  // Müşteri avantajları
   const customerAdvantages = [
     {
       icon: <Target className="h-8 w-8 text-blue-600" />,
@@ -118,6 +101,7 @@ export default function Landing() {
     }
   ];
 
+  // Matbaacı avantajları
   const printerAdvantages = [
     {
       icon: <Users className="h-8 w-8 text-blue-600" />,
@@ -151,87 +135,73 @@ export default function Landing() {
     }
   ];
 
-  const features = [
-    {
-      icon: <Palette className="h-6 w-6" />,
-      title: "Akıllı Tasarım Analizi",
-      description: "AI destekli tasarım analizi ile hızlı fiyatlandırma"
-    },
-    {
-      icon: <PrinterIcon className="h-6 w-6" />,
-      title: "Çoklu Format Desteği",
-      description: "PDF, SVG, EPS ve tüm yaygın tasarım formatları"
-    },
-    {
-      icon: <CreditCard className="h-6 w-6" />,
-      title: "Güvenli Ödeme",
-      description: "PayTR entegrasyonu ile güvenli ödeme işlemleri"
-    },
-    {
-      icon: <Globe className="h-6 w-6" />,
-      title: "Türkiye Geneli",
-      description: "Tüm Türkiye'den matbaacılar ve müşteriler"
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header with enhanced dropdown */}
+      <header className="relative z-10 bg-black/20 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                <PrinterIcon className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Matbixx
-              </span>
+              <span className="text-xl font-bold text-white">Matbixx</span>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              <a href="#avantajlar" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors">
                 Avantajlar
               </a>
-              <a href="#ozellikler" className="text-gray-600 hover:text-blue-600 transition-colors">
-                Özellikler
-              </a>
-              <a href="#iletisim" className="text-gray-600 hover:text-blue-600 transition-colors">
-                İletişim
+              <a href="#canlı-takip" className="text-white/80 hover:text-white transition-colors">
+                Canlı Takip
               </a>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button variant="outline" className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20">
                     <LogIn className="h-4 w-4" />
                     Giriş Yap
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 bg-black/90 border-white/20 text-white">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">Giriş Seçenekleri</p>
+                    <p className="text-sm font-medium text-white">Giriş Seçenekleri</p>
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleRoleSelection('customer')}>
+                  <DropdownMenuSeparator className="bg-white/20" />
+                  <DropdownMenuItem 
+                    onClick={() => handleRoleSelection('customer')}
+                    className="text-white hover:bg-white/10"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     Müşteri Girişi
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleRoleSelection('printer')}>
+                  <DropdownMenuItem 
+                    onClick={() => handleRoleSelection('printer')}
+                    className="text-white hover:bg-white/10"
+                  >
                     <Building2 className="mr-2 h-4 w-4" />
                     Matbaacı Girişi
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleRoleSelection('admin')}>
+                  <DropdownMenuItem 
+                    onClick={() => handleRoleSelection('admin')}
+                    className="text-white hover:bg-white/10"
+                  >
                     <Crown className="mr-2 h-4 w-4" />
                     Admin Girişi
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogin}>
+                  <DropdownMenuSeparator className="bg-white/20" />
+                  <DropdownMenuItem 
+                    onClick={handleLogin}
+                    className="text-white hover:bg-white/10"
+                  >
                     <LogIn className="mr-2 h-4 w-4" />
                     Direkt Giriş
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleGoHome}>
+                  <DropdownMenuItem 
+                    onClick={handleGoHome}
+                    className="text-white hover:bg-white/10"
+                  >
                     <Home className="mr-2 h-4 w-4" />
                     Anasayfaya Dön
                   </DropdownMenuItem>
@@ -241,7 +211,7 @@ export default function Landing() {
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-2"
+              className="md:hidden p-2 text-white"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -250,22 +220,19 @@ export default function Landing() {
 
           {/* Mobile Navigation */}
           {mobileMenuOpen && (
-            <div className="md:hidden border-t bg-white py-4">
+            <div className="md:hidden border-t border-white/10 bg-black/20 py-4">
               <div className="flex flex-col space-y-3">
-                <a href="#avantajlar" className="text-gray-600 hover:text-blue-600 transition-colors px-2">
+                <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors px-2">
                   Avantajlar
                 </a>
-                <a href="#ozellikler" className="text-gray-600 hover:text-blue-600 transition-colors px-2">
-                  Özellikler
+                <a href="#canlı-takip" className="text-white/80 hover:text-white transition-colors px-2">
+                  Canlı Takip
                 </a>
-                <a href="#iletisim" className="text-gray-600 hover:text-blue-600 transition-colors px-2">
-                  İletişim
-                </a>
-                <Separator />
+                <div className="border-t border-white/10 my-2"></div>
                 <Button 
                   variant="outline" 
                   onClick={() => handleRoleSelection('customer')}
-                  className="mx-2 justify-start"
+                  className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <User className="mr-2 h-4 w-4" />
                   Müşteri Girişi
@@ -273,7 +240,7 @@ export default function Landing() {
                 <Button 
                   variant="outline" 
                   onClick={() => handleRoleSelection('printer')}
-                  className="mx-2 justify-start"
+                  className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <Building2 className="mr-2 h-4 w-4" />
                   Matbaacı Girişi
@@ -281,7 +248,7 @@ export default function Landing() {
                 <Button 
                   variant="outline" 
                   onClick={handleLogin}
-                  className="mx-2 justify-start"
+                  className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <LogIn className="mr-2 h-4 w-4" />
                   Direkt Giriş
@@ -289,7 +256,7 @@ export default function Landing() {
                 <Button 
                   variant="ghost" 
                   onClick={handleGoHome}
-                  className="mx-2 justify-start"
+                  className="mx-2 justify-start text-white hover:bg-white/10"
                 >
                   <Home className="mr-2 h-4 w-4" />
                   Anasayfaya Dön
@@ -301,85 +268,148 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-20 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Türkiye'nin En Gelişmiş
-            <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              B2B Matbaa Platformu
-            </span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            AI destekli tasarım analizi, otomatik fiyatlandırma ve güvenli ödeme sistemi ile 
-            müşteri ve matbaacıları bir araya getiren yenilikçi platform.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button 
-              size="lg" 
-              onClick={() => handleRoleSelection('customer')}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            >
-              <User className="mr-2 h-5 w-5" />
-              Müşteri Olarak Başla
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              onClick={() => handleRoleSelection('printer')}
-            >
-              <Building2 className="mr-2 h-5 w-5" />
-              Matbaacı Olarak Katıl
-            </Button>
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+              Türkiye'nin En Gelişmiş
+              <span className="block bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                B2B Matbaa Platformu
+              </span>
+            </h1>
+            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+              AI destekli tasarım analizi, otomatik fiyatlandırma ve güvenli ödeme sistemi
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+              <Button 
+                size="lg" 
+                onClick={() => handleRoleSelection('customer')}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
+              >
+                <User className="mr-2 h-5 w-5" />
+                Müşteri Olarak Başla
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={() => handleRoleSelection('printer')}
+                className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
+              >
+                <Building2 className="mr-2 h-5 w-5" />
+                Matbaacı Olarak Katıl
+              </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-400">500+</div>
+                <div className="text-gray-400">Aktif Matbaacı</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-400">2000+</div>
+                <div className="text-gray-400">Mutlu Müşteri</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-400">15K+</div>
+                <div className="text-gray-400">Tamamlanan Proje</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-orange-400">99%</div>
+                <div className="text-gray-400">Memnuniyet Oranı</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Canlı İş Takibi */}
+      <section id="canlı-takip" className="py-16 bg-white/5 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              🔴 Canlı İş Takibi
+            </h2>
+            <p className="text-xl text-gray-300">
+              Platformda gerçek zamanlı olarak devam eden işler
+            </p>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">500+</div>
-              <div className="text-gray-600">Aktif Matbaacı</div>
+          <div className="bg-black/30 backdrop-blur-sm rounded-xl p-8 border border-white/10">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-white font-medium">Anlık Güncelleme</span>
+              </div>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                Aktif: {liveJobs.length} İş
+              </Badge>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600">2000+</div>
-              <div className="text-gray-600">Mutlu Müşteri</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">15K+</div>
-              <div className="text-gray-600">Tamamlanan Proje</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600">99%</div>
-              <div className="text-gray-600">Memnuniyet Oranı</div>
+
+            <div className="space-y-4">
+              {liveJobs.slice(0, 3).map((job, index) => (
+                <div 
+                  key={job.id}
+                  className={`p-4 rounded-lg border transition-all duration-500 ${
+                    index === currentJobIndex % 3 
+                      ? 'bg-blue-500/20 border-blue-500/50 transform scale-105' 
+                      : 'bg-white/5 border-white/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <div className="text-white font-medium">{job.type}</div>
+                        <div className="text-gray-400 text-sm">{job.location}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-medium ${
+                        job.status === 'Tamamlandı' ? 'text-green-400' :
+                        job.status === 'Üretimde' ? 'text-blue-400' : 'text-yellow-400'
+                      }`}>
+                        {job.status}
+                      </div>
+                      <div className="text-gray-500 text-xs">{job.time}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       {/* Customer Advantages */}
-      <section id="avantajlar" className="py-20 bg-white">
+      <section id="avantajlar" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Müşteriler İçin Avantajlar
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
               Matbixx ile baskı ihtiyaçlarınızı kolayca karşılayın, en iyi fiyatları bulun
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {customerAdvantages.map((advantage, index) => (
-              <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card key={index} className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 group">
                 <CardHeader className="text-center pb-4">
-                  <div className="w-16 h-16 bg-gradient-to-r from-blue-50 to-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                     {advantage.icon}
                   </div>
-                  <CardTitle className="text-xl font-semibold text-gray-900">
+                  <CardTitle className="text-xl font-semibold text-white">
                     {advantage.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-gray-600">{advantage.description}</p>
+                  <p className="text-gray-300">{advantage.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -388,30 +418,30 @@ export default function Landing() {
       </section>
 
       {/* Printer Advantages */}
-      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50">
+      <section className="py-20 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Matbaacılar İçin Avantajlar
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
               İşinizi büyütün, daha fazla müşteriye ulaşın ve gelirinizi artırın
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {printerAdvantages.map((advantage, index) => (
-              <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white">
+              <Card key={index} className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 group">
                 <CardHeader className="text-center pb-4">
-                  <div className="w-16 h-16 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                     {advantage.icon}
                   </div>
-                  <CardTitle className="text-xl font-semibold text-gray-900">
+                  <CardTitle className="text-xl font-semibold text-white">
                     {advantage.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-gray-600">{advantage.description}</p>
+                  <p className="text-gray-300">{advantage.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -419,50 +449,21 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="ozellikler" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Platform Özellikleri
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Teknoloji ve deneyimin mükemmel birleşimi
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <div key={index} className="text-center group">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <div className="text-white">
-                    {feature.icon}
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Hemen Başlayın!
           </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Ücretsiz hesap oluşturun ve Türkiye'nin en gelişmiş B2B matbaa platformunun avantajlarından yararlanın
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              variant="secondary"
               onClick={() => handleRoleSelection('customer')}
-              className="bg-white text-blue-600 hover:bg-gray-100"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
             >
               <User className="mr-2 h-5 w-5" />
               Müşteri Kaydı
@@ -471,7 +472,7 @@ export default function Landing() {
               size="lg" 
               variant="outline"
               onClick={() => handleRoleSelection('printer')}
-              className="border-white text-white hover:bg-white hover:text-blue-600"
+              className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
             >
               <Building2 className="mr-2 h-5 w-5" />
               Matbaacı Kaydı
@@ -480,97 +481,50 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section id="iletisim" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              İletişim
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Sorularınız için bizimle iletişime geçin
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Mail className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">E-posta</h3>
-              <p className="text-gray-600">info@matbixx.com</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Phone className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Telefon</h3>
-              <p className="text-gray-600">+90 (212) 555 0123</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <HeadphonesIcon className="h-6 w-6 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Destek</h3>
-              <p className="text-gray-600">7/24 Canlı Destek</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-black/20 backdrop-blur-sm border-t border-white/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                <PrinterIcon className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold">Matbixx</span>
+              <span className="text-xl font-bold text-white">Matbixx</span>
             </div>
             
             <div className="text-center md:text-right">
               <p className="text-gray-400">© 2024 Matbixx. Tüm hakları saklıdır.</p>
-              <p className="text-gray-400 text-sm mt-1">B2B Matbaa Platformu</p>
+              <p className="text-gray-500 text-sm mt-1">B2B Matbaa Platformu</p>
             </div>
           </div>
         </div>
       </footer>
 
-      {/* Login Modal */}
-      <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* Role Selection Modal */}
+      <Dialog open={showRoleSelection} onOpenChange={setShowRoleSelection}>
+        <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 text-white">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {showLoginForm === 'customer' && <User className="h-5 w-5" />}
-              {showLoginForm === 'printer' && <Building2 className="h-5 w-5" />}
-              {showLoginForm === 'admin' && <Crown className="h-5 w-5" />}
-              {showLoginForm === 'customer' && 'Müşteri Girişi'}
-              {showLoginForm === 'printer' && 'Matbaacı Girişi'}
-              {showLoginForm === 'admin' && 'Admin Girişi'}
-              {!showLoginForm && 'Giriş Yap'}
+            <DialogTitle className="flex items-center gap-2 text-white">
+              {selectedRole === 'customer' && <User className="h-5 w-5" />}
+              {selectedRole === 'printer' && <Building2 className="h-5 w-5" />}
+              {selectedRole === 'admin' && <Crown className="h-5 w-5" />}
+              {selectedRole === 'customer' && 'Müşteri Girişi'}
+              {selectedRole === 'printer' && 'Matbaacı Girişi'}
+              {selectedRole === 'admin' && 'Admin Girişi'}
             </DialogTitle>
-            <DialogDescription>
-              {showLoginForm === 'customer' && 'Müşteri hesabınızla giriş yapın ve baskı siparişlerinizi yönetin.'}
-              {showLoginForm === 'printer' && 'Matbaacı hesabınızla giriş yapın ve siparişlerinizi takip edin.'}
-              {showLoginForm === 'admin' && 'Admin hesabınızla giriş yapın ve sistemi yönetin.'}
-              {!showLoginForm && 'Hesabınızla giriş yapın.'}
+            <DialogDescription className="text-gray-300">
+              {selectedRole === 'customer' && 'Müşteri hesabınızla giriş yapın ve baskı siparişlerinizi yönetin.'}
+              {selectedRole === 'printer' && 'Matbaacı hesabınızla giriş yapın ve siparişlerinizi takip edin.'}
+              {selectedRole === 'admin' && 'Admin hesabınızla giriş yapın ve sistemi yönetin.'}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <Button 
               onClick={handleLogin}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
             >
-              {isLoading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              ) : (
-                <LogIn className="mr-2 h-4 w-4" />
-              )}
+              <LogIn className="mr-2 h-4 w-4" />
               Replit ile Giriş Yap
             </Button>
             
@@ -578,15 +532,15 @@ export default function Landing() {
               <Button 
                 variant="outline" 
                 onClick={handleGoHome}
-                className="flex-1"
+                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
               >
                 <Home className="mr-2 h-4 w-4" />
                 Anasayfaya Dön
               </Button>
               <Button 
                 variant="ghost" 
-                onClick={() => setIsLoginModalOpen(false)}
-                className="flex-1"
+                onClick={() => setShowRoleSelection(false)}
+                className="flex-1 text-gray-300 hover:bg-gray-800"
               >
                 İptal
               </Button>
