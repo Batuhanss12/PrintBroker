@@ -25,7 +25,10 @@ import {
   TrendingUp,
   Award,
   Menu,
-  X
+  X,
+  Mail,
+  Phone,
+  MapPin
 } from "lucide-react";
 
 export default function Landing() {
@@ -212,7 +215,7 @@ export default function Landing() {
                     className="text-white hover:bg-white/10"
                   >
                     <Building2 className="mr-2 h-4 w-4" />
-                    Matbaacı Girişi
+                    Firma Girişi
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => handleDirectLogin('admin')}
@@ -267,7 +270,7 @@ export default function Landing() {
                   className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <Building2 className="mr-2 h-4 w-4" />
-                  Matbaacı Girişi
+                  Firma Girişi
                 </Button>
                 <Button 
                   variant="outline" 
@@ -322,7 +325,7 @@ export default function Landing() {
                 className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
               >
                 <Building2 className="mr-2 h-5 w-5" />
-                Matbaacı Olarak Katıl
+                Firma Olarak Katıl
               </Button>
             </div>
 
@@ -333,7 +336,7 @@ export default function Landing() {
                 <div className="text-gray-400">Aktif Matbaacı</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-400">2000+</div>
+                <div className="text-3xl font-bold text-purple-400">1000+</div>
                 <div className="text-gray-400">Mutlu Müşteri</div>
               </div>
               <div className="text-center">
@@ -517,13 +520,87 @@ export default function Landing() {
               className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
             >
               <Building2 className="mr-2 h-5 w-5" />
-              Matbaacı Kaydı
+              Firma Kaydı
             </Button>
           </div>
         </div>
       </section>
+      {/* Corporate Sections */}
+      <section className="py-16 bg-white/5 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            
+            {/* Bize Ulaşın */}
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-white mb-6">Bize Ulaşın</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center space-x-3">
+                  <Mail className="h-5 w-5 text-blue-400" />
+                  <span className="text-gray-300">info@matbixx.com</span>
+                </div>
+                <div className="flex items-center justify-center space-x-3">
+                  <Phone className="h-5 w-5 text-green-400" />
+                  <span className="text-gray-300">+90 (212) 555 0123</span>
+                </div>
+                <div className="flex items-center justify-center space-x-3">
+                  <MapPin className="h-5 w-5 text-red-400" />
+                  <span className="text-gray-300">İstanbul, Türkiye</span>
+                </div>
+                <div className="flex items-center justify-center space-x-3">
+                  <MessageSquare className="h-5 w-5 text-purple-400" />
+                  <span className="text-gray-300">7/24 Canlı Destek</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Kariyer */}
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-white mb-6">Kariyer</h3>
+              <div className="space-y-4 text-gray-300">
+                <p className="leading-relaxed">
+                  Türkiye'nin en hızlı büyüyen B2B matbaa platformunda kariyer fırsatları keşfedin.
+                </p>
+                <div className="space-y-2">
+                  <div className="text-sm">• Yazılım Geliştirici</div>
+                  <div className="text-sm">• Satış Temsilcisi</div>
+                  <div className="text-sm">• Müşteri Hizmetleri</div>
+                  <div className="text-sm">• Grafik Tasarımcı</div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="mt-4 border-white/30 text-white hover:bg-white/10"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  CV Gönder
+                </Button>
+              </div>
+            </div>
+
+            {/* Kurumsal */}
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-white mb-6">Kurumsal</h3>
+              <div className="space-y-4 text-gray-300">
+                <div className="space-y-3">
+                  <a href="#" className="block hover:text-white transition-colors">Hakkımızda</a>
+                  <a href="#" className="block hover:text-white transition-colors">Gizlilik Politikası</a>
+                  <a href="#" className="block hover:text-white transition-colors">Kullanım Koşulları</a>
+                  <a href="#" className="block hover:text-white transition-colors">KVKK</a>
+                  <a href="#" className="block hover:text-white transition-colors">İş Ortakları</a>
+                  <a href="#" className="block hover:text-white transition-colors">Basın Kiti</a>
+                </div>
+                <div className="pt-4 border-t border-white/10">
+                  <p className="text-sm text-gray-400">ISO 27001 Sertifikalı</p>
+                  <p className="text-sm text-gray-400">SSL Güvenlik Sertifikası</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="bg-black/20 backdrop-blur-sm border-t border-white/10 py-12">
+      <footer className="bg-black/30 backdrop-blur-sm border-t border-white/10 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
@@ -534,8 +611,33 @@ export default function Landing() {
             </div>
             
             <div className="text-center md:text-right">
-              <p className="text-gray-400">© 2024 Matbixx. Tüm hakları saklıdır.</p>
-              <p className="text-gray-500 text-sm mt-1">B2B Matbaa Platformu</p>
+              <p className="text-gray-400">© 2024 Matbixx A.Ş. Tüm hakları saklıdır.</p>
+              <p className="text-gray-500 text-sm mt-1">Türkiye'nin En Güvenilir B2B Matbaa Platformu</p>
+            </div>
+          </div>
+          
+          {/* Social Media & Additional Info */}
+          <div className="mt-6 pt-6 border-t border-white/10">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="flex space-x-6 mb-4 md:mb-0">
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <span className="sr-only">LinkedIn</span>
+                  <Building2 className="h-5 w-5" />
+                </a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <span className="sr-only">Twitter</span>
+                  <MessageSquare className="h-5 w-5" />
+                </a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <span className="sr-only">Instagram</span>
+                  <Target className="h-5 w-5" />
+                </a>
+              </div>
+              <div className="text-center md:text-right">
+                <p className="text-xs text-gray-500">
+                  Matbixx, profesyonel baskı hizmetlerinde güvenin adresi | Est. 2024
+                </p>
+              </div>
             </div>
           </div>
         </div>
