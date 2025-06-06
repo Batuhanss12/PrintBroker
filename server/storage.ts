@@ -110,6 +110,8 @@ export interface IStorage {
   getContractsByPrinter(printerId: string): Promise<Contract[]>;
   updateContractStatus(id: string, status: string): Promise<void>;
   signContract(id: string, userId: string, signature: string): Promise<void>;
+
+  createUser(userData: InsertUser): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -694,6 +696,18 @@ export class DatabaseStorage implements IStorage {
       .update(contracts)
       .set(updateData)
       .where(eq(contracts.id, id));
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
+    try {
+      console.log("Inserting user data to database:", userData);
+      const [newUser] = await db.insert(users).values(userData).returning();
+      console.log("User inserted successfully:", newUser);
+      return newUser;
+    } catch (error) {
+      console.error("Database insert error:", error);
+      throw new Error(`Kullanıcı oluşturma hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    }
   }
 }
 

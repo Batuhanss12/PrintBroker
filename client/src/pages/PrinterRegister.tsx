@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,7 @@ export default function PrinterRegister() {
 
   const validateForm = () => {
     const required = ["firstName", "lastName", "email", "phone", "companyName", "taxNumber", "address", "city", "postalCode", "description"];
-    
+
     for (const field of required) {
       if (!formData[field as keyof PrinterFormData]) {
         toast({
@@ -95,7 +94,7 @@ export default function PrinterRegister() {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    
+
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
@@ -117,7 +116,7 @@ export default function PrinterRegister() {
           title: "Kayıt Başarılı",
           description: "Matbaa hesabınız oluşturuldu, ana sayfaya yönlendiriliyorsunuz...",
         });
-        
+
         setTimeout(() => {
           window.location.href = '/';
         }, 1500);
@@ -149,7 +148,7 @@ export default function PrinterRegister() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Geri Dön
           </Button>
-          
+
           <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Building2 className="h-8 w-8 text-orange-600" />
           </div>
@@ -194,7 +193,7 @@ export default function PrinterRegister() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div>
                     <Label htmlFor="email">E-posta *</Label>
@@ -329,7 +328,7 @@ export default function PrinterRegister() {
                   </div>
                 </div>
                 <p className="text-gray-600 mb-4">Gelişmiş işletme yönetim sistemi</p>
-                
+
                 <ul className="space-y-3">
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
@@ -392,7 +391,7 @@ export default function PrinterRegister() {
                 <p className="text-sm text-gray-600">
                   Zaten hesabınız var mı?{" "}
                   <button
-                    onClick={() => window.location.href = "/api/login"}
+                    onClick={() => window.location.href = "/"}
                     className="text-orange-600 hover:text-orange-700 font-semibold"
                   >
                     Giriş Yapın

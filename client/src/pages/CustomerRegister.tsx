@@ -340,7 +340,7 @@ export default function CustomerRegister() {
                 <p className="text-sm text-gray-600">
                   Zaten hesabınız var mı?{" "}
                   <button
-                    onClick={() => window.location.href = "/api/login"}
+                    onClick={() => window.location.href = "/"}
                     className="text-blue-600 hover:text-blue-700 font-semibold"
                   >
                     Giriş Yapın
