@@ -9,7 +9,7 @@ import Navigation from "@/components/Navigation";
 import StatsCard from "@/components/StatsCard";
 import ContractManager from "@/components/ContractManager";
 import ReportsAndAnalytics from "@/components/ReportsAndAnalytics";
-import AutomationPanelFixed from "@/components/AutomationPanelFixed";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -227,11 +227,10 @@ export default function PrinterDashboard() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="contracts">Sözleşmeler</TabsTrigger>
             <TabsTrigger value="reports">Raporlar</TabsTrigger>
-            <TabsTrigger value="automation">Otomasyonlar</TabsTrigger>
             <TabsTrigger value="orders">Siparişler</TabsTrigger>
           </TabsList>
 
@@ -414,9 +413,7 @@ export default function PrinterDashboard() {
             <ReportsAndAnalytics />
           </TabsContent>
 
-          <TabsContent value="automation">
-            <AutomationPanelFixed />
-          </TabsContent>
+
 
           <TabsContent value="orders" className="space-y-6">
             <Card>
