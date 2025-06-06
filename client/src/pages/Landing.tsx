@@ -36,7 +36,10 @@ import {
   Eye,
   EyeOff,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Shirt,
+  Package,
+  CreditCard
 } from "lucide-react";
 
 export default function Landing() {
@@ -346,6 +349,12 @@ export default function Landing() {
           {mobileMenuOpen && (
             <div className="md:hidden border-t border-white/10 bg-black/20 py-4">
               <div className="flex flex-col space-y-3">
+                <Link href="/products" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
+                  Ürünler
+                </Link>
+                <Link href="/references" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
+                  Referanslar
+                </Link>
                 <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
                   Avantajlar
                 </a>
@@ -816,6 +825,145 @@ export default function Landing() {
           </div>
         </div>
       </section>
+      {/* Quick Categories */}
+      <section className="py-12 sm:py-16 bg-white/5 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Popüler Baskı Çözümleri
+            </h2>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              En çok tercih edilen ürün kategorileri ve hizmetlerimiz
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all duration-300 cursor-pointer border border-white/10">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mr-4">
+                  <FileText className="h-6 w-6 text-blue-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Etiket & Sticker</h3>
+              </div>
+              <p className="text-gray-300 text-sm mb-3">Ürün etiketleri, marka çıkartmaları ve özel tasarım stickerlar</p>
+              <div className="text-green-400 text-sm font-medium">0.10₺ - 5.00₺</div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all duration-300 cursor-pointer border border-white/10">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mr-4">
+                  <CreditCard className="h-6 w-6 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Kartvizit & Katalog</h3>
+              </div>
+              <p className="text-gray-300 text-sm mb-3">Profesyonel kartvizitler, kataloglar ve kurumsal materyaller</p>
+              <div className="text-green-400 text-sm font-medium">0.50₺ - 15.00₺</div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all duration-300 cursor-pointer border border-white/10">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mr-4">
+                  <Package className="h-6 w-6 text-orange-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Ambalaj & Poşet</h3>
+              </div>
+              <p className="text-gray-300 text-sm mb-3">Özel tasarım ambalajlar, plastik ve kağıt poşetler</p>
+              <div className="text-green-400 text-sm font-medium">0.25₺ - 8.00₺</div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all duration-300 cursor-pointer border border-white/10">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center mr-4">
+                  <Target className="h-6 w-6 text-red-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Tabela & Banner</h3>
+              </div>
+              <p className="text-gray-300 text-sm mb-3">Dış mekan tabelaları, reklam bannerları ve dijital baskılar</p>
+              <div className="text-green-400 text-sm font-medium">25.00₺ - 500.00₺</div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all duration-300 cursor-pointer border border-white/10">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mr-4">
+                  <Shirt className="h-6 w-6 text-green-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Tekstil Baskı</h3>
+              </div>
+              <p className="text-gray-300 text-sm mb-3">T-shirt, hoodie, çanta ve tekstil ürünlerinde özel baskılar</p>
+              <div className="text-green-400 text-sm font-medium">15.00₺ - 75.00₺</div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all duration-300 cursor-pointer border border-white/10">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center mr-4">
+                  <Star className="h-6 w-6 text-yellow-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Özel Projeler</h3>
+              </div>
+              <p className="text-gray-300 text-sm mb-3">Büyük hacimli işler ve özelleştirilmiş üretim çözümleri</p>
+              <div className="text-green-400 text-sm font-medium">Teklif alın</div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <Link href="/products">
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3">
+                <ArrowRight className="mr-2 h-5 w-5" />
+                Tüm Kategorileri Gör
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Service Features */}
+      <section className="py-12 sm:py-16 bg-gradient-to-r from-blue-900/20 to-purple-900/20 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Neden Matbixx?
+            </h2>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              Sektördeki deneyimimiz ve teknolojik altyapımızla size en iyi hizmeti sunuyoruz
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-blue-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Kalite Garantisi</h3>
+              <p className="text-gray-300 text-sm">ISO sertifikalı üretim ve %100 kalite kontrolü</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Truck className="w-8 h-8 text-green-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Hızlı Teslimat</h3>
+              <p className="text-gray-300 text-sm">24-48 saat içinde kapınızda</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Özel Tasarım</h3>
+              <p className="text-gray-300 text-sm">Uzman tasarım ekibi desteği</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-8 h-8 text-orange-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Esnek Ödeme</h3>
+              <p className="text-gray-300 text-sm">Taksit seçenekleri ve kurumsal anlaşmalar</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Corporate Sections */}
       <section className="py-12 sm:py-16 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
