@@ -243,11 +243,11 @@ export default function Landing() {
       <header className="relative z-10 bg-black/20 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg flex items-center justify-center">
+            <div className="flex items-center space-x-2 min-w-0">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Building2 className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">Matbixx</span>
+              <span className="text-lg sm:text-xl font-bold text-white truncate">Matbixx</span>
             </div>
 
             {/* Desktop Navigation */}
@@ -317,13 +317,13 @@ export default function Landing() {
           {mobileMenuOpen && (
             <div className="md:hidden border-t border-white/10 bg-black/20 py-4">
               <div className="flex flex-col space-y-3">
-                <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors px-2">
+                <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
                   Avantajlar
                 </a>
-                <a href="#canlı-takip" className="text-white/80 hover:text-white transition-colors px-2">
+                <a href="#canlı-takip" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
                   Canlı Takip
                 </a>
-                <div className="border-t border-white/10 my-2"></div>
+                <div className="border-t border-white/10 my-2 mx-4"></div>
                 <Button 
                   variant="outline" 
                   onClick={() => handleShowLogin('customer')}
@@ -363,75 +363,75 @@ export default function Landing() {
         </div>
       </header>
       {/* Hero Section */}
-      <div className="relative">
+      <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-12 sm:pb-16">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-              Türkiye'nin En Gelişmiş
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
+              <span className="block">Türkiye'nin En Gelişmiş</span>
               <span className="block bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 B2B Matbaa Platformu
               </span>
             </h1>
-            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
               AI destekli tasarım analizi, otomatik fiyatlandırma ve güvenli ödeme sistemi
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4">
               <Button 
                 size="lg" 
                 onClick={() => handleShowLogin('customer')}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 sm:px-8 py-3 w-full sm:w-auto"
               >
-                <User className="mr-2 h-5 w-5" />
+                <User className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                 Müşteri Girişi
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
                 onClick={() => handleShowLogin('printer')}
-                className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
+                className="border-white/30 text-white hover:bg-white/10 px-6 sm:px-8 py-3 w-full sm:w-auto"
               >
-                <Building2 className="mr-2 h-5 w-5" />
+                <Building2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                 Firma Girişi
               </Button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto px-4">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400">50+</div>
-                <div className="text-gray-400">Aktif Matbaacı</div>
+                <div className="text-2xl sm:text-3xl font-bold text-blue-400">50+</div>
+                <div className="text-sm sm:text-base text-gray-400">Aktif Matbaacı</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-400">1000+</div>
-                <div className="text-gray-400">Mutlu Müşteri</div>
+                <div className="text-2xl sm:text-3xl font-bold text-purple-400">1000+</div>
+                <div className="text-sm sm:text-base text-gray-400">Mutlu Müşteri</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-400">15K+</div>
-                <div className="text-gray-400">Tamamlanan Proje</div>
+                <div className="text-2xl sm:text-3xl font-bold text-green-400">15K+</div>
+                <div className="text-sm sm:text-base text-gray-400">Tamamlanan Proje</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-400">99%</div>
-                <div className="text-gray-400">Memnuniyet Oranı</div>
+                <div className="text-2xl sm:text-3xl font-bold text-orange-400">99%</div>
+                <div className="text-sm sm:text-base text-gray-400">Memnuniyet Oranı</div>
               </div>
             </div>
           </div>
         </div>
       </div>
       {/* Canlı İş Takibi */}
-      <section id="canlı-takip" className="py-16 bg-white/5 backdrop-blur-sm">
+      <section id="canlı-takip" className="py-12 sm:py-16 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
               🔴 Canlı İş Takibi
             </h2>
-            <p className="text-xl text-gray-300">
+            <p className="text-lg sm:text-xl text-gray-300 px-4">
               Platformda gerçek zamanlı olarak devam eden işler
             </p>
           </div>
 
-          <div className="bg-black/30 backdrop-blur-sm rounded-xl p-8 border border-white/10">
+          <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4 sm:p-6 lg:p-8 border border-white/10">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
@@ -446,26 +446,26 @@ export default function Landing() {
               {liveJobs.slice(0, 4).map((job, index) => (
                 <div 
                   key={job.id}
-                  className={`p-4 rounded-lg border transition-all duration-500 ${
+                  className={`p-3 sm:p-4 rounded-lg border transition-all duration-500 ${
                     index === currentJobIndex % 4 
-                      ? 'bg-blue-500/20 border-blue-500/50 transform scale-105' 
+                      ? 'bg-blue-500/20 border-blue-500/50 transform scale-[1.02] sm:scale-105' 
                       : 'bg-white/5 border-white/10'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-white" />
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
-                      <div>
-                        <div className="text-white font-medium">{job.type}</div>
-                        <div className="text-gray-400 text-sm">{job.location}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-white font-medium text-sm sm:text-base truncate">{job.type}</div>
+                        <div className="text-gray-400 text-xs sm:text-sm">{job.location}</div>
                         <div className="text-blue-300 text-xs">{job.quantity}</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-green-400 font-bold text-lg">{job.amount}</div>
-                      <div className={`text-sm font-medium ${
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-green-400 font-bold text-sm sm:text-lg">{job.amount}</div>
+                      <div className={`text-xs sm:text-sm font-medium ${
                         job.status === 'Tamamlandı' ? 'text-green-400' :
                         job.status === 'Üretimde' ? 'text-blue-400' : 'text-yellow-400'
                       }`}>
@@ -479,35 +479,35 @@ export default function Landing() {
             </div>
 
             {/* Günlük İstatistikler */}
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-green-400">₺{(liveJobs.reduce((sum, job) => sum + parseInt(job.amount.replace('₺', '').replace(',', '')), 0)).toLocaleString()}</div>
-                <div className="text-gray-400 text-sm">Günlük Hacim</div>
+            <div className="mt-6 sm:mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-2xl font-bold text-green-400 truncate">₺{(liveJobs.reduce((sum, job) => sum + parseInt(job.amount.replace('₺', '').replace(',', '')), 0)).toLocaleString()}</div>
+                <div className="text-gray-400 text-xs sm:text-sm">Günlük Hacim</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-blue-400">{liveJobs.filter(job => job.status === 'Üretimde').length}</div>
-                <div className="text-gray-400 text-sm">Üretimde</div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-2xl font-bold text-blue-400">{liveJobs.filter(job => job.status === 'Üretimde').length}</div>
+                <div className="text-gray-400 text-xs sm:text-sm">Üretimde</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-yellow-400">{liveJobs.filter(job => job.status === 'Teklif aşamasında').length}</div>
-                <div className="text-gray-400 text-sm">Teklif Bekleyen</div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-2xl font-bold text-yellow-400">{liveJobs.filter(job => job.status === 'Teklif aşamasında').length}</div>
+                <div className="text-gray-400 text-xs sm:text-sm">Teklif Bekleyen</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-purple-400">{liveJobs.filter(job => job.status === 'Tamamlandı').length}</div>
-                <div className="text-gray-400 text-sm">Tamamlanan</div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-2xl font-bold text-purple-400">{liveJobs.filter(job => job.status === 'Tamamlandı').length}</div>
+                <div className="text-gray-400 text-xs sm:text-sm">Tamamlanan</div>
               </div>
             </div>
           </div>
         </div>
       </section>
       {/* Customer Advantages */}
-      <section id="avantajlar" className="py-20">
+      <section id="avantajlar" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
               Müşteriler İçin Avantajlar
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-300 max-w-3xl mx-auto px-4">
               Matbixx ile baskı ihtiyaçlarınızı kolayca karşılayın, en iyi fiyatları bulun
             </p>
           </div>
@@ -532,13 +532,13 @@ export default function Landing() {
         </div>
       </section>
       {/* Printer Advantages */}
-      <section className="py-20 bg-white/5 backdrop-blur-sm">
+      <section className="py-12 sm:py-16 lg:py-20 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
               Matbaacılar İçin Avantajlar
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-300 max-w-3xl mx-auto px-4">
               İşinizi büyütün, daha fazla müşteriye ulaşın ve gelirinizi artırın
             </p>
           </div>
@@ -563,18 +563,18 @@ export default function Landing() {
         </div>
       </section>
       {/* Membership Plans & CTA Section */}
-      <section className="py-20">
+      <section className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6">
               Üyelik Paketlerimiz
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-300 max-w-3xl mx-auto px-4">
               İhtiyacınıza uygun paketi seçin ve Türkiye'nin en gelişmiş B2B matbaa platformunun avantajlarından yararlanın
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12 sm:mb-16">
             {/* Müşteri Paketi */}
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 relative">
               <CardHeader className="text-center pb-4">
@@ -708,28 +708,28 @@ export default function Landing() {
           </div>
 
           {/* Quick Start CTA */}
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-white mb-4">
+          <div className="text-center px-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
               Hemen Başlayın!
             </h3>
-            <p className="text-lg text-gray-300 mb-6 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-gray-300 mb-4 sm:mb-6 max-w-2xl mx-auto">
               Demo hesaplarla sistemi test edin veya hemen kayıt olun
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-md sm:max-w-none mx-auto">
               <Button 
                 size="lg" 
                 onClick={() => handleShowLogin('customer')}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 sm:px-8 py-3 w-full sm:w-auto"
               >
-                <User className="mr-2 h-5 w-5" />
+                <User className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                 Müşteri Demo
               </Button>
               <Button 
                 size="lg" 
                 onClick={() => handleShowLogin('printer')}
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-8 py-3"
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 sm:px-8 py-3 w-full sm:w-auto"
               >
-                <Building2 className="mr-2 h-5 w-5" />
+                <Building2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                 Firma Demo
               </Button>
             </div>
@@ -737,9 +737,9 @@ export default function Landing() {
         </div>
       </section>
       {/* Corporate Sections */}
-      <section className="py-16 bg-white/5 backdrop-blur-sm">
+      <section className="py-12 sm:py-16 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
 
             {/* Bize Ulaşın */}
             <div className="text-center">
