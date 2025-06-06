@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import LoadingPage from "@/components/LoadingPage";
 import Landing from "./pages/Landing";
+import LandingNew from "./pages/LandingNew";
 import Home from "./pages/Home";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import PrinterDashboard from "@/pages/PrinterDashboard";
@@ -16,6 +17,7 @@ import Payment from "./pages/Payment";
 import CustomerRegister from "./pages/CustomerRegister";
 import PrinterRegister from "./pages/PrinterRegister";
 import ProductCategories from "./pages/ProductCategories";
+import ProductCategoriesNew from "./pages/ProductCategoriesNew";
 import References from "./pages/References";
 import NotFound from "./pages/not-found";
 
@@ -30,8 +32,10 @@ function AppRouter() {
     <Switch>
       {!isAuthenticated ? (
         <>
-          <Route path="/" component={Landing} />
-          <Route path="/products" component={ProductCategories} />
+          <Route path="/" component={LandingNew} />
+          <Route path="/products" component={ProductCategoriesNew} />
+          <Route path="/old" component={Landing} />
+          <Route path="/old-products" component={ProductCategories} />
           <Route path="/references" component={References} />
           <Route path="/customer-register" component={CustomerRegister} />
           <Route path="/printer-register" component={PrinterRegister} />

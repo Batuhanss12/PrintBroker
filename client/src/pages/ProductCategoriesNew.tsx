@@ -1,0 +1,802 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Search,
+  Filter,
+  Star,
+  CheckCircle,
+  Clock,
+  Shield,
+  Truck,
+  FileText,
+  Package,
+  Calculator,
+  Eye,
+  Download,
+  Sparkles,
+  ArrowRight,
+  Target,
+  Award,
+  Zap,
+  TrendingUp,
+  Factory,
+  Layers,
+  Building2,
+  Palette,
+  Printer,
+  Globe,
+  Users,
+  DollarSign,
+  BarChart3,
+  MessageSquare,
+  Phone,
+  Mail
+} from "lucide-react";
+
+// Professional Quote Dialog Component
+const ProfessionalQuoteDialog = ({ category }: { category: any }) => {
+  const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    productType: category.id,
+    quantity: '',
+    material: '',
+    size: '',
+    description: '',
+    companyName: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    urgency: 'normal'
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/quotes/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          categoryTitle: category.title,
+          priceRange: category.priceRange,
+          minVolume: category.minOrder
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Teklif Talebi Gönderildi",
+          description: "24 saat içinde profesyonel teklifiniz hazırlanacaktır.",
+        });
+        setIsOpen(false);
+        setFormData({
+          productType: category.id,
+          quantity: '',
+          material: '',
+          size: '',
+          description: '',
+          companyName: '',
+          contactName: '',
+          email: '',
+          phone: '',
+          urgency: 'normal'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+          <Calculator className="w-4 h-4 mr-2" />
+          Profesyonel Teklif Al
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">
+            {category.title} - Profesyonel Teklif Talebi
+          </DialogTitle>
+          <DialogDescription>
+            Detaylı bilgilerinizi paylaşın, size özel fiyat teklifi hazırlayalım
+          </DialogDescription>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="quantity">Adet Miktarı *</Label>
+              <Input
+                id="quantity"
+                type="number"
+                placeholder="Örn: 5000"
+                value={formData.quantity}
+                onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">{category.minOrder}</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="material">Malzeme Tercihi</Label>
+              <Select onValueChange={(value) => setFormData({...formData, material: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Malzeme seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {category.materials?.map((material: string, index: number) => (
+                    <SelectItem key={index} value={material}>{material}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="size">Boyut Bilgisi</Label>
+              <Input
+                id="size"
+                placeholder="Örn: 10x15 cm veya A4"
+                value={formData.size}
+                onChange={(e) => setFormData({...formData, size: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="urgency">Teslimat Süresi</Label>
+              <Select onValueChange={(value) => setFormData({...formData, urgency: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Normal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Normal Süre ({category.delivery})</SelectItem>
+                  <SelectItem value="urgent">Acil (48 saat)</SelectItem>
+                  <SelectItem value="express">Ekspres (24 saat)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="description">Ürün Detayları</Label>
+            <Textarea
+              id="description"
+              placeholder="Tasarım özellikleri, renk tercihleri, özel istekleriniz..."
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              rows={3}
+            />
+          </div>
+
+          <div className="border-t pt-6">
+            <h4 className="font-semibold mb-4">İletişim Bilgileri</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="companyName">Firma Adı *</Label>
+                <Input
+                  id="companyName"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="contactName">Yetkili Kişi *</Label>
+                <Input
+                  id="contactName"
+                  value={formData.contactName}
+                  onChange={(e) => setFormData({...formData, contactName: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <Label htmlFor="email">E-posta *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="phone">Telefon</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="flex-1">
+              İptal
+            </Button>
+            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
+              Teklif Talebi Gönder
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const productCategories = [
+  {
+    id: "kartvizit-business-cards",
+    title: "Profesyonel Kartvizit Baskı",
+    subtitle: "Premium Kurumsal Kimlik Çözümleri",
+    description: "300-350gr kuşe kağıt, mat/parlak laminasyon, spot UV lakk, emboss ve deboss seçenekleri ile profesyonel kartvizitler.",
+    image: "/api/placeholder/400/300",
+    priceRange: "0.45₺ - 4.50₺",
+    minOrder: "100 adet",
+    delivery: "24-48 saat",
+    category: "corporate",
+    popularity: 98,
+    materials: ["300gr Kuşe", "350gr Bristol", "Kraft Kağıt", "Özel Dokulu"],
+    features: [
+      "Mat/Parlak Laminasyon",
+      "Spot UV Lakk",
+      "Emboss/Deboss",
+      "Özel Kesim",
+      "Yuvarlak Köşe",
+      "Metalik Folyo"
+    ],
+    applications: [
+      "Kurumsal Tanıtım",
+      "Networking Etkinlikleri", 
+      "Profesyonel İmaj",
+      "Marka Bilinirliği"
+    ],
+    seoKeywords: ["kartvizit baskı", "profesyonel kartvizit", "kurumsal kartvizit", "premium kartvizit"],
+    qualityFeatures: {
+      resolution: "300 DPI",
+      colorSpace: "CMYK + Pantone",
+      finishing: "Laminasyon, UV Lakk",
+      certification: "ISO 9001"
+    }
+  },
+  {
+    id: "etiket-sticker-label",
+    title: "Endüstriyel Etiket & Sticker",
+    subtitle: "Su Geçirmez & UV Dayanıklı Çözümler",
+    description: "Gıda, ilaç, kozmetik ve endüstriyel ürünler için FDA onaylı, su geçirmez, UV dayanıklı etiketler ve güvenlik hologramları.",
+    image: "/api/placeholder/400/300",
+    priceRange: "0.08₺ - 3.50₺",
+    minOrder: "500 adet",
+    delivery: "24-72 saat",
+    category: "industrial",
+    popularity: 95,
+    materials: ["Premium Vinyl", "Polyester Film", "Kraft Kağıt", "Hologram Folyo", "Şeffaf PET"],
+    features: [
+      "Su Geçirmez",
+      "UV Dayanıklı", 
+      "Çıkarılabilir/Kalıcı",
+      "Hologram Güvenlik",
+      "Barkod Uyumlu",
+      "FDA Onaylı"
+    ],
+    applications: [
+      "Gıda Ambalajı",
+      "İlaç Sektörü",
+      "Kozmetik Ürünler",
+      "Güvenlik Etiketleri"
+    ],
+    seoKeywords: ["etiket baskı", "sticker baskı", "güvenlik etiket", "su geçirmez etiket"],
+    qualityFeatures: {
+      resolution: "1200 DPI",
+      colorSpace: "CMYK + Spot",
+      finishing: "Laminasyon, Die-Cut",
+      certification: "FDA, CE"
+    }
+  },
+  {
+    id: "brosur-katalog-printing",
+    title: "Broşür & Katalog Baskı",
+    subtitle: "Yüksek Kalite Tanıtım Materyalleri",
+    description: "Kurumsal broşürler, ürün katalogları, dergi baskıları. Premium kağıt seçenekleri, spot UV, ciltleme ve tel dikiş hizmetleri.",
+    image: "/api/placeholder/400/300",
+    priceRange: "2.50₺ - 35.00₺",
+    minOrder: "100 adet",
+    delivery: "3-5 iş günü",
+    category: "corporate",
+    popularity: 89,
+    materials: ["170gr Kuşe", "250gr Karton", "Premium Mat", "Özel Dokulu"],
+    features: [
+      "Spot UV Lakk",
+      "Tel Dikiş Ciltleme",
+      "Spiral Ciltleme",
+      "Termo Ciltleme",
+      "Katlama Seçenekleri",
+      "Premium Finish"
+    ],
+    applications: [
+      "Kurumsal Tanıtım",
+      "Ürün Katalogları",
+      "Dergi Baskısı",
+      "Fuar Materyalleri"
+    ],
+    seoKeywords: ["broşür baskı", "katalog baskı", "dergi baskı", "tanıtım materyali"],
+    qualityFeatures: {
+      resolution: "300 DPI",
+      colorSpace: "CMYK + Pantone",
+      finishing: "Ciltleme, UV Lakk",
+      certification: "FSC, ISO 14001"
+    }
+  },
+  {
+    id: "ambalaj-kutu-packaging",
+    title: "Özel Ambalaj & Kutu Çözümleri",
+    subtitle: "Premium Ambalaj Tasarım & Üretim",
+    description: "E-ticaret, gıda, kozmetik için özel tasarım mukavva kutular, lüks ambalajlar ve eco-friendly sürdürülebilir çözümler.",
+    image: "/api/placeholder/400/300",
+    priceRange: "1.50₺ - 85.00₺",
+    minOrder: "250 adet",
+    delivery: "5-10 iş günü",
+    category: "packaging",
+    popularity: 92,
+    materials: ["Mukavva", "Bristol Karton", "Kraft Kağıt", "Geri Dönüşüm Malzeme"],
+    features: [
+      "Özel Tasarım",
+      "Lüks Finish",
+      "Eco-Friendly",
+      "Mıknatıslı Kapak",
+      "Pencereli Tasarım",
+      "Hot Foil Stamping"
+    ],
+    applications: [
+      "E-ticaret Ambalajı",
+      "Gıda Ambalajı", 
+      "Kozmetik Kutuları",
+      "Hediye Ambalajları"
+    ],
+    seoKeywords: ["ambalaj baskı", "kutu baskı", "özel ambalaj", "e-ticaret kutu"],
+    qualityFeatures: {
+      resolution: "300 DPI",
+      colorSpace: "CMYK + Spot",
+      finishing: "Die-Cut, Emboss",
+      certification: "FSC, Recyclable"
+    }
+  },
+  {
+    id: "banner-tabela-signage",
+    title: "Banner & Tabela Sistemleri",
+    subtitle: "Açık Hava & İç Mekan Reklamları",
+    description: "Dijital baskı banner, PVC tabela, LED backlight sistemler. Hava koşullarına dayanıklı malzemeler ve montaj hizmeti.",
+    image: "/api/placeholder/400/300",
+    priceRange: "25.00₺ - 850.00₺",
+    minOrder: "1 adet",
+    delivery: "2-7 iş günü",
+    category: "outdoor",
+    popularity: 85,
+    materials: ["PVC Banner", "Mesh Banner", "Alüminyum Kompozit", "Akrilik Pleksiglas"],
+    features: [
+      "Hava Dayanıklı",
+      "UV Print",
+      "LED Backlight",
+      "Büyük Format",
+      "Montaj Hizmeti",
+      "Özel Kesim"
+    ],
+    applications: [
+      "Mağaza Tabelası",
+      "Fuar Standı",
+      "Yol Kenarı Reklam",
+      "İç Mekan Dekor"
+    ],
+    seoKeywords: ["banner baskı", "tabela baskı", "açık hava reklamı", "dijital baskı"],
+    qualityFeatures: {
+      resolution: "720 DPI",
+      colorSpace: "CMYK + RGB",
+      finishing: "Laminasyon, Eyelets",
+      certification: "Outdoor Rated"
+    }
+  },
+  {
+    id: "tekstil-promosyon-textile",
+    title: "Tekstil & Promosyon Ürünleri",
+    subtitle: "T-shirt, Forma & Kurumsal Tekstil",
+    description: "DTG, transfer, nakış teknikleri ile t-shirt, polo, forma, promosyon ürünleri. Organik pamuk ve performance kumaş seçenekleri.",
+    image: "/api/placeholder/400/300",
+    priceRange: "15.00₺ - 125.00₺",
+    minOrder: "25 adet",
+    delivery: "7-12 iş günü",
+    category: "textile",
+    popularity: 88,
+    materials: ["Organik Pamuk", "Performance Polyester", "Pamuk Karışım", "Bambu Karışım"],
+    features: [
+      "DTG Baskı",
+      "Transfer Baskı",
+      "Nakış",
+      "Solmayan Renkler",
+      "Nefes Alabilir",
+      "Organik Seçenekler"
+    ],
+    applications: [
+      "Kurumsal Etkinlik",
+      "Takım Kıyafeti",
+      "Promosyon Kampanyası",
+      "Spor Organizasyonu"
+    ],
+    seoKeywords: ["tekstil baskı", "tişört baskı", "promosyon ürünleri", "nakış"],
+    qualityFeatures: {
+      resolution: "1440 DPI",
+      colorSpace: "CMYK + Spot",
+      finishing: "Heat Press, Embroidery",
+      certification: "OEKO-TEX, Organic"
+    }
+  }
+];
+
+const categoryColors = {
+  corporate: "from-blue-600 to-indigo-600",
+  industrial: "from-orange-500 to-red-600", 
+  packaging: "from-green-600 to-emerald-600",
+  outdoor: "from-purple-600 to-pink-600",
+  textile: "from-amber-600 to-yellow-600"
+};
+
+const platformStats = [
+  { icon: Factory, label: "Aktif Üretim Kapasitesi", value: "100M+ adet/ay" },
+  { icon: Users, label: "Sertifikalı Matbaacı", value: "500+" },
+  { icon: Star, label: "Müşteri Memnuniyeti", value: "4.9/5" },
+  { icon: Globe, label: "Şehir Kapsamı", value: "81 İl" }
+];
+
+const qualityStandards = [
+  "ISO 9001:2015 Kalite Yönetimi",
+  "ISO 14001 Çevre Yönetimi", 
+  "FSC Orman Sertifikası",
+  "OEKO-TEX Tekstil Standardı",
+  "FDA Gıda Uygunluğu",
+  "CE Avrupa Uygunluğu"
+];
+
+export default function ProductCategoriesNew() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sortBy, setSortBy] = useState("popularity");
+
+  const filteredCategories = productCategories.filter(category => {
+    const matchesSearch = category.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         category.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         category.seoKeywords.some(keyword => keyword.includes(searchQuery.toLowerCase()));
+    
+    const matchesCategory = selectedCategory === "all" || category.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  const sortedCategories = [...filteredCategories].sort((a, b) => {
+    switch (sortBy) {
+      case "popularity":
+        return b.popularity - a.popularity;
+      case "price-low":
+        return parseFloat(a.priceRange.split("₺")[0]) - parseFloat(b.priceRange.split("₺")[0]);
+      case "price-high":
+        return parseFloat(b.priceRange.split("₺")[1]) - parseFloat(a.priceRange.split("₺")[1]);
+      case "delivery":
+        return a.delivery.localeCompare(b.delivery);
+      default:
+        return 0;
+    }
+  });
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* SEO Optimized Header */}
+      <section className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full text-blue-800 text-sm font-medium mb-6">
+              <Sparkles className="h-4 w-4 mr-2" />
+              500+ Sertifikalı Matbaacı • ISO 9001 Kalite Garantisi
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Profesyonel Baskı Çözümleri
+              <span className="text-blue-600 block">Her İhtiyaca Özel</span>
+            </h1>
+            
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+              Kartvizit'ten ambalaja, etiket'ten tekstile kadar tüm baskı ihtiyaçlarınız için 
+              AI destekli platform ile anında teklif alın ve %30 tasarruf edin.
+            </p>
+
+            {/* Search and Filter Bar */}
+            <div className="max-w-4xl mx-auto">
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Kartvizit, etiket, broşür, ambalaj..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-12 text-lg bg-white border-gray-300 focus:border-blue-500"
+                  />
+                </div>
+                
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-48 h-12">
+                    <SelectValue placeholder="Kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Kategoriler</SelectItem>
+                    <SelectItem value="corporate">Kurumsal</SelectItem>
+                    <SelectItem value="industrial">Endüstriyel</SelectItem>
+                    <SelectItem value="packaging">Ambalaj</SelectItem>
+                    <SelectItem value="outdoor">Dış Mekan</SelectItem>
+                    <SelectItem value="textile">Tekstil</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-48 h-12">
+                    <SelectValue placeholder="Sırala" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="popularity">Popülerlik</SelectItem>
+                    <SelectItem value="price-low">Fiyat (Düşük)</SelectItem>
+                    <SelectItem value="price-high">Fiyat (Yüksek)</SelectItem>
+                    <SelectItem value="delivery">Teslimat Süresi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Platform Statistics */}
+      <section className="bg-blue-600 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {platformStats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <stat.icon className="h-8 w-8 text-white" />
+                </div>
+                <div className="text-3xl font-bold mb-2">{stat.value}</div>
+                <div className="text-blue-100">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Product Categories Grid */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {filteredCategories.length} Ürün Kategorisi
+            </h2>
+            <Badge className="bg-green-100 text-green-800">
+              Anında Teklif Alın
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {sortedCategories.map((category) => (
+              <Card key={category.id} className="group hover:shadow-xl transition-all duration-500 border-0 shadow-lg overflow-hidden">
+                <div className="relative">
+                  <div className={`w-full h-64 bg-gradient-to-r ${categoryColors[category.category as keyof typeof categoryColors]} flex items-center justify-center relative overflow-hidden`}>
+                    <Package className="w-32 h-32 text-white/20 absolute" />
+                    <Sparkles className="w-8 h-8 text-white absolute top-4 right-4" />
+                    
+                    {/* Category Badge */}
+                    <Badge className="absolute top-4 left-4 bg-white/20 text-white border-white/30">
+                      {category.category === 'corporate' && 'Kurumsal'}
+                      {category.category === 'industrial' && 'Endüstriyel'}
+                      {category.category === 'packaging' && 'Ambalaj'}
+                      {category.category === 'outdoor' && 'Dış Mekan'}
+                      {category.category === 'textile' && 'Tekstil'}
+                    </Badge>
+                    
+                    {/* Popularity Score */}
+                    <div className="absolute bottom-4 right-4 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+                      <div className="flex items-center text-white text-sm">
+                        <Star className="w-4 h-4 mr-1 fill-current" />
+                        {category.popularity}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-xl group-hover:text-blue-600 transition-colors leading-tight mb-2">
+                        {category.title}
+                      </CardTitle>
+                      <p className="text-sm font-medium text-blue-600 mb-2">
+                        {category.subtitle}
+                      </p>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {category.description}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-6">
+                  {/* Pricing and Delivery */}
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <span className="text-xs text-gray-500 font-medium">Fiyat Aralığı</span>
+                      <div className="font-bold text-green-600 text-sm">{category.priceRange}</div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 font-medium">Min. Sipariş</span>
+                      <div className="font-semibold text-gray-900 text-sm">{category.minOrder}</div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 font-medium">Teslimat</span>
+                      <div className="font-semibold text-gray-900 text-sm">{category.delivery}</div>
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Star className="w-4 h-4 mr-2 text-yellow-500" />
+                      Özellikler
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {category.features.map((feature, index) => (
+                        <div key={index} className="flex items-center text-sm">
+                          <CheckCircle className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" />
+                          <span className="text-gray-700">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Quality Standards */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                      <Shield className="w-4 h-4 mr-2 text-blue-500" />
+                      Kalite Standartları
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-500">Çözünürlük:</span>
+                        <span className="font-medium ml-1">{category.qualityFeatures.resolution}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Renk:</span>
+                        <span className="font-medium ml-1">{category.qualityFeatures.colorSpace}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Finish:</span>
+                        <span className="font-medium ml-1">{category.qualityFeatures.finishing}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Sertifika:</span>
+                        <span className="font-medium ml-1">{category.qualityFeatures.certification}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Applications */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                      <Target className="w-4 h-4 mr-2 text-purple-500" />
+                      Kullanım Alanları
+                    </h4>
+                    <div className="flex flex-wrap gap-1">
+                      {category.applications.map((app, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {app}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Delivery and Quality Indicators */}
+                  <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-200">
+                    <span className="flex items-center text-gray-600">
+                      <Clock className="w-4 h-4 mr-2" />
+                      Express: 24-48h
+                    </span>
+                    <span className="flex items-center text-green-600 font-medium">
+                      <Shield className="w-4 h-4 mr-1" />
+                      Kalite Garantili
+                    </span>
+                    <span className="flex items-center text-blue-600 font-medium">
+                      <Truck className="w-4 h-4 mr-1" />
+                      Ücretsiz Kargo
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-3 pt-4">
+                    <ProfessionalQuoteDialog category={category} />
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Eye className="w-4 h-4 mr-2" />
+                      Örnekleri Gör
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Quality Assurance Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Kalite Standartlarımız
+            </h2>
+            <p className="text-lg text-gray-600">
+              Uluslararası sertifikalar ve kalite garantisi
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {qualityStandards.map((standard, index) => (
+              <div key={index} className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 text-center">
+                <Shield className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                <p className="font-semibold text-gray-900 text-sm">{standard}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Baskı İhtiyaçlarınız İçin Hemen Başlayın
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            AI destekli sistemimiz ile 60 saniyede profesyonel teklif alın
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3">
+              <Calculator className="h-5 w-5 mr-2" />
+              Anında Teklif Al
+            </Button>
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3">
+              <Phone className="h-5 w-5 mr-2" />
+              0850 XXX XX XX
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
