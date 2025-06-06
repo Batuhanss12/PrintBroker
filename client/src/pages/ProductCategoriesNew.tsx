@@ -280,7 +280,7 @@ const productCategories = [
     subtitle: "Premium Kurumsal Kimlik Çözümleri",
     description: "300-350gr kuşe kağıt, mat/parlak laminasyon, spot UV lakk, emboss ve deboss seçenekleri ile profesyonel kartvizitler.",
     image: "/api/placeholder/400/300",
-    priceRange: "0.45₺ - 4.50₺",
+    priceRange: "0.45₺ - 4.50₺ + Tasarım Kredisi",
     minOrder: "100 adet",
     delivery: "24-48 saat",
     category: "corporate",

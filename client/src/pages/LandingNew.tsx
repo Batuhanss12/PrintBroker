@@ -139,9 +139,9 @@ export default function LandingNew() {
   const platformFeatures = [
     {
       icon: Sparkles,
-      title: "Otomatik Tasarım Sistemi",
-      description: "AI destekli otomatik tasarım motoru ile profesyonel tasarımlar anında oluşturulur",
-      benefit: "Tasarım maliyeti sıfır"
+      title: "Kredili Tasarım Sistemi",
+      description: "AI destekli otomatik tasarım motoru - 2999₺/ay ile sınırsız profesyonel tasarım",
+      benefit: "Aylık sabit maliyet"
     },
     {
       icon: Zap,
@@ -254,22 +254,37 @@ export default function LandingNew() {
                   <div className="px-4 py-3 border-b">
                     <p className="font-semibold text-gray-900">Panel Türü Seçin</p>
                   </div>
-                  <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => window.location.href = '/api/login'}>
+                  <DropdownMenuItem 
+                    className="px-4 py-3 cursor-pointer hover:bg-gray-100" 
+                    onClick={() => {
+                      window.location.href = '/api/login';
+                    }}
+                  >
                     <User className="h-4 w-4 mr-3 text-blue-600" />
                     <div>
-                      <div className="font-medium">Firma Paneli</div>
-                      <div className="text-sm text-gray-500">Baskı ihtiyaçları yönetimi</div>
+                      <div className="font-medium">Firma Paneli Girişi</div>
+                      <div className="text-sm text-gray-500">Mevcut firma hesabı ile giriş</div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => window.location.href = '/customer-register'}>
+                  <DropdownMenuItem 
+                    className="px-4 py-3 cursor-pointer hover:bg-gray-100" 
+                    onClick={() => {
+                      window.location.href = '/customer-register';
+                    }}
+                  >
                     <Building2 className="h-4 w-4 mr-3 text-green-600" />
                     <div>
                       <div className="font-medium">Yeni Firma Kaydı</div>
-                      <div className="text-sm text-gray-500">Hemen hesap oluşturun</div>
+                      <div className="text-sm text-gray-500">2999₺/ay - Ücretsiz deneme</div>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => window.location.href = '/printer-register'}>
+                  <DropdownMenuItem 
+                    className="px-4 py-3 cursor-pointer hover:bg-gray-100" 
+                    onClick={() => {
+                      window.location.href = '/printer-register';
+                    }}
+                  >
                     <Factory className="h-4 w-4 mr-3 text-orange-600" />
                     <div>
                       <div className="font-medium">Üretici Firma Kaydı</div>
@@ -313,13 +328,24 @@ export default function LandingNew() {
                   Referanslar
                 </Link>
                 <div className="px-4 pt-2 border-t border-gray-200 space-y-2">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => window.location.href = '/api/login'}>
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
+                    onClick={() => {
+                      window.location.href = '/api/login';
+                    }}
+                  >
                     <User className="h-4 w-4 mr-2" />
-                    Firma Paneli
+                    Firma Paneli Girişi
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => window.location.href = '/customer-register'}>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => {
+                      window.location.href = '/customer-register';
+                    }}
+                  >
                     <Building2 className="h-4 w-4 mr-2" />
-                    Yeni Kayıt
+                    Yeni Kayıt (2999₺/ay)
                   </Button>
                 </div>
               </div>
@@ -350,15 +376,29 @@ export default function LandingNew() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
+                <Button 
+                  size="lg" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
+                  onClick={() => window.location.href = '/customer-register'}
+                >
                   <Sparkles className="h-5 w-5 mr-2" />
-                  Otomatik Tasarım Başlat
+                  Kredili Tasarım Başlat
                 </Button>
-                <Button size="lg" variant="outline" className="border-gray-300 text-gray-700 px-8 py-3">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-gray-300 text-gray-700 px-8 py-3"
+                  onClick={() => window.location.href = '/products'}
+                >
                   <Calculator className="h-5 w-5 mr-2" />
                   Anında Teklif Al
                 </Button>
-                <Button size="lg" variant="outline" className="border-gray-300 text-gray-700 px-8 py-3">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-gray-300 text-gray-700 px-8 py-3"
+                  onClick={() => window.open('https://www.youtube.com/watch?v=demo', '_blank')}
+                >
                   <Play className="h-5 w-5 mr-2" />
                   Demo İzle
                 </Button>
@@ -531,8 +571,8 @@ export default function LandingNew() {
                     <Sparkles className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Sıfır Tasarım Maliyeti</h4>
-                    <p className="text-gray-600">AI sistemi ile profesyonel tasarımlar otomatik oluşturulur, tasarımcı maliyeti ortadan kalkar.</p>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Kredili Tasarım Sistemi</h4>
+                    <p className="text-gray-600">AI sistemi ile profesyonel tasarımlar kredi sistemi ile oluşturulur. Aylık 2999₺ paket ile sınırsız tasarım.</p>
                   </div>
                 </div>
                 
@@ -579,9 +619,12 @@ export default function LandingNew() {
                 </div>
               </div>
               
-              <Button className="w-full mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
+              <Button 
+                className="w-full mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                onClick={() => window.location.href = '/customer-register'}
+              >
                 <Sparkles className="h-5 w-5 mr-2" />
-                Otomatik Tasarım Sistemini Dene
+                Kredili Tasarım Sistemini Başlat
               </Button>
             </div>
           </div>
@@ -633,11 +676,20 @@ export default function LandingNew() {
             Ücretsiz hesap oluşturun ve ilk siparişinizde %20 indirim kazanın
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3">
-              Ücretsiz Hesap Aç
+            <Button 
+              size="lg" 
+              className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3"
+              onClick={() => window.location.href = '/customer-register'}
+            >
+              Firma Hesabı Aç (2999₺/ay)
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3">
-              Matbaa Olarak Katıl
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3"
+              onClick={() => window.location.href = '/printer-register'}
+            >
+              Üretici Firma Katıl
             </Button>
           </div>
         </div>
