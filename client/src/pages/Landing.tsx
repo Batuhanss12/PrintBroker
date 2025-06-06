@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { 
   CheckCircle, 
   Clock, 
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 
 export default function Landing() {
+  const { toast } = useToast();
   const [liveJobs, setLiveJobs] = useState([
     { id: 1, type: "Etiket Baskısı", location: "İstanbul", status: "Teklif aşamasında", time: "2 dk önce", amount: "₺2,450", quantity: "5000 adet" },
     { id: 2, type: "Kartvizit", location: "Ankara", status: "Üretimde", time: "5 dk önce", amount: "₺890", quantity: "1000 adet" },
@@ -87,79 +89,12 @@ export default function Landing() {
     window.location.href = '/api/login';
   };
 
-  const handleDirectLogin = async (role: string) => {
+  const handleDirectLogin = (role: string) => {
     console.log(`Direct login attempt for role: ${role}`);
-
-    try {
-      // Test kullanıcıları ile giriş simülasyonu
-      const testCredentials = {
-        customer: { email: 'customer@test.com', password: 'test123' },
-        printer: { email: 'printer@test.com', password: 'test123' },
-        admin: { email: 'admin@test.com', password: 'test123' }
-      };
-
-      const credentials = testCredentials[role as keyof typeof testCredentials];
-
-      if (!credentials) {
-        toast({
-          title: "Hata",
-          description: "Geçersiz rol",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // API'ye giriş isteği gönder
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(credentials),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        toast({
-          title: "Giriş Başarılı",
-          description: `${role} paneline yönlendiriliyorsunuz...`,
-          variant: "default",
-        });
-
-        // Rol bazında yönlendirme
-        setTimeout(() => {
-          if (role === 'customer') {
-            window.location.href = '/customer-dashboard';
-          } else if (role === 'printer') {
-            window.location.href = '/printer-dashboard';
-          } else if (role === 'admin') {
-            window.location.href = '/admin-dashboard';
-          }
-        }, 1000);
-      } else {
-        // Eğer test kullanıcısı yoksa, kayıt sayfasına yönlendir
-        if (role === 'customer') {
-          window.location.href = '/customer-register';
-        } else if (role === 'printer') {
-          window.location.href = '/printer-register';
-        } else {
-          toast({
-            title: "Giriş Başarısız",
-            description: result.message || "Giriş yapılamadı",
-            variant: "destructive",
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        title: "Bağlantı Hatası",
-        description: "Sunucuya bağlanılamadı",
-        variant: "destructive",
-      });
-    }
+    
+    // Doğrudan Replit Auth sistemi üzerinden giriş yap
+    // Giriş sonrası role göre otomatik yönlendirme olacak
+    window.location.href = '/api/login';
   };
 
   const handleGoHome = () => {
