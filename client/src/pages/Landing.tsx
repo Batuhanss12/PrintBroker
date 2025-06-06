@@ -289,13 +289,40 @@ export default function Landing() {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/products" className="text-white/80 hover:text-white transition-colors">
+            <nav className="hidden md:flex items-center space-x-6">
+              {/* Search Bar */}
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Ürün ara..."
+                  className="w-64 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/15 focus:border-blue-400"
+                />
+              </div>
+
+              <Link href="/products" className="text-white/80 hover:text-white transition-colors font-medium">
                 Ürünler
               </Link>
-              <Link href="/references" className="text-white/80 hover:text-white transition-colors">
+              <Link href="/references" className="text-white/80 hover:text-white transition-colors font-medium">
                 Referanslar
               </Link>
+              
+              {/* Live Activity Indicator */}
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-500/20 rounded-full border border-green-400/30">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-xs font-medium text-green-300">
+                  {liveJobs.length} Aktif İş
+                </span>
+              </div>
+
+              {/* Notification Bell */}
+              <div className="relative">
+                <Button variant="ghost" size="sm" className="relative p-2 text-white/80 hover:text-white hover:bg-white/10">
+                  <Clock className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
+                    {Math.min(liveJobs.length, 9)}
+                  </span>
+                </Button>
+              </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -356,6 +383,19 @@ export default function Landing() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-100" />
                   <div className="px-4 py-2">
+                    <p className="text-xs text-gray-500 mb-2">Hızlı Eylemler</p>
+                    <div className="space-y-1">
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-gray-600 hover:text-blue-600">
+                        <Zap className="h-3 w-3 mr-2" />
+                        Demo Hesap
+                      </Button>
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-gray-600 hover:text-green-600">
+                        <Phone className="h-3 w-3 mr-2" />
+                        Destek Hattı
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2 border-t border-gray-100">
                     <p className="text-xs text-gray-500">
                       Hesabınız yok mu? 
                       <a href="/customer-register" className="text-blue-600 hover:text-blue-700 font-medium ml-1">
@@ -380,19 +420,70 @@ export default function Landing() {
           {mobileMenuOpen && (
             <div className="md:hidden border-t border-white/10 bg-black/20 py-4">
               <div className="flex flex-col space-y-3">
-                <Link href="/products" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
+                {/* Search Bar Mobile */}
+                <div className="px-4">
+                  <Input
+                    type="text"
+                    placeholder="Ürün ara..."
+                    className="w-full bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/15 focus:border-blue-400"
+                  />
+                </div>
+
+                {/* Live Activity Mobile */}
+                <div className="px-4">
+                  <div className="flex items-center justify-between p-3 bg-green-500/20 rounded-lg border border-green-400/30">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-green-300">
+                        {liveJobs.length} Aktif İş
+                      </span>
+                    </div>
+                    <Clock className="h-4 w-4 text-green-400" />
+                  </div>
+                </div>
+
+                <Link href="/products" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10 flex items-center">
+                  <Package className="mr-3 h-4 w-4" />
                   Ürünler
                 </Link>
-                <Link href="/references" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
+                <Link href="/references" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10 flex items-center">
+                  <Star className="mr-3 h-4 w-4" />
                   Referanslar
                 </Link>
-                <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
+                <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10 flex items-center">
+                  <Target className="mr-3 h-4 w-4" />
                   Avantajlar
                 </a>
-                <a href="#canlı-takip" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10">
+                <a href="#canlı-takip" className="text-white/80 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/10 flex items-center">
+                  <TrendingUp className="mr-3 h-4 w-4" />
                   Canlı Takip
                 </a>
+                
                 <div className="border-t border-white/10 my-2 mx-4"></div>
+                
+                {/* Quick Actions Mobile */}
+                <div className="px-4 space-y-2">
+                  <p className="text-xs text-white/60 font-medium">Hızlı Eylemler</p>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10"
+                  >
+                    <Zap className="mr-2 h-4 w-4" />
+                    Demo Hesap
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10"
+                  >
+                    <Phone className="mr-2 h-4 w-4" />
+                    Destek Hattı
+                  </Button>
+                </div>
+
+                <div className="border-t border-white/10 my-2 mx-4"></div>
+                
                 <Button 
                   variant="outline" 
                   onClick={() => handleShowLogin('customer')}
@@ -431,6 +522,7 @@ export default function Landing() {
           )}
         </div>
       </header>
+
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         {/* Modern geometric background */}

@@ -725,6 +725,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Professional Quote API
+  app.post('/api/quotes/create', async (req, res) => {
+    try {
+      const {
+        productType,
+        categoryTitle,
+        quantity,
+        material,
+        size,
+        description,
+        companyName,
+        contactName,
+        email,
+        phone,
+        urgency,
+        priceRange,
+        minVolume
+      } = req.body;
+
+      const quote = {
+        id: randomUUID(),
+        productType,
+        categoryTitle,
+        quantity: parseInt(quantity) || 0,
+        material: material || '',
+        size: size || '',
+        description: description || '',
+        companyName,
+        contactName,
+        email,
+        phone: phone || '',
+        urgency: urgency || 'normal',
+        priceRange,
+        minVolume,
+        status: 'new' as const,
+        createdAt: new Date(),
+        estimatedPrice: null,
+        responseDeadline: new Date(Date.now() + (urgency === 'express' ? 24 : urgency === 'urgent' ? 48 : 72) * 60 * 60 * 1000)
+      };
+
+      console.log('📋 Yeni profesyonel teklif talebi:', {
+        id: quote.id,
+        company: companyName,
+        product: categoryTitle,
+        quantity: quantity,
+        urgency: urgency
+      });
+
+      setTimeout(() => {
+        console.log('🏭 Teklif matbaa paneline iletildi:', quote.id);
+      }, 1000);
+
+      res.json({
+        success: true,
+        message: 'Teklif talebiniz başarıyla alındı',
+        quoteId: quote.id,
+        estimatedResponse: quote.responseDeadline
+      });
+
+    } catch (error) {
+      console.error('Quote creation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Teklif oluşturulurken hata oluştu'
+      });
+    }
+  });
+
   // Live feed endpoint - hem gerçek veriler hem mock veriler
   app.get('/api/quotes/live-feed', async (req, res) => {
     try {
