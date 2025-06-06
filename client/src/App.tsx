@@ -15,6 +15,8 @@ import QuoteForm from "@/pages/QuoteForm";
 import Payment from "./pages/Payment";
 import CustomerRegister from "./pages/CustomerRegister";
 import PrinterRegister from "./pages/PrinterRegister";
+import ProductCategories from "./pages/ProductCategories";
+import References from "./pages/References";
 import NotFound from "./pages/not-found";
 
 function Router() {
@@ -29,6 +31,8 @@ function Router() {
       {!isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
+          <Route path="/products" component={ProductCategories} />
+          <Route path="/references" component={References} />
           <Route path="/customer-register" component={CustomerRegister} />
           <Route path="/printer-register" component={PrinterRegister} />
           <Route path="/payment" component={Payment} />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -274,6 +275,12 @@ export default function Landing() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
+              <Link href="/products" className="text-white/80 hover:text-white transition-colors">
+                Ürünler
+              </Link>
+              <Link href="/references" className="text-white/80 hover:text-white transition-colors">
+                Referanslar
+              </Link>
               <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors">
                 Avantajlar
               </a>
