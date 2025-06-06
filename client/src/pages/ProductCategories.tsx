@@ -2,6 +2,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { 
   FileText, 
   Package, 
@@ -30,6 +36,219 @@ import {
   Sparkles
 } from "lucide-react";
 import { Link } from "wouter";
+import { useState } from "react";
+
+// Professional Quote Dialog Component
+const QuoteDialog = ({ category }: { category: any }) => {
+  const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    productType: category.id,
+    quantity: '',
+    material: '',
+    size: '',
+    description: '',
+    companyName: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    urgency: 'normal'
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/quotes/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          categoryTitle: category.title,
+          priceRange: category.priceRange,
+          minVolume: category.volume
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Teklif Talebi Gönderildi",
+          description: "24 saat içinde size detaylı teklif gönderilecektir.",
+        });
+        setIsOpen(false);
+        setFormData({
+          productType: category.id,
+          quantity: '',
+          material: '',
+          size: '',
+          description: '',
+          companyName: '',
+          contactName: '',
+          email: '',
+          phone: '',
+          urgency: 'normal'
+        });
+      } else {
+        throw new Error('Teklif gönderilirken hata oluştu');
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Teklif gönderilirken bir hata oluştu. Lütfen tekrar deneyin.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button className="flex-1" size="sm">
+          <Calculator className="w-4 h-4 mr-2" />
+          Profesyonel Teklif
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">
+            {category.title} - Profesyonel Teklif Talebi
+          </DialogTitle>
+          <DialogDescription>
+            Detaylı bilgilerinizi paylaşın, size özel fiyat teklifi hazırlayalım
+          </DialogDescription>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Product Specifications */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="quantity">Adet Miktarı *</Label>
+              <Input
+                id="quantity"
+                type="number"
+                placeholder="Örn: 5000"
+                value={formData.quantity}
+                onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">{category.volume}</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="material">Malzeme Tercihi</Label>
+              <Select onValueChange={(value) => setFormData({...formData, material: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Malzeme seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {category.materials.map((material: string, index: number) => (
+                    <SelectItem key={index} value={material}>{material}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="size">Boyut Bilgisi</Label>
+              <Input
+                id="size"
+                placeholder="Örn: 10x15 cm veya A4"
+                value={formData.size}
+                onChange={(e) => setFormData({...formData, size: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="urgency">Aciliyet Durumu</Label>
+              <Select onValueChange={(value) => setFormData({...formData, urgency: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Normal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Normal Süre ({category.delivery})</SelectItem>
+                  <SelectItem value="urgent">Acil (48 saat)</SelectItem>
+                  <SelectItem value="express">Ekspres (24 saat)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="description">Ürün Detayları</Label>
+            <Textarea
+              id="description"
+              placeholder="Tasarım özellikleri, renk tercihleri, özel istekleriniz..."
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              rows={3}
+            />
+          </div>
+
+          {/* Contact Information */}
+          <div className="border-t pt-6">
+            <h4 className="font-semibold mb-4">İletişim Bilgileri</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="companyName">Firma Adı *</Label>
+                <Input
+                  id="companyName"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="contactName">Yetkili Kişi *</Label>
+                <Input
+                  id="contactName"
+                  value={formData.contactName}
+                  onChange={(e) => setFormData({...formData, contactName: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <Label htmlFor="email">E-posta *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="phone">Telefon</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="flex-1">
+              İptal
+            </Button>
+            <Button type="submit" className="flex-1">
+              Teklif Talebi Gönder
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const productCategories = [
   {
@@ -180,7 +399,7 @@ export default function ProductCategories() {
             {productCategories.map((category) => (
               <Card key={category.id} className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white overflow-hidden">
                 <div className="relative">
-                  <div className={`w-full h-56 bg-gradient-to-r ${categoryColors[category.category]} flex items-center justify-center relative overflow-hidden`}>
+                  <div className={`w-full h-56 bg-gradient-to-r ${categoryColors[category.category as keyof typeof categoryColors] || 'from-gray-600 to-gray-800'} flex items-center justify-center relative overflow-hidden`}>
                     <Package className="w-24 h-24 text-white/30 absolute" />
                     <Sparkles className="w-8 h-8 text-white absolute top-4 right-4" />
                     <Badge className="absolute top-4 left-4 bg-white/20 text-white border-white/30">
@@ -261,10 +480,7 @@ export default function ProductCategories() {
 
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-3 pt-4">
-                    <Button className="flex-1" size="sm">
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Hızlı Teklif
-                    </Button>
+                    <QuoteDialog category={category} />
                     <Button variant="outline" size="sm">
                       <Eye className="w-4 h-4 mr-2" />
                       Örnekler
