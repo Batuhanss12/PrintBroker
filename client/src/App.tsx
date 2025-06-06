@@ -19,6 +19,7 @@ import PrinterRegister from "./pages/PrinterRegister";
 import ProductCategories from "./pages/ProductCategories";
 import ProductCategoriesNew from "./pages/ProductCategoriesNew";
 import References from "./pages/References";
+import ReferencesNew from "./pages/ReferencesNew";
 import NotFound from "./pages/not-found";
 
 function AppRouter() {
@@ -36,7 +37,8 @@ function AppRouter() {
           <Route path="/products" component={ProductCategoriesNew} />
           <Route path="/old" component={Landing} />
           <Route path="/old-products" component={ProductCategories} />
-          <Route path="/references" component={References} />
+          <Route path="/references" component={ReferencesNew} />
+          <Route path="/old-references" component={References} />
           <Route path="/customer-register" component={CustomerRegister} />
           <Route path="/printer-register" component={PrinterRegister} />
           <Route path="/payment" component={Payment} />
