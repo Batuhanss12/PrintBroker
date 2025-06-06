@@ -427,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register endpoint
   app.post('/api/auth/register', async (req, res) => {
     try {
-      const { email, password, firstName, lastName, role, phone, company, address } = req.body;
+      const { email, password, firstName, lastName, role, phone, company, address, companyName, taxNumber, description, website } = req.body;
       
       if (!email || !password || !firstName || !lastName) {
         return res.status(400).json({ success: false, message: "Gerekli alanlar eksik" });
@@ -439,23 +439,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "Bu email adresi zaten kayıtlı" });
       }
 
-      // Create new user
+      // Create new user with proper role typing
+      const userRole = (role === 'printer' || role === 'admin') ? role : 'customer';
       const userData = {
         email,
         password, // In production, hash with bcrypt
         firstName,
         lastName,
-        role: role || 'customer',
+        role: userRole,
         phone,
-        company,
-        address
+        companyName: company || companyName,
+        companyAddress: address,
+        taxNumber,
+        description,
+        website,
+        isActive: true,
+        creditBalance: "0.00",
+        subscriptionStatus: "active" as const
       };
 
       const newUser = await storage.createUser(userData);
 
       // Set session
       req.session.user = {
-        id: newUser.id.toString(),
+        id: newUser.id,
         email: newUser.email,
         role: newUser.role,
         firstName: newUser.firstName,
@@ -532,6 +539,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Logout endpoint
+  app.get('/api/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Session destroy error:', err);
+        return res.status(500).json({ success: false, message: "Çıkış hatası" });
+      }
+      res.clearCookie('connect.sid');
+      res.redirect('/');
+    });
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -544,6 +563,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Design history endpoint
+  app.get('/api/designs/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.user.id;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Mock design history for now - can be replaced with real data
+      const designs = [
+        {
+          id: `design_${Date.now()}_1`,
+          prompt: "Modern logo tasarımı",
+          createdAt: new Date(),
+          status: "completed",
+          result: { url: "/api/placeholder-image.png" }
+        }
+      ];
+
+      res.json({
+        designs,
+        total: designs.length,
+        page,
+        totalPages: Math.ceil(designs.length / limit)
+      });
+    } catch (error) {
+      console.error("Design history error:", error);
+      res.status(500).json({ message: "Failed to fetch design history" });
     }
   });
 

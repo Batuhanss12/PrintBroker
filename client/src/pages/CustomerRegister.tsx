@@ -20,6 +20,8 @@ interface CustomerFormData {
   firstName: string;
   lastName: string;
   email: string;
+  password: string;
+  confirmPassword: string;
   phone: string;
   company?: string;
   address: string;
@@ -33,6 +35,8 @@ export default function CustomerRegister() {
     firstName: "",
     lastName: "",
     email: "",
+    password: "",
+    confirmPassword: "",
     phone: "",
     company: "",
     address: "",
@@ -46,7 +50,7 @@ export default function CustomerRegister() {
   };
 
   const validateForm = () => {
-    const required = ["firstName", "lastName", "email", "phone", "address", "city", "postalCode"];
+    const required = ["firstName", "lastName", "email", "password", "phone", "address", "city", "postalCode"];
     
     for (const field of required) {
       if (!formData[field as keyof CustomerFormData]) {
@@ -65,6 +69,25 @@ export default function CustomerRegister() {
       toast({
         title: "Geçersiz E-posta",
         description: "Lütfen geçerli bir e-posta adresi girin.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Password validation
+    if (formData.password.length < 6) {
+      toast({
+        title: "Geçersiz Şifre",
+        description: "Şifre en az 6 karakter olmalıdır.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Şifre Uyumsuzluğu",
+        description: "Şifreler eşleşmiyor.",
         variant: "destructive",
       });
       return false;
@@ -95,7 +118,6 @@ export default function CustomerRegister() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          password: 'temp123', // Geçici şifre - production'da proper form field olmalı
           role: 'customer',
           company: formData.company
         })
@@ -208,6 +230,29 @@ export default function CustomerRegister() {
                       value={formData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="5XX XXX XX XX"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <Label htmlFor="password">Şifre *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      placeholder="En az 6 karakter"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="confirmPassword">Şifre Tekrar *</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                      placeholder="Şifrenizi tekrar girin"
                     />
                   </div>
                 </div>
