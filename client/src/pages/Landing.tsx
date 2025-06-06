@@ -291,7 +291,6 @@ export default function Landing() {
           )}
         </div>
       </header>
-
       {/* Hero Section */}
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
@@ -330,7 +329,7 @@ export default function Landing() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400">500+</div>
+                <div className="text-3xl font-bold text-blue-400">50+</div>
                 <div className="text-gray-400">Aktif Matbaacı</div>
               </div>
               <div className="text-center">
@@ -349,7 +348,6 @@ export default function Landing() {
           </div>
         </div>
       </div>
-
       {/* Canlı İş Takibi */}
       <section id="canlı-takip" className="py-16 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -431,7 +429,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* Customer Advantages */}
       <section id="avantajlar" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -463,7 +460,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* Printer Advantages */}
       <section className="py-20 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -495,7 +491,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -527,7 +522,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="bg-black/20 backdrop-blur-sm border-t border-white/10 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -546,7 +540,6 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-
       {/* Role Selection Modal */}
       <Dialog open={showRoleSelection} onOpenChange={setShowRoleSelection}>
         <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 text-white">
