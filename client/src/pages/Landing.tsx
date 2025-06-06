@@ -40,17 +40,7 @@ import {
 
 export default function Landing() {
   const { toast } = useToast();
-  const [liveJobs, setLiveJobs] = useState([
-    { id: 1, type: "Premium Etiket Baskısı", location: "İstanbul", status: "Teklif aşamasında", time: "2 dk önce", amount: "₺4,850", quantity: "5000 adet" },
-    { id: 2, type: "Lüks Kartvizit", location: "Ankara", status: "Üretimde", time: "5 dk önce", amount: "₺2,340", quantity: "1000 adet" },
-    { id: 3, type: "Kurumsal Broşür", location: "İzmir", status: "Tamamlandı", time: "8 dk önce", amount: "₺6,750", quantity: "2500 adet" },
-    { id: 4, type: "Özel Sticker", location: "Bursa", status: "Teklif aşamasında", time: "12 dk önce", amount: "₺3,420", quantity: "3000 adet" },
-    { id: 5, type: "Katalog Baskısı", location: "Antalya", status: "Üretimde", time: "15 dk önce", amount: "₺9,650", quantity: "500 adet" },
-    { id: 6, type: "Banner Baskısı", location: "Adana", status: "Kalite Kontrolde", time: "18 dk önce", amount: "₺2,890", quantity: "200 adet" },
-    { id: 7, type: "Mağnet Reklam", location: "Kocaeli", status: "Üretimde", time: "22 dk önce", amount: "₺1,560", quantity: "1500 adet" },
-    { id: 8, type: "Dijital Baskı", location: "Gaziantep", status: "Tamamlandı", time: "25 dk önce", amount: "₺7,250", quantity: "800 adet" },
-    { id: 9, type: "UV Lak Baskı", location: "Eskişehir", status: "Teklif aşamasında", time: "28 dk önce", amount: "₺11,400", quantity: "1200 adet" }
-  ]);
+  const [liveJobs, setLiveJobs] = useState<any[]>([]);
 
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
@@ -62,86 +52,36 @@ export default function Landing() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Canlı iş takibi animasyonu ve otomatik yeni iş ekleme
+  // Canlı iş takibi - gerçek sistem verilerini çek
   useEffect(() => {
+    const fetchLiveJobs = async () => {
+      try {
+        const response = await fetch('/api/quotes/live-feed');
+        if (response.ok) {
+          const data = await response.json();
+          setLiveJobs(data.quotes || []);
+        }
+      } catch (error) {
+        console.error('Live jobs fetch error:', error);
+      }
+    };
+
+    // İlk yükleme
+    fetchLiveJobs();
+
+    // Her 30 saniyede bir güncelle
+    const refreshInterval = setInterval(fetchLiveJobs, 30000);
+
+    // Animasyon için index güncelleme
     const animationInterval = setInterval(() => {
-      setCurrentJobIndex((prev) => (prev + 1) % liveJobs.length);
+      setCurrentJobIndex((prev) => liveJobs.length > 0 ? (prev + 1) % liveJobs.length : 0);
     }, 3000);
 
-    // Her 10 dakikada bir yeni iş ekle - daha yüksek tutarlarla
-    const newJobInterval = setInterval(() => {
-      const jobTypes = [
-        "Premium Etiket Baskısı", "Lüks Kartvizit", "Katalog Baskısı", "Özel Sticker", 
-        "Kurumsal Broşür", "Banner Baskısı", "Mağnet Reklam", "Afiş Baskısı", 
-        "Ambalaj Kutusu", "Folyo Baskı", "UV Lak Baskı", "Emboss Kartvizit",
-        "Dijital Baskı", "Offset Baskı", "Serigrafi Baskı", "Tekstil Baskı"
-      ];
-      const locations = [
-        "İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana", "Kocaeli", 
-        "Gaziantep", "Konya", "Mersin", "Eskişehir", "Trabzon", "Samsun", "Denizli"
-      ];
-      const statuses = ["Teklif aşamasında", "Üretimde", "Tamamlandı", "Kalite Kontrolde"];
-
-      // Daha yüksek ve gerçekçi tutarlar
-      const baseAmount = Math.random() * 15000 + 1000; // 1000-16000 arası
-      const timeMultiplier = 1 + (Date.now() % 1000000) / 10000000; // Zamana bağlı artış
-      const finalAmount = Math.floor(baseAmount * timeMultiplier);
-
-      // Miktar da tutarla orantılı olsun
-      const baseQuantity = Math.floor(finalAmount / (Math.random() * 8 + 2)); // Birim fiyata göre
-      
-      const newJob = {
-        id: Date.now(),
-        type: jobTypes[Math.floor(Math.random() * jobTypes.length)],
-        location: locations[Math.floor(Math.random() * locations.length)],
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        time: "Az önce",
-        amount: `₺${finalAmount.toLocaleString()}`,
-        quantity: `${baseQuantity.toLocaleString()} adet`
-      };
-
-      setLiveJobs(prev => {
-        const newJobs = [newJob, ...prev];
-        // Son 12 işi tut ve toplam tutarları güncelle
-        return newJobs.slice(0, 12);
-      });
-
-      // Yeni iş eklendi bildirimi
-      console.log(`🔴 Yeni iş eklendi: ${newJob.type} - ${newJob.amount}`);
-    }, 600000); // 10 dakika = 600000ms
-
-    // İlk yüklemede birkaç ek iş ekle
-    const initialJobsTimer = setTimeout(() => {
-      const additionalJobs = [
-        {
-          id: Date.now() + 1,
-          type: "Lüks Davetiye Baskısı",
-          location: "İstanbul",
-          status: "Üretimde",
-          time: "3 dk önce",
-          amount: "₺8,750",
-          quantity: "500 adet"
-        },
-        {
-          id: Date.now() + 2,
-          type: "Kurumsal Kimlik Seti",
-          location: "Ankara",
-          status: "Teklif aşamasında",
-          time: "7 dk önce",
-          amount: "₺12,300",
-          quantity: "2000 adet"
-        }
-      ];
-      
-      setLiveJobs(prev => [...additionalJobs, ...prev].slice(0, 12));
-    }, 5000);
-
     return () => {
+      clearInterval(refreshInterval);
       clearInterval(animationInterval);
-      clearInterval(newJobInterval);
-      clearTimeout(initialJobsTimer);
     };
-  }, []);
+  }, [liveJobs.length]);
 
   const handleRoleSelection = (role: string) => {
     setSelectedRole(role);
@@ -510,9 +450,8 @@ export default function Landing() {
                         <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-white font-medium text-sm sm:text-base truncate">{job.type}</div>
-                        <div className="text-gray-400 text-xs sm:text-sm">{job.location}</div>
-                        <div className="text-blue-300 text-xs">{job.quantity}</div>
+                        <div className="text-white font-medium text-sm sm:text-base truncate">{job.title || job.type}</div>
+                        <div className="text-gray-400 text-xs sm:text-sm">{job.location || 'Türkiye'}</div>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -535,22 +474,28 @@ export default function Landing() {
               <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
                 <div className="text-lg sm:text-2xl font-bold text-green-400 truncate">
                   ₺{(liveJobs.reduce((sum, job) => {
-                    const amount = parseInt(job.amount.replace('₺', '').replace(/,/g, '').replace(/\./g, ''));
-                    return sum + (isNaN(amount) ? 0 : amount);
+                    const amount = job.estimatedBudget || job.amount || 0;
+                    return sum + (typeof amount === 'number' ? amount : 0);
                   }, 0)).toLocaleString()}
                 </div>
                 <div className="text-gray-400 text-xs sm:text-sm">Günlük Hacim</div>
               </div>
               <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
-                <div className="text-lg sm:text-2xl font-bold text-blue-400">{liveJobs.filter(job => job.status === 'Üretimde').length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-blue-400">
+                  {liveJobs.filter(job => job.status === 'in_progress' || job.status === 'Üretimde').length}
+                </div>
                 <div className="text-gray-400 text-xs sm:text-sm">Üretimde</div>
               </div>
               <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
-                <div className="text-lg sm:text-2xl font-bold text-yellow-400">{liveJobs.filter(job => job.status === 'Teklif aşamasında').length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-yellow-400">
+                  {liveJobs.filter(job => job.status === 'pending' || job.status === 'received_quotes' || job.status === 'Teklif aşamasında').length}
+                </div>
                 <div className="text-gray-400 text-xs sm:text-sm">Teklif Bekleyen</div>
               </div>
               <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
-                <div className="text-lg sm:text-2xl font-bold text-purple-400">{liveJobs.filter(job => job.status === 'Tamamlandı' || job.status === 'Kalite Kontrolde').length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-purple-400">
+                  {liveJobs.filter(job => job.status === 'completed' || job.status === 'approved' || job.status === 'Tamamlandı' || job.status === 'Kalite Kontrolde').length}
+                </div>
                 <div className="text-gray-400 text-xs sm:text-sm">Tamamlanan</div>
               </div>
             </div>
