@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { randomUUID } from "crypto";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
@@ -75,11 +76,11 @@ async function generateAutomaticLabelQuotes(currentTime: Date) {
       const randomCity = cities[Math.floor(Math.random() * cities.length)];
       
       const labelQuote = {
-        id: `auto_label_${tenMinuteSlot}_${Date.now()}`,
+        id: randomUUID(),
         title: `${randomLabel.title} - ${quantity} Adet`,
-        type: randomLabel.type,
+        type: 'general_printing' as const,
         category: randomLabel.category,
-        status: 'pending',
+        status: 'pending' as const,
         location: randomCity,
         quantity: quantity,
         unitPrice: unitPrice.toFixed(2),
@@ -98,17 +99,18 @@ async function generateAutomaticLabelQuotes(currentTime: Date) {
         deadline: new Date(currentTime.getTime() + (Math.random() * 14 + 3) * 24 * 60 * 60 * 1000)
       };
       
-      // Sisteme kaydet (storage varsa)
-      if (storage.createQuote) {
-        try {
-          await storage.createQuote({
-            customerId: 'AUTO-SYSTEM',
-            ...labelQuote
-          });
-          console.log(`🏷️ Otomatik etiket teklifi oluşturuldu: ${labelQuote.title} - ${randomCity} (${quantity} adet)`);
-        } catch (error) {
-          console.warn('Otomatik teklif kaydı başarısız:', error);
-        }
+      // Test amaçlı - sadece memory'de tutulur, veritabanına kaydedilmez
+      console.log(`🏷️ Test teklifi oluşturuldu: ${labelQuote.title} - ${randomCity} (${quantity} adet)`);
+      
+      // Mock data pool'una ekle
+      if (!global.mockQuotes) {
+        global.mockQuotes = [];
+      }
+      global.mockQuotes.push(labelQuote);
+      
+      // En fazla 50 mock quote tut
+      if (global.mockQuotes.length > 50) {
+        global.mockQuotes = global.mockQuotes.slice(-50);
       }
     }
   } catch (error) {
