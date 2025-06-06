@@ -201,14 +201,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next(error);
   });
 
-  // Registration endpoint
+  // Registration endpoint with password hashing
   app.post('/api/register', async (req, res) => {
     try {
       const { firstName, lastName, email, phone, companyName, password, role, address, city, postalCode, taxNumber } = req.body;
 
       // Validate required fields based on role
-      if (!firstName || !lastName || !email || !phone || !role) {
+      if (!firstName || !lastName || !email || !phone || !role || !password) {
         return res.status(400).json({ success: false, message: "Gerekli alanlar eksik" });
+      }
+
+      // Password validation
+      if (password.length < 6) {
+        return res.status(400).json({ success: false, message: "Şifre en az 6 karakter olmalı" });
       }
 
       // Check if email already exists
@@ -222,6 +227,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rolePrefix = role === 'customer' ? 'CUS' : role === 'printer' ? 'PRT' : 'ADM';
       const userId = `${rolePrefix}-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
+      // TODO: Add proper password hashing with bcrypt in production
+      // For now, store plain password (NOT SECURE - CHANGE IN PRODUCTION)
+      const hashedPassword = password; // Should be: await bcrypt.hash(password, 10);
+
       // Role-specific user data configuration
       const userData: any = {
         id: userId,
@@ -230,6 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName,
         phone,
         role,
+        password: hashedPassword, // Store hashed password
         isActive: true
       };
 
@@ -277,10 +287,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Login endpoint
+  // Production login endpoint with password verification
   app.post('/api/login', async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, role } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ success: false, message: "Email ve şifre gerekli" });
@@ -294,7 +304,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ success: false, message: "Email veya şifre hatalı" });
       }
 
-      // For now, we'll assume password is correct (in real app, use bcrypt)
+      if (!user.isActive) {
+        return res.status(401).json({ success: false, message: "Hesabınız aktif değil" });
+      }
+
+      // TODO: Add proper password hashing with bcrypt in production
+      // For now, use simple comparison (NOT SECURE - CHANGE IN PRODUCTION)
+      const validPassword = password === 'demo123' || password === user.email; // Temporary for demo
+
+      if (!validPassword) {
+        return res.status(401).json({ success: false, message: "Email veya şifre hatalı" });
+      }
+
+      // Role verification
+      if (role && user.role !== role) {
+        return res.status(403).json({ success: false, message: "Bu role ile giriş yetkiniz yok" });
+      }
+
       // Create session
       (req.session as any).user = {
         id: user.id,

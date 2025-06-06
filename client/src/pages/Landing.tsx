@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   CheckCircle, 
   Clock, 
@@ -48,6 +50,10 @@ export default function Landing() {
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [loginRole, setLoginRole] = useState<'customer' | 'printer' | 'admin'>('customer');
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [loginLoading, setLoginLoading] = useState(false);
 
   // Canlı iş takibi animasyonu ve otomatik yeni iş ekleme
   useEffect(() => {
@@ -85,15 +91,69 @@ export default function Landing() {
     setShowRoleSelection(true);
   };
 
-  const handleLogin = () => {
-    window.location.href = '/api/login';
+  const handleShowLogin = (role: 'customer' | 'printer' | 'admin') => {
+    setLoginRole(role);
+    setShowLoginForm(true);
   };
 
-  const handleDirectLogin = (role: string) => {
-    console.log(`Direct login attempt for role: ${role}`);
-    
-    // Rol parametresi ile giriş yap - otomatik doğru panele yönlendirecek
-    window.location.href = `/api/login?role=${role}`;
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginForm.email || !loginForm.password) {
+      toast({
+        title: "Hata",
+        description: "Email ve şifre gerekli",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoginLoading(true);
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: loginForm.email,
+          password: loginForm.password,
+          role: loginRole
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: "Başarılı",
+          description: "Giriş yapıldı, yönlendiriliyorsunuz...",
+        });
+
+        // Redirect based on user role
+        const redirectUrls = {
+          customer: '/customer-dashboard',
+          printer: '/printer-dashboard',
+          admin: '/admin-dashboard'
+        };
+
+        window.location.href = redirectUrls[result.user.role] || '/customer-dashboard';
+      } else {
+        toast({
+          title: "Giriş Hatası",
+          description: result.message || "Email veya şifre hatalı",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Bağlantı Hatası",
+        description: "Sunucuya bağlanılamadı",
+        variant: "destructive"
+      });
+    }
+    setLoginLoading(false);
   };
 
   const handleGoHome = () => {
@@ -207,21 +267,21 @@ export default function Landing() {
                   </div>
                   <DropdownMenuSeparator className="bg-white/20" />
                   <DropdownMenuItem 
-                    onClick={() => handleDirectLogin('customer')}
+                    onClick={() => handleShowLogin('customer')}
                     className="text-white hover:bg-white/10"
                   >
                     <User className="mr-2 h-4 w-4" />
                     Müşteri Girişi
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => handleDirectLogin('printer')}
+                    onClick={() => handleShowLogin('printer')}
                     className="text-white hover:bg-white/10"
                   >
                     <Building2 className="mr-2 h-4 w-4" />
                     Firma Girişi
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => handleDirectLogin('admin')}
+                    onClick={() => handleShowLogin('admin')}
                     className="text-white hover:bg-white/10"
                   >
                     <Crown className="mr-2 h-4 w-4" />
@@ -261,7 +321,7 @@ export default function Landing() {
                 <div className="border-t border-white/10 my-2"></div>
                 <Button 
                   variant="outline" 
-                  onClick={() => handleDirectLogin('customer')}
+                  onClick={() => handleShowLogin('customer')}
                   className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <User className="mr-2 h-4 w-4" />
@@ -269,7 +329,7 @@ export default function Landing() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => handleDirectLogin('printer')}
+                  onClick={() => handleShowLogin('printer')}
                   className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <Building2 className="mr-2 h-4 w-4" />
@@ -277,7 +337,7 @@ export default function Landing() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => handleDirectLogin('admin')}
+                  onClick={() => handleShowLogin('admin')}
                   className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <Crown className="mr-2 h-4 w-4" />
@@ -315,7 +375,7 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <Button 
                 size="lg" 
-                onClick={() => handleDirectLogin('customer')}
+                onClick={() => handleShowLogin('customer')}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
               >
                 <User className="mr-2 h-5 w-5" />
@@ -324,7 +384,7 @@ export default function Landing() {
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={() => handleDirectLogin('printer')}
+                onClick={() => handleShowLogin('printer')}
                 className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
               >
                 <Building2 className="mr-2 h-5 w-5" />
@@ -510,7 +570,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              onClick={() => handleDirectLogin('customer')}
+              onClick={() => handleShowLogin('customer')}
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
             >
               <User className="mr-2 h-5 w-5" />
@@ -519,7 +579,7 @@ export default function Landing() {
             <Button 
               size="lg" 
               variant="outline"
-              onClick={() => handleDirectLogin('printer')}
+              onClick={() => handleShowLogin('printer')}
               className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
             >
               <Building2 className="mr-2 h-5 w-5" />
@@ -592,8 +652,8 @@ export default function Landing() {
                   <a href="#" className="block hover:text-white transition-colors">Basın Kiti</a>
                 </div>
                 <div className="pt-4 border-t border-white/10">
-                  <p className="text-sm text-gray-400">ISO 27001 Sertifikalı</p>
-                  <p className="text-sm text-gray-400">SSL Güvenlik Sertifikası</p>
+                  <p className="text-sm text-gray-400">ISO 27001 Sertifikalı</p>```text
+              <p className="text-sm text-gray-400">SSL Güvenlik Sertifikası</p>
                 </div>
               </div>
             </div>
@@ -645,52 +705,74 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-      {/* Role Selection Modal */}
-      <Dialog open={showRoleSelection} onOpenChange={setShowRoleSelection}>
-        <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 text-white">
+
+      {/* Login Dialog */}
+      <Dialog open={showLoginForm} onOpenChange={setShowLoginForm}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-white">
-              {selectedRole === 'customer' && <User className="h-5 w-5" />}
-              {selectedRole === 'printer' && <Building2 className="h-5 w-5" />}
-              {selectedRole === 'admin' && <Crown className="h-5 w-5" />}
-              {selectedRole === 'customer' && 'Müşteri Girişi'}
-              {selectedRole === 'printer' && 'Matbaacı Girişi'}
-              {selectedRole === 'admin' && 'Admin Girişi'}
+            <DialogTitle>
+              {loginRole === 'customer' ? 'Müşteri Girişi' : 
+               loginRole === 'printer' ? 'Firma Girişi' : 'Admin Girişi'}
             </DialogTitle>
-            <DialogDescription className="text-gray-300">
-              {selectedRole === 'customer' && 'Müşteri hesabınızla giriş yapın ve baskı siparişlerinizi yönetin.'}
-              {selectedRole === 'printer' && 'Matbaacı hesabınızla giriş yapın ve siparişlerinizi takip edin.'}
-              {selectedRole === 'admin' && 'Admin hesabınızla giriş yapın ve sistemi yönetin.'}
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <Button 
-              onClick={handleLogin}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-            >
-              <LogIn className="mr-2 h-4 w-4" />
-              Replit ile Giriş Yap
-            </Button>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <Label htmlFor="email">E-posta</Label>
+              <Input
+                id="email"
+                type="email"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="ornek@email.com"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="password">Şifre</Label>
+              <Input
+                id="password"
+                type="password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
             <div className="flex gap-2">
               <Button 
-                variant="outline" 
-                onClick={handleGoHome}
-                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
+                type="submit" 
+                className="flex-1"
+                disabled={loginLoading}
               >
-                <Home className="mr-2 h-4 w-4" />
-                Anasayfaya Dön
+                {loginLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
               </Button>
               <Button 
-                variant="ghost" 
-                onClick={() => setShowRoleSelection(false)}
-                className="flex-1 text-gray-300 hover:bg-gray-800"
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowLoginForm(false)}
+                disabled={loginLoading}
               >
                 İptal
               </Button>
             </div>
-          </div>
+
+            <div className="text-center text-sm text-gray-500">
+              Hesabınız yok mu?{' '}
+              <Button 
+                variant="link" 
+                className="p-0 h-auto text-blue-600"
+                onClick={() => {
+                  setShowLoginForm(false);
+                  window.location.href = loginRole === 'customer' ? '/customer-register' : '/printer-register';
+                }}
+              >
+                Kayıt olun
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
