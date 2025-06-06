@@ -284,54 +284,73 @@ export default function Landing() {
               <Link href="/references" className="text-white/80 hover:text-white transition-colors">
                 Referanslar
               </Link>
-              <a href="#avantajlar" className="text-white/80 hover:text-white transition-colors">
-                Avantajlar
-              </a>
-              <a href="#canlı-takip" className="text-white/80 hover:text-white transition-colors">
-                Canlı Takip
-              </a>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="flex items-center gap-2 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 border border-slate-500/20 text-white font-semibold px-6 py-2.5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
-                    <LogIn className="h-4 w-4" />
-                    Giriş Yap
+                  <Button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-blue-500/30 text-white font-semibold px-6 py-2.5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                    <Building2 className="h-4 w-4" />
+                    Hesap Girişi
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-black/90 border-white/20 text-white">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-white">Giriş Seçenekleri</p>
+                <DropdownMenuContent align="end" className="w-64 bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl rounded-lg">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-semibold text-gray-900">Platformumuza Giriş Yapın</p>
+                    <p className="text-xs text-gray-600 mt-1">Hesap türünüzü seçerek devam edin</p>
                   </div>
-                  <DropdownMenuSeparator className="bg-white/20" />
                   <DropdownMenuItem 
                     onClick={() => handleShowLogin('customer')}
-                    className="text-white hover:bg-white/10"
+                    className="text-gray-700 hover:bg-blue-50 px-4 py-3 cursor-pointer"
                   >
-                    <User className="mr-2 h-4 w-4" />
-                    Müşteri Girişi
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <User className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">Müşteri Girişi</div>
+                        <div className="text-xs text-gray-500">Baskı ihtiyaçlarınız için</div>
+                      </div>
+                    </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => handleShowLogin('printer')}
-                    className="text-white hover:bg-white/10"
+                    className="text-gray-700 hover:bg-orange-50 px-4 py-3 cursor-pointer"
                   >
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Firma Girişi
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                        <Building2 className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">Matbaa Girişi</div>
+                        <div className="text-xs text-gray-500">İşlerinizi yönetin</div>
+                      </div>
+                    </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => handleShowLogin('admin')}
-                    className="text-white hover:bg-white/10"
+                    className="text-gray-700 hover:bg-purple-50 px-4 py-3 cursor-pointer"
                   >
-                    <Crown className="mr-2 h-4 w-4" />
-                    Admin Girişi
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                        <Crown className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">Yönetici Girişi</div>
+                        <div className="text-xs text-gray-500">Platform yönetimi</div>
+                      </div>
+                    </div>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/20" />
-                  <DropdownMenuItem 
-                    onClick={handleGoHome}
-                    className="text-white hover:bg-white/10"
-                  >
-                    <Home className="mr-2 h-4 w-4" />
-                    Anasayfaya Dön
-                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-100" />
+                  <div className="px-4 py-2">
+                    <p className="text-xs text-gray-500">
+                      Hesabınız yok mu? 
+                      <a href="/customer-register" className="text-blue-600 hover:text-blue-700 font-medium ml-1">
+                        Kayıt Olun
+                      </a>
+                    </p>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </nav>
@@ -507,11 +526,7 @@ export default function Landing() {
                           <div className="text-white font-medium text-sm sm:text-base truncate">
                             {job.title || job.type}
                           </div>
-                          {job.quantity && (
-                            <div className="text-emerald-400 text-xs font-medium bg-emerald-500/20 px-2 py-1 rounded">
-                              {job.quantity} adet
-                            </div>
-                          )}
+
                         </div>
                         <div className="text-gray-400 text-xs sm:text-sm">{job.location || 'Türkiye'}</div>
                       </div>
@@ -663,7 +678,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12 sm:mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-12 sm:mb-16">
             {/* Müşteri Paketi */}
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 relative">
               <CardHeader className="text-center pb-4">
@@ -753,47 +768,7 @@ export default function Landing() {
               </CardFooter>
             </Card>
 
-            {/* Enterprise Paketi */}
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 relative">
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Crown className="h-8 w-8 text-purple-400" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-white mb-2">
-                  Enterprise
-                </CardTitle>
-                <div className="text-3xl font-bold text-purple-400 mb-2">
-                  Özel Fiyat
-                </div>
-                <p className="text-gray-300 text-sm">Kurumsal çözümler</p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  {[
-                    'Özel API entegrasyonları',
-                    'Sınırsız kullanıcı',
-                    'Özel raporlama',
-                    'Beyaz etiket çözümü',
-                    'Özel SLA anlaşması',
-                    'Dedike hesap yöneticisi'
-                  ].map((feature, index) => (
-                    <div key={index} className="flex items-center text-sm text-gray-300">
-                      <CheckCircle className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  variant="outline"
-                  className="w-full border-white/30 text-white hover:bg-white/10"
-                >
-                  <Phone className="mr-2 h-4 w-4" />
-                  İletişime Geç
-                </Button>
-              </CardFooter>
-            </Card>
+
           </div>
 
           {/* Quick Start CTA */}
