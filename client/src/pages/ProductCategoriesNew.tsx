@@ -262,8 +262,9 @@ const ProfessionalQuoteDialog = ({ category }: { category: any }) => {
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="flex-1">
               İptal
             </Button>
-            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
-              Teklif Talebi Gönder
+            <Button type="submit" className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 font-semibold">
+              <Zap className="w-4 h-4 mr-2" />
+              Otomatik Sistem Başlat
             </Button>
           </div>
         </form>

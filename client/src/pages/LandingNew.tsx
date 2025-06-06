@@ -312,9 +312,14 @@ export default function LandingNew() {
                 <Link href="/references" className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium">
                   Referanslar
                 </Link>
-                <div className="px-4 pt-2 border-t border-gray-200">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                    Giriş Yap
+                <div className="px-4 pt-2 border-t border-gray-200 space-y-2">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => window.location.href = '/api/login'}>
+                    <User className="h-4 w-4 mr-2" />
+                    Firma Paneli
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={() => window.location.href = '/customer-register'}>
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Yeni Kayıt
                   </Button>
                 </div>
               </div>
