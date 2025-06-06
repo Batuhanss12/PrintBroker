@@ -411,9 +411,8 @@ export default function Landing() {
               </Button>
               <Button 
                 size="lg" 
-                variant="outline"
                 onClick={() => handleShowLogin('printer')}
-                className="border-white/30 text-white hover:bg-white/10 px-6 sm:px-8 py-3 w-full sm:w-auto"
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-6 sm:px-8 py-3 w-full sm:w-auto"
               >
                 <Building2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                 Firma Girişi
