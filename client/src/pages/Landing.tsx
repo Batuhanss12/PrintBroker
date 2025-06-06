@@ -92,9 +92,8 @@ export default function Landing() {
   const handleDirectLogin = (role: string) => {
     console.log(`Direct login attempt for role: ${role}`);
     
-    // Doğrudan Replit Auth sistemi üzerinden giriş yap
-    // Giriş sonrası role göre otomatik yönlendirme olacak
-    window.location.href = '/api/login';
+    // Rol parametresi ile giriş yap - otomatik doğru panele yönlendirecek
+    window.location.href = `/api/login?role=${role}`;
   };
 
   const handleGoHome = () => {
