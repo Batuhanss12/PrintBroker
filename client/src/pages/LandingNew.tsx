@@ -135,31 +135,31 @@ export default function LandingNew() {
     }
   ];
 
-  // SEO optimized features
+  // Enhanced platform features emphasizing automated design system
   const platformFeatures = [
     {
+      icon: Sparkles,
+      title: "Otomatik Tasarım Sistemi",
+      description: "AI destekli otomatik tasarım motoru ile profesyonel tasarımlar anında oluşturulur",
+      benefit: "Tasarım maliyeti sıfır"
+    },
+    {
       icon: Zap,
-      title: "Anında Teklif Alma",
-      description: "AI destekli sistem ile 60 saniyede çoklu matbaacıdan profesyonel teklif",
+      title: "60 Saniyede Teklif",
+      description: "Yapay zeka sistemi ile 500+ üretici firmadan otomatik teklif alın",
       benefit: "90% zaman tasarrufu"
     },
     {
-      icon: Shield,
-      title: "Kalite Garantisi",
-      description: "ISO 9001 sertifikalı matbaacılar, %100 para iade garantisi",
-      benefit: "Güvenli alışveriş"
-    },
-    {
       icon: TrendingUp,
-      title: "Fiyat Optimizasyonu",
-      description: "Piyasa fiyatlarından %30'a kadar tasarruf, şeffaf fiyatlandırma",
-      benefit: "Maksimum tasarruf"
+      title: "Maliyet Optimizasyonu",
+      description: "Akıllı algoritma ile en uygun fiyat ve kalite dengesini otomatik bulur",
+      benefit: "40% maliyet tasarrufu"
     },
     {
-      icon: Clock,
-      title: "Express Teslimat",
-      description: "24 saat express seçeneği, canlı kargo takibi",
-      benefit: "Hızlı teslimat"
+      icon: Shield,
+      title: "Kurumsal Güvence",
+      description: "ISO 9001 sertifikalı üretici firmalar, tam sigorta koruması",
+      benefit: "Risk-free işletme"
     }
   ];
 
@@ -242,30 +242,38 @@ export default function LandingNew() {
                 </span>
               </div>
 
-              {/* Login Dropdown */}
+              {/* Active Login Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6">
                     <LogIn className="h-4 w-4 mr-2" />
-                    Giriş Yap
+                    Panel Girişi
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
                   <div className="px-4 py-3 border-b">
-                    <p className="font-semibold text-gray-900">Hesap Türü Seçin</p>
+                    <p className="font-semibold text-gray-900">Panel Türü Seçin</p>
                   </div>
-                  <DropdownMenuItem className="px-4 py-3">
+                  <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => window.location.href = '/api/login'}>
                     <User className="h-4 w-4 mr-3 text-blue-600" />
                     <div>
-                      <div className="font-medium">Müşteri Girişi</div>
-                      <div className="text-sm text-gray-500">Baskı ihtiyaçları için</div>
+                      <div className="font-medium">Firma Paneli</div>
+                      <div className="text-sm text-gray-500">Baskı ihtiyaçları yönetimi</div>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="px-4 py-3">
-                    <Building2 className="h-4 w-4 mr-3 text-orange-600" />
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => window.location.href = '/customer-register'}>
+                    <Building2 className="h-4 w-4 mr-3 text-green-600" />
                     <div>
-                      <div className="font-medium">Matbaa Girişi</div>
-                      <div className="text-sm text-gray-500">İş tekliflerinizi yönetin</div>
+                      <div className="font-medium">Yeni Firma Kaydı</div>
+                      <div className="text-sm text-gray-500">Hemen hesap oluşturun</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => window.location.href = '/printer-register'}>
+                    <Factory className="h-4 w-4 mr-3 text-orange-600" />
+                    <div>
+                      <div className="font-medium">Üretici Firma Kaydı</div>
+                      <div className="text-sm text-gray-500">Platformumuza katılın</div>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -327,17 +335,21 @@ export default function LandingNew() {
               </div>
               
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6">
-                Profesyonel Baskı
-                <span className="text-blue-600 block">Çözümleriniz Burada</span>
+                Otomatik Tasarım Sistemi ile
+                <span className="text-blue-600 block">Kurumsal Baskı Çözümleri</span>
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                500+ sertifikalı matbaacıdan anında teklif alın. AI destekli platform ile 
-                baskı ihtiyaçlarınızı %30 daha ekonomik karşılayın.
+                AI destekli otomatik tasarım motoru ile profesyonel tasarımlar anında oluşturulur. 
+                500+ üretici firmadan 60 saniyede teklif alın, %40 maliyet tasarrufu sağlayın.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Otomatik Tasarım Başlat
+                </Button>
+                <Button size="lg" variant="outline" className="border-gray-300 text-gray-700 px-8 py-3">
                   <Calculator className="h-5 w-5 mr-2" />
                   Anında Teklif Al
                 </Button>
@@ -347,19 +359,19 @@ export default function LandingNew() {
                 </Button>
               </div>
 
-              {/* Trust Indicators */}
+              {/* Corporate Trust Indicators */}
               <div className="grid grid-cols-3 gap-6 pt-8 border-t border-gray-200">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">500+</div>
-                  <div className="text-sm text-gray-600">Matbaacı</div>
+                  <div className="text-sm text-gray-600">Üretici Firma</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">50K+</div>
-                  <div className="text-sm text-gray-600">Mutlu Müşteri</div>
+                  <div className="text-2xl font-bold text-gray-900">Fortune 500</div>
+                  <div className="text-sm text-gray-600">Kurumsal Müşteri</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">1M+</div>
-                  <div className="text-sm text-gray-600">Tamamlanan İş</div>
+                  <div className="text-2xl font-bold text-gray-900">%40</div>
+                  <div className="text-sm text-gray-600">Maliyet Tasarrufu</div>
                 </div>
               </div>
             </div>
@@ -486,15 +498,100 @@ export default function LandingNew() {
         </div>
       </section>
 
+      {/* Automated Design System Showcase */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-4 py-2 bg-blue-600 rounded-full text-white text-sm font-medium mb-6">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Otomatik Tasarım Teknolojisi
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              AI Destekli Otomatik Tasarım Sistemi
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Kurumsal firmalar için özel geliştirilen yapay zeka sistemi ile 
+              profesyonel tasarımlar anında oluşturulur, tasarım maliyetiniz sıfırlanır.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                Firmalar İçin Özel Avantajlar
+              </h3>
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Sıfır Tasarım Maliyeti</h4>
+                    <p className="text-gray-600">AI sistemi ile profesyonel tasarımlar otomatik oluşturulur, tasarımcı maliyeti ortadan kalkar.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">%90 Süreç Hızlanması</h4>
+                    <p className="text-gray-600">Geleneksel 2-3 haftalık süreçler 1 saate düşer, işletme verimliliği maksimuma çıkar.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Shield className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Kurumsal Kalite Garantisi</h4>
+                    <p className="text-gray-600">Fortune 500 standartlarında tasarım kalitesi, marka imajınızı güçlendirir.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Otomatik Tasarım Süreci</h4>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
+                  <span className="text-gray-700">Ürün ve marka bilgilerinizi sisteme girin</span>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
+                  <span className="text-gray-700">AI sistemi 30 saniyede profesyonel tasarım oluşturur</span>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
+                  <span className="text-gray-700">500+ üretici firmadan otomatik teklif alırsınız</span>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
+                  <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-white text-sm font-bold">4</div>
+                  <span className="text-gray-700">En uygun teklifi seçip üretimi başlatın</span>
+                </div>
+              </div>
+              
+              <Button className="w-full mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
+                <Sparkles className="h-5 w-5 mr-2" />
+                Otomatik Tasarım Sistemini Dene
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Platform Features */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Neden MatBixx?
+              Kurumsal Firmalar Neden MatBixx Tercih Ediyor?
             </h2>
             <p className="text-xl text-gray-600">
-              Teknoloji ve deneyimin mükemmel birleşimi
+              İşletme verimliliği ve maliyet optimizasyonu odaklı çözümler
             </p>
           </div>
 
