@@ -50,6 +50,65 @@ import { multiMethodAnalyzer } from "./multiMethodAnalyzer";
 import { operationalLayoutSystem } from "./operationalLayoutSystem";
 import { fastApiClient } from "./fastApiClient";
 
+// Create test users for development
+async function createTestUsers() {
+  try {
+    const testUsers = [
+      {
+        id: 'CUS-TEST-001',
+        email: 'customer@test.com',
+        firstName: 'Test',
+        lastName: 'Müşteri',
+        phone: '+90 555 123 4567',
+        role: 'customer',
+        isActive: true,
+        creditBalance: '500.00',
+        subscriptionStatus: 'inactive',
+        companyAddress: 'Test Adres, İstanbul',
+        companyName: 'Test Şirketi'
+      },
+      {
+        id: 'PRT-TEST-001',
+        email: 'printer@test.com',
+        firstName: 'Test',
+        lastName: 'Matbaa',
+        phone: '+90 555 765 4321',
+        role: 'printer',
+        isActive: true,
+        creditBalance: '0.00',
+        subscriptionStatus: 'active',
+        companyName: 'Test Matbaası',
+        companyAddress: 'Test Matbaa Adresi, İstanbul',
+        taxNumber: '1234567890'
+      },
+      {
+        id: 'ADM-TEST-001',
+        email: 'admin@test.com',
+        firstName: 'Test',
+        lastName: 'Admin',
+        phone: '+90 555 987 6543',
+        role: 'admin',
+        isActive: true,
+        creditBalance: '999999.00',
+        subscriptionStatus: 'active',
+        companyName: 'Matbixx Admin'
+      }
+    ];
+
+    for (const userData of testUsers) {
+      const existingUsers = await storage.getAllUsers();
+      const userExists = existingUsers.find(user => user.email === userData.email);
+      
+      if (!userExists) {
+        await storage.upsertUser(userData);
+        console.log(`✅ Test user created: ${userData.email} (${userData.role})`);
+      }
+    }
+  } catch (error) {
+    console.error('Error creating test users:', error);
+  }
+}
+
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -102,6 +161,9 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+
+  // Create test users if they don't exist
+  await createTestUsers();
 
   // Multer error handling middleware
   app.use((error: any, req: any, res: any, next: any) => {

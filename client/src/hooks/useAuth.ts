@@ -39,7 +39,10 @@ export const useAuth = () => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(credentials),
+        body: JSON.stringify({
+          email: credentials.username,
+          password: credentials.password
+        }),
       });
 
       if (!response.ok) {

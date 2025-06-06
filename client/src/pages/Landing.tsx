@@ -41,7 +41,7 @@ export default function Landing() {
     { id: 6, type: "Poster Baskı", location: "Adana", status: "Teklif aşamasında", time: "18 dk önce", amount: "₺1,200", quantity: "200 adet" },
     { id: 7, type: "Mağnet", location: "Kocaeli", status: "Üretimde", time: "22 dk önce", amount: "₺780", quantity: "1500 adet" }
   ]);
-  
+
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
@@ -58,7 +58,7 @@ export default function Landing() {
       const jobTypes = ["Etiket Baskısı", "Kartvizit", "Broşür", "Sticker", "Katalog", "Poster", "Mağnet", "Afiş", "Banner", "Kutu"];
       const locations = ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana", "Kocaeli", "Gaziantep", "Konya", "Mersin"];
       const statuses = ["Teklif aşamasında", "Üretimde", "Tamamlandı"];
-      
+
       const newJob = {
         id: Date.now(),
         type: jobTypes[Math.floor(Math.random() * jobTypes.length)],
@@ -87,10 +87,79 @@ export default function Landing() {
     window.location.href = '/api/login';
   };
 
-  const handleDirectLogin = (userType: string) => {
-    // Store user type for redirect after login
-    localStorage.setItem('intended_user_type', userType);
-    window.location.href = '/api/login';
+  const handleDirectLogin = async (role: string) => {
+    console.log(`Direct login attempt for role: ${role}`);
+
+    try {
+      // Test kullanıcıları ile giriş simülasyonu
+      const testCredentials = {
+        customer: { email: 'customer@test.com', password: 'test123' },
+        printer: { email: 'printer@test.com', password: 'test123' },
+        admin: { email: 'admin@test.com', password: 'test123' }
+      };
+
+      const credentials = testCredentials[role as keyof typeof testCredentials];
+
+      if (!credentials) {
+        toast({
+          title: "Hata",
+          description: "Geçersiz rol",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // API'ye giriş isteği gönder
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(credentials),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast({
+          title: "Giriş Başarılı",
+          description: `${role} paneline yönlendiriliyorsunuz...`,
+          variant: "default",
+        });
+
+        // Rol bazında yönlendirme
+        setTimeout(() => {
+          if (role === 'customer') {
+            window.location.href = '/customer-dashboard';
+          } else if (role === 'printer') {
+            window.location.href = '/printer-dashboard';
+          } else if (role === 'admin') {
+            window.location.href = '/admin-dashboard';
+          }
+        }, 1000);
+      } else {
+        // Eğer test kullanıcısı yoksa, kayıt sayfasına yönlendir
+        if (role === 'customer') {
+          window.location.href = '/customer-register';
+        } else if (role === 'printer') {
+          window.location.href = '/printer-register';
+        } else {
+          toast({
+            title: "Giriş Başarısız",
+            description: result.message || "Giriş yapılamadı",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Bağlantı Hatası",
+        description: "Sunucuya bağlanılamadı",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleGoHome = () => {
@@ -190,7 +259,7 @@ export default function Landing() {
               <a href="#canlı-takip" className="text-white/80 hover:text-white transition-colors">
                 Canlı Takip
               </a>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20">
@@ -308,7 +377,7 @@ export default function Landing() {
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
               AI destekli tasarım analizi, otomatik fiyatlandırma ve güvenli ödeme sistemi
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <Button 
                 size="lg" 
@@ -316,7 +385,7 @@ export default function Landing() {
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
               >
                 <User className="mr-2 h-5 w-5" />
-                Müşteri Olarak Başla
+                Müşteri Girişi
               </Button>
               <Button 
                 size="lg" 
@@ -325,7 +394,7 @@ export default function Landing() {
                 className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
               >
                 <Building2 className="mr-2 h-5 w-5" />
-                Firma Olarak Katıl
+                Firma Girişi
               </Button>
             </div>
 
@@ -503,7 +572,7 @@ export default function Landing() {
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Ücretsiz hesap oluşturun ve Türkiye'nin en gelişmiş B2B matbaa platformunun avantajlarından yararlanın
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
@@ -529,7 +598,7 @@ export default function Landing() {
       <section className="py-16 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            
+
             {/* Bize Ulaşın */}
             <div className="text-center">
               <h3 className="text-2xl font-bold text-white mb-6">Bize Ulaşın</h3>
@@ -609,13 +678,13 @@ export default function Landing() {
               </div>
               <span className="text-xl font-bold text-white">Matbixx</span>
             </div>
-            
+
             <div className="text-center md:text-right">
               <p className="text-gray-400">© 2024 Matbixx A.Ş. Tüm hakları saklıdır.</p>
               <p className="text-gray-500 text-sm mt-1">Türkiye'nin En Güvenilir B2B Matbaa Platformu</p>
             </div>
           </div>
-          
+
           {/* Social Media & Additional Info */}
           <div className="mt-6 pt-6 border-t border-white/10">
             <div className="flex flex-col md:flex-row justify-between items-center">
@@ -660,7 +729,7 @@ export default function Landing() {
               {selectedRole === 'admin' && 'Admin hesabınızla giriş yapın ve sistemi yönetin.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <Button 
               onClick={handleLogin}
@@ -669,7 +738,7 @@ export default function Landing() {
               <LogIn className="mr-2 h-4 w-4" />
               Replit ile Giriş Yap
             </Button>
-            
+
             <div className="flex gap-2">
               <Button 
                 variant="outline" 

@@ -34,22 +34,7 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/" component={() => {
-            // Auto-redirect to appropriate dashboard based on role
-            const userRole = (user as any)?.role || 'customer';
-            
-            if (userRole === 'admin') {
-              window.location.href = '/admin-dashboard';
-              return null;
-            }
-            if (userRole === 'printer') {
-              window.location.href = '/printer-dashboard';
-              return null;
-            }
-            // Default to customer dashboard
-            window.location.href = '/customer-dashboard';
-            return null;
-          }} />
+          <Route path="/" component={Home} />
           
           <Route path="/dashboard" component={() => {
             // Universal dashboard route that redirects based on role
