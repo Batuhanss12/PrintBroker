@@ -39,7 +39,8 @@ import {
   CheckCircle2,
   Shirt,
   Package,
-  CreditCard
+  CreditCard,
+  Brain
 } from "lucide-react";
 
 export default function Landing() {
@@ -263,6 +264,16 @@ export default function Landing() {
     }
   ];
 
+  const handleShowLoginForm = (role: 'customer' | 'printer' | 'admin') => {
+    setLoginRole(role);
+    setShowLoginForm(true);
+  };
+
+  const [loginData, setLoginData] = useState({
+    email: "",
+    password: "",
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Header with enhanced dropdown */}
@@ -420,61 +431,84 @@ export default function Landing() {
         </div>
       </header>
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-12 sm:pb-16">
-          <div className="text-center">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-              <span className="block">Türkiye'nin En Gelişmiş</span>
-              <span className="block bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                B2B Matbaa Platformu
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+        {/* Modern geometric background */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.05"%3E%3Cpath d="m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+        </div>
+
+        {/* Floating elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse animation-delay-2000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-5 animate-pulse animation-delay-4000"></div>
+        </div>
+
+        <div className="relative z-10 text-center text-white px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+          {/* Logo/Icon */}
+          <div className="flex justify-center mb-8">
+            <div className="relative">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-2xl">
+                <Printer className="h-12 w-12 text-white" />
+              </div>
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-400 to-purple-500 rounded-3xl blur opacity-30 animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Main headline */}
+          <div className="space-y-6 mb-8">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight">
+              <span className="block text-white mb-2">MatBixx</span>
+              <span className="block bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                Professional
               </span>
             </h1>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
-              AI destekli tasarım analizi, otomatik fiyatlandırma ve güvenli ödeme sistemi
-            </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4">
+            <p className="text-xl sm:text-2xl md:text-3xl text-blue-100 font-light leading-relaxed max-w-4xl mx-auto">
+              Türkiye'nin en gelişmiş <span className="font-semibold text-blue-300">AI destekli</span> baskı platformu
+            </p>
+          </div>
+
+          {/* Feature highlights */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <Brain className="h-8 w-8 text-blue-400 mx-auto mb-3" />
+              <h3 className="font-semibold text-lg mb-2">AI Analiz</h3>
+              <p className="text-blue-100 text-sm">Otomatik tasarım optimizasyonu</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <Zap className="h-8 w-8 text-purple-400 mx-auto mb-3" />
+              <h3 className="font-semibold text-lg mb-2">Hızlı İşlem</h3>
+              <p className="text-blue-100 text-sm">Anında fiyat hesaplama</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <Shield className="h-8 w-8 text-green-400 mx-auto mb-3" />
+              <h3 className="font-semibold text-lg mb-2">Güvenli Ödeme</h3>
+              <p className="text-blue-100 text-sm">256-bit SSL şifreleme</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 px-4">
               <Button 
                 size="lg" 
                 onClick={() => window.location.href = '/customer-register'}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 sm:px-8 py-3 w-full sm:w-auto"
+                className="group bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 text-lg font-semibold"
               >
-                <User className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                Müşteri Kaydı
+                <User className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
+                Müşteri Olarak Başla
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
               <Button 
                 size="lg" 
                 onClick={() => window.location.href = '/printer-register'}
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-6 sm:px-8 py-3 w-full sm:w-auto"
+                className="group bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 text-lg font-semibold"
               >
-                <Building2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                Firma Kaydı
+                <Building2 className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
+                Matbaacı Kaydı
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
             </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto px-4">
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-blue-400">50+</div>
-                <div className="text-sm sm:text-base text-gray-400">Aktif Matbaacı</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-purple-400">1000+</div>
-                <div className="text-sm sm:text-base text-gray-400">Mutlu Müşteri</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-green-400">15K+</div>
-                <div className="text-sm sm:text-base text-gray-400">Tamamlanan Proje</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-orange-400">99%</div>
-                <div className="text-sm sm:text-base text-gray-400">Memnuniyet Oranı</div>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+      </section>
       {/* Canlı İş Takibi */}
       <section id="canlı-takip" className="py-12 sm:py-16 bg-white/5 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -811,7 +845,7 @@ export default function Landing() {
               En çok tercih edilen ürün kategorileri ve hizmetlerimiz
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all duration-300 cursor-pointer border border-white/10">
               <div className="flex items-center mb-4">
@@ -902,7 +936,7 @@ export default function Landing() {
               Sektördeki deneyimimiz ve teknolojik altyapımızla size en iyi hizmeti sunuyoruz
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -911,7 +945,7 @@ export default function Landing() {
               <h3 className="text-xl font-semibold text-white mb-2">Kalite Garantisi</h3>
               <p className="text-gray-300 text-sm">ISO sertifikalı üretim ve %100 kalite kontrolü</p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Truck className="w-8 h-8 text-green-400" />
@@ -919,7 +953,7 @@ export default function Landing() {
               <h3 className="text-xl font-semibold text-white mb-2">Hızlı Teslimat</h3>
               <p className="text-gray-300 text-sm">24-48 saat içinde kapınızda</p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Star className="w-8 h-8 text-purple-400" />
@@ -927,7 +961,7 @@ export default function Landing() {
               <h3 className="text-xl font-semibold text-white mb-2">Özel Tasarım</h3>
               <p className="text-gray-300 text-sm">Uzman tasarım ekibi desteği</p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-orange-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-8 h-8 text-orange-400" />
