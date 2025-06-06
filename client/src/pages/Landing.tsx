@@ -31,7 +31,11 @@ import {
   X,
   Mail,
   Phone,
-  MapPin
+  MapPin,
+  Eye,
+  EyeOff,
+  Zap,
+  CheckCircle2
 } from "lucide-react";
 
 export default function Landing() {
@@ -54,6 +58,7 @@ export default function Landing() {
   const [loginRole, setLoginRole] = useState<'customer' | 'printer' | 'admin'>('customer');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [loginLoading, setLoginLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Canlı iş takibi animasyonu ve otomatik yeni iş ekleme
   useEffect(() => {
@@ -557,34 +562,177 @@ export default function Landing() {
           </div>
         </div>
       </section>
-      {/* CTA Section */}
+      {/* Membership Plans & CTA Section */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Hemen Başlayın!
-          </h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Ücretsiz hesap oluşturun ve Türkiye'nin en gelişmiş B2B matbaa platformunun avantajlarından yararlanın
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Üyelik Paketlerimiz
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              İhtiyacınıza uygun paketi seçin ve Türkiye'nin en gelişmiş B2B matbaa platformunun avantajlarından yararlanın
+            </p>
+          </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              onClick={() => handleShowLogin('customer')}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
-            >
-              <User className="mr-2 h-5 w-5" />
-              Müşteri Kaydı
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              onClick={() => handleShowLogin('printer')}
-              className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
-            >
-              <Building2 className="mr-2 h-5 w-5" />
-              Firma Kaydı
-            </Button>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            {/* Müşteri Paketi */}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 relative">
+              <CardHeader className="text-center pb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <User className="h-8 w-8 text-blue-400" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-white mb-2">
+                  Müşteri Paketi
+                </CardTitle>
+                <div className="text-3xl font-bold text-blue-400 mb-2">
+                  Kredili Sistem
+                </div>
+                <p className="text-gray-300 text-sm">Kullandığın kadar öde</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  {[
+                    'Sınırsız teklif alma',
+                    'AI destekli tasarım (35₺/tasarım)',
+                    '100MB dosya yükleme',
+                    'Gerçek zamanlı sipariş takibi',
+                    '7/24 canlı destek',
+                    'Güvenli ödeme sistemi'
+                  ].map((feature, index) => (
+                    <div key={index} className="flex items-center text-sm text-gray-300">
+                      <CheckCircle className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
+                      {feature}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  onClick={() => handleShowLogin('customer')}
+                  className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Müşteri Girişi
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Firma Paketi */}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 relative">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 text-xs font-semibold">
+                  EN POPÜLER
+                </Badge>
+              </div>
+              <CardHeader className="text-center pb-4 pt-8">
+                <div className="w-16 h-16 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Building2 className="h-8 w-8 text-orange-400" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-white mb-2">
+                  Firma Paketi
+                </CardTitle>
+                <div className="text-3xl font-bold text-orange-400 mb-2">
+                  ₺2.999<span className="text-lg text-gray-400">/ay</span>
+                </div>
+                <p className="text-gray-300 text-sm">Premium işletme sistemi</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  {[
+                    'Geniş müşteri ağına erişim',
+                    'Gelişmiş analitik dashboard',
+                    'Otomatik sipariş yönetimi',
+                    'Müşteri CRM entegrasyonu',
+                    'Premium öncelikli destek',
+                    'Öncelikli liste görünürlüğü'
+                  ].map((feature, index) => (
+                    <div key={index} className="flex items-center text-sm text-gray-300">
+                      <CheckCircle className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
+                      {feature}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  onClick={() => handleShowLogin('printer')}
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+                >
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Firma Girişi
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Enterprise Paketi */}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 relative">
+              <CardHeader className="text-center pb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Crown className="h-8 w-8 text-purple-400" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-white mb-2">
+                  Enterprise
+                </CardTitle>
+                <div className="text-3xl font-bold text-purple-400 mb-2">
+                  Özel Fiyat
+                </div>
+                <p className="text-gray-300 text-sm">Kurumsal çözümler</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  {[
+                    'Özel API entegrasyonları',
+                    'Sınırsız kullanıcı',
+                    'Özel raporlama',
+                    'Beyaz etiket çözümü',
+                    'Özel SLA anlaşması',
+                    'Dedike hesap yöneticisi'
+                  ].map((feature, index) => (
+                    <div key={index} className="flex items-center text-sm text-gray-300">
+                      <CheckCircle className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
+                      {feature}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  variant="outline"
+                  className="w-full border-white/30 text-white hover:bg-white/10"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  İletişime Geç
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+
+          {/* Quick Start CTA */}
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-white mb-4">
+              Hemen Başlayın!
+            </h3>
+            <p className="text-lg text-gray-300 mb-6 max-w-2xl mx-auto">
+              Demo hesaplarla sistemi test edin veya hemen kayıt olun
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                onClick={() => handleShowLogin('customer')}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
+              >
+                <User className="mr-2 h-5 w-5" />
+                Müşteri Demo
+              </Button>
+              <Button 
+                size="lg" 
+                onClick={() => handleShowLogin('printer')}
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-8 py-3"
+              >
+                <Building2 className="mr-2 h-5 w-5" />
+                Firma Demo
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -706,70 +854,213 @@ export default function Landing() {
         </div>
       </footer>
 
-      {/* Login Dialog */}
+      {/* Professional Login Dialog */}
       <Dialog open={showLoginForm} onOpenChange={setShowLoginForm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {loginRole === 'customer' ? 'Müşteri Girişi' : 
-               loginRole === 'printer' ? 'Firma Girişi' : 'Admin Girişi'}
+        <DialogContent className="sm:max-w-lg bg-white border-0 shadow-2xl">
+          <DialogHeader className="text-center pb-6">
+            <div className="mx-auto mb-4">
+              {loginRole === 'customer' && (
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <User className="h-8 w-8 text-white" />
+                </div>
+              )}
+              {loginRole === 'printer' && (
+                <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                  <Building2 className="h-8 w-8 text-white" />
+                </div>
+              )}
+              {loginRole === 'admin' && (
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                  <Crown className="h-8 w-8 text-white" />
+                </div>
+              )}
+            </div>
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              {loginRole === 'customer' ? 'Müşteri Paneli' : 
+               loginRole === 'printer' ? 'Firma Paneli' : 'Admin Paneli'}
             </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              {loginRole === 'customer' ? 'Baskı ihtiyaçlarınızı karşılayın' : 
+               loginRole === 'printer' ? 'İşinizi yönetin ve büyütün' : 'Sistemi yönetin'}
+            </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Label htmlFor="email">E-posta</Label>
-              <Input
-                id="email"
-                type="email"
-                value={loginForm.email}
-                onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="ornek@email.com"
-                required
-              />
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Membership Features Display */}
+            <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <Star className="h-4 w-4 text-yellow-500 mr-2" />
+                {loginRole === 'customer' ? 'Müşteri Avantajları' : 
+                 loginRole === 'printer' ? 'Firma Avantajları' : 'Admin Yetkileri'}
+              </h4>
+              <div className="grid grid-cols-1 gap-2">
+                {loginRole === 'customer' && [
+                  'Sınırsız teklif alma',
+                  'AI destekli tasarım (35₺/tasarım)',
+                  '100MB dosya yükleme',
+                  '7/24 canlı destek'
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-center text-sm text-gray-700">
+                    <CheckCircle2 className="h-3 w-3 text-green-600 mr-2 flex-shrink-0" />
+                    {feature}
+                  </div>
+                ))}
+                
+                {loginRole === 'printer' && [
+                  'Geniş müşteri ağına erişim',
+                  'Gelişmiş analitik dashboard',
+                  'Otomatik sipariş yönetimi',
+                  'Premium öncelikli destek'
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-center text-sm text-gray-700">
+                    <CheckCircle2 className="h-3 w-3 text-green-600 mr-2 flex-shrink-0" />
+                    {feature}
+                  </div>
+                ))}
+
+                {loginRole === 'admin' && [
+                  'Tam sistem kontrolü',
+                  'Kullanıcı yönetimi',
+                  'Sistem metrikleri',
+                  'Gelişmiş raporlama'
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-center text-sm text-gray-700">
+                    <CheckCircle2 className="h-3 w-3 text-green-600 mr-2 flex-shrink-0" />
+                    {feature}
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="password">Şifre</Label>
-              <Input
-                id="password"
-                type="password"
-                value={loginForm.password}
-                onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="••••••••"
-                required
-              />
+            {/* Login Form */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  E-posta Adresi
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={loginForm.email}
+                  onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="ornek@email.com"
+                  className="mt-1 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Şifre
+                </Label>
+                <div className="relative mt-1">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="••••••••"
+                    className="h-11 pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Demo Login Credentials */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs font-medium text-blue-800 mb-2">Demo Giriş Bilgileri:</p>
+                <div className="space-y-1 text-xs text-blue-700">
+                  {loginRole === 'customer' && (
+                    <>
+                      <p>E-posta: customer@test.com</p>
+                      <p>Şifre: demo123</p>
+                    </>
+                  )}
+                  {loginRole === 'printer' && (
+                    <>
+                      <p>E-posta: printer@test.com</p>
+                      <p>Şifre: demo123</p>
+                    </>
+                  )}
+                  {loginRole === 'admin' && (
+                    <>
+                      <p>E-posta: admin@test.com</p>
+                      <p>Şifre: demo123</p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="flex gap-2">
+            {/* Action Buttons */}
+            <div className="space-y-3">
               <Button 
                 type="submit" 
-                className="flex-1"
+                className={`w-full h-12 text-base font-semibold ${
+                  loginRole === 'customer' 
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700' 
+                    : loginRole === 'printer'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'
+                    : 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600'
+                }`}
                 disabled={loginLoading}
               >
-                {loginLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
+                {loginLoading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Giriş yapılıyor...
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Güvenli Giriş Yap
+                  </div>
+                )}
               </Button>
+              
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => setShowLoginForm(false)}
                 disabled={loginLoading}
+                className="w-full h-12 border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 İptal
               </Button>
             </div>
 
-            <div className="text-center text-sm text-gray-500">
-              Hesabınız yok mu?{' '}
+            {/* Registration Link */}
+            <div className="text-center pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                Henüz hesabınız yok mu?
+              </p>
               <Button 
+                type="button"
                 variant="link" 
-                className="p-0 h-auto text-blue-600"
+                className="p-0 h-auto text-blue-600 hover:text-blue-700 font-semibold"
                 onClick={() => {
                   setShowLoginForm(false);
-                  window.location.href = loginRole === 'customer' ? '/customer-register' : '/printer-register';
+                  if (loginRole === 'customer') {
+                    window.location.href = '/customer-register';
+                  } else if (loginRole === 'printer') {
+                    window.location.href = '/printer-register';
+                  }
                 }}
               >
-                Kayıt olun
+                <Zap className="h-4 w-4 mr-1" />
+                {loginRole === 'customer' ? 'Ücretsiz Müşteri Kaydı' : 
+                 loginRole === 'printer' ? 'Firma Kaydı Oluştur' : 'Admin Hesabı'}
               </Button>
             </div>
           </form>
