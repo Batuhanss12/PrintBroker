@@ -509,7 +509,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              onClick={() => handleRoleSelection('customer')}
+              onClick={() => handleDirectLogin('customer')}
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
             >
               <User className="mr-2 h-5 w-5" />
@@ -518,7 +518,7 @@ export default function Landing() {
             <Button 
               size="lg" 
               variant="outline"
-              onClick={() => handleRoleSelection('printer')}
+              onClick={() => handleDirectLogin('printer')}
               className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
             >
               <Building2 className="mr-2 h-5 w-5" />
