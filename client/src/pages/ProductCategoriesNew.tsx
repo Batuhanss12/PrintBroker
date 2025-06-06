@@ -314,7 +314,7 @@ const productCategories = [
     subtitle: "Su Geçirmez & UV Dayanıklı Çözümler",
     description: "Gıda, ilaç, kozmetik ve endüstriyel ürünler için FDA onaylı, su geçirmez, UV dayanıklı etiketler ve güvenlik hologramları.",
     image: "/api/placeholder/400/300",
-    priceRange: "0.08₺ - 3.50₺",
+    priceRange: "0.08₺ - 3.50₺ + Tasarım Kredisi",
     minOrder: "500 adet",
     delivery: "24-72 saat",
     category: "industrial",
@@ -348,7 +348,7 @@ const productCategories = [
     subtitle: "Yüksek Kalite Tanıtım Materyalleri",
     description: "Kurumsal broşürler, ürün katalogları, dergi baskıları. Premium kağıt seçenekleri, spot UV, ciltleme ve tel dikiş hizmetleri.",
     image: "/api/placeholder/400/300",
-    priceRange: "2.50₺ - 35.00₺",
+    priceRange: "2.50₺ - 35.00₺ + Tasarım Kredisi",
     minOrder: "100 adet",
     delivery: "3-5 iş günü",
     category: "corporate",
@@ -382,7 +382,7 @@ const productCategories = [
     subtitle: "Premium Ambalaj Tasarım & Üretim",
     description: "E-ticaret, gıda, kozmetik için özel tasarım mukavva kutular, lüks ambalajlar ve eco-friendly sürdürülebilir çözümler.",
     image: "/api/placeholder/400/300",
-    priceRange: "1.50₺ - 85.00₺",
+    priceRange: "1.50₺ - 85.00₺ + Tasarım Kredisi",
     minOrder: "250 adet",
     delivery: "5-10 iş günü",
     category: "packaging",
@@ -416,7 +416,7 @@ const productCategories = [
     subtitle: "Açık Hava & İç Mekan Reklamları",
     description: "Dijital baskı banner, PVC tabela, LED backlight sistemler. Hava koşullarına dayanıklı malzemeler ve montaj hizmeti.",
     image: "/api/placeholder/400/300",
-    priceRange: "25.00₺ - 850.00₺",
+    priceRange: "25.00₺ - 850.00₺ + Tasarım Kredisi",
     minOrder: "1 adet",
     delivery: "2-7 iş günü",
     category: "outdoor",
@@ -450,7 +450,7 @@ const productCategories = [
     subtitle: "T-shirt, Forma & Kurumsal Tekstil",
     description: "DTG, transfer, nakış teknikleri ile t-shirt, polo, forma, promosyon ürünleri. Organik pamuk ve performance kumaş seçenekleri.",
     image: "/api/placeholder/400/300",
-    priceRange: "15.00₺ - 125.00₺",
+    priceRange: "15.00₺ - 125.00₺ + Tasarım Kredisi",
     minOrder: "25 adet",
     delivery: "7-12 iş günü",
     category: "textile",
@@ -810,13 +810,22 @@ export default function ProductCategoriesNew() {
             AI destekli sistemimiz ile 60 saniyede profesyonel teklif alın
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3">
+            <Button 
+              size="lg" 
+              className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3"
+              onClick={() => window.location.href = '/customer-register'}
+            >
               <Calculator className="h-5 w-5 mr-2" />
-              Anında Teklif Al
+              Kredili Sistem Başlat (2999₺/ay)
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3"
+              onClick={() => window.open('tel:+908501234567')}
+            >
               <Phone className="h-5 w-5 mr-2" />
-              0850 XXX XX XX
+              0850 123 45 67
             </Button>
           </div>
         </div>
