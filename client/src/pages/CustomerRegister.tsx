@@ -90,13 +90,14 @@ export default function CustomerRegister() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          password: 'temp123', // Geçici şifre - production'da proper form field olmalı
           role: 'customer',
-          companyName: formData.company
+          company: formData.company
         })
       });
 

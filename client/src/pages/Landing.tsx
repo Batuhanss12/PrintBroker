@@ -137,7 +137,7 @@ export default function Landing() {
 
     setLoginLoading(true);
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,8 +145,7 @@ export default function Landing() {
         credentials: 'include',
         body: JSON.stringify({
           email: loginForm.email,
-          password: loginForm.password,
-          role: loginRole
+          password: loginForm.password
         }),
       });
 

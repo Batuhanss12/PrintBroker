@@ -96,11 +96,12 @@ export default function PrinterRegister() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          password: 'temp123', // Geçici şifre - production'da proper form field olmalı
           role: 'printer'
         })
       });
