@@ -485,66 +485,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/quotes/live-feed', async (req, res) => {
     try {
       // Gerçek sisteme verilerini çek
-      const realQuotes = await storage.getRecentQuotes ? await storage.getRecentQuotes(10) : [];
+      const realQuotes = await storage.getRecentQuotes ? await storage.getRecentQuotes(15) : [];
       
-      // Mock işler oluştur (5 dakikada bir değişen)
+      // Mock işler oluştur (5 dakikada bir değişen) - yüksek tutarlı projeler
       const now = new Date();
       const fiveMinuteSlot = Math.floor(now.getTime() / (5 * 60 * 1000));
       
       const mockJobs = [
         {
           id: `mock_${fiveMinuteSlot}_1`,
-          title: 'Etiket Baskı Projesi',
+          title: 'Kurumsal Etiket Seri Üretimi',
           type: 'Etiket Baskı',
           location: 'İstanbul',
-          amount: `₺${(Math.random() * 2000 + 500).toFixed(0)}`,
+          amount: `₺${(Math.random() * 25000 + 15000).toFixed(0)}`,
           status: Math.random() > 0.5 ? 'Teklif aşamasında' : 'Üretimde',
           time: `${Math.floor(Math.random() * 59) + 1} dk önce`,
-          estimatedBudget: Math.random() * 2000 + 500,
+          estimatedBudget: Math.random() * 25000 + 15000,
           isGenerated: true
         },
         {
           id: `mock_${fiveMinuteSlot}_2`,
-          title: 'Kartvizit Tasarım ve Baskı',
+          title: 'Premium Kartvizit Koleksiyonu',
           type: 'Kartvizit',
           location: 'Ankara',
-          amount: `₺${(Math.random() * 1500 + 300).toFixed(0)}`,
+          amount: `₺${(Math.random() * 18000 + 8000).toFixed(0)}`,
           status: Math.random() > 0.3 ? 'Tamamlandı' : 'Kalite Kontrolde',
           time: `${Math.floor(Math.random() * 120) + 5} dk önce`,
-          estimatedBudget: Math.random() * 1500 + 300,
+          estimatedBudget: Math.random() * 18000 + 8000,
           isGenerated: true
         },
         {
           id: `mock_${fiveMinuteSlot}_3`,
-          title: 'Broşür ve Katalog Baskısı',
+          title: 'Katalog ve Broşür Mega Üretim',
           type: 'Broşür',
           location: 'İzmir',
-          amount: `₺${(Math.random() * 3000 + 800).toFixed(0)}`,
+          amount: `₺${(Math.random() * 35000 + 20000).toFixed(0)}`,
           status: Math.random() > 0.6 ? 'Teklif aşamasında' : 'Üretimde',
           time: `${Math.floor(Math.random() * 180) + 10} dk önce`,
-          estimatedBudget: Math.random() * 3000 + 800,
+          estimatedBudget: Math.random() * 35000 + 20000,
           isGenerated: true
         },
         {
           id: `mock_${fiveMinuteSlot}_4`,
-          title: 'Poster ve Afiş Baskı',
+          title: 'Outdoor Poster Kampanyası',
           type: 'Poster',
           location: 'Bursa',
-          amount: `₺${(Math.random() * 1200 + 400).toFixed(0)}`,
+          amount: `₺${(Math.random() * 22000 + 12000).toFixed(0)}`,
           status: Math.random() > 0.4 ? 'Tamamlandı' : 'Üretimde',
           time: `${Math.floor(Math.random() * 240) + 15} dk önce`,
-          estimatedBudget: Math.random() * 1200 + 400,
+          estimatedBudget: Math.random() * 22000 + 12000,
           isGenerated: true
         },
         {
           id: `mock_${fiveMinuteSlot}_5`,
-          title: 'Ambalaj Etiketi Üretim',
+          title: 'Endüstriyel Etiket Sistemi',
           type: 'Etiket',
           location: 'Antalya',
-          amount: `₺${(Math.random() * 2500 + 600).toFixed(0)}`,
+          amount: `₺${(Math.random() * 28000 + 18000).toFixed(0)}`,
           status: Math.random() > 0.7 ? 'Teklif aşamasında' : 'Kalite Kontrolde',
           time: `${Math.floor(Math.random() * 300) + 20} dk önce`,
-          estimatedBudget: Math.random() * 2500 + 600,
+          estimatedBudget: Math.random() * 28000 + 18000,
+          isGenerated: true
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_6`,
+          title: 'Lüks Ambalaj Tasarım Üretimi',
+          type: 'Ambalaj',
+          location: 'İstanbul',
+          amount: `₺${(Math.random() * 30000 + 25000).toFixed(0)}`,
+          status: Math.random() > 0.4 ? 'Üretimde' : 'Teklif aşamasında',
+          time: `${Math.floor(Math.random() * 90) + 30} dk önce`,
+          estimatedBudget: Math.random() * 30000 + 25000,
+          isGenerated: true
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_7`,
+          title: 'Kurumsal Kimlik Materyali',
+          type: 'Kurumsal',
+          location: 'Ankara',
+          amount: `₺${(Math.random() * 40000 + 20000).toFixed(0)}`,
+          status: Math.random() > 0.5 ? 'Kalite Kontrolde' : 'Tamamlandı',
+          time: `${Math.floor(Math.random() * 150) + 45} dk önce`,
+          estimatedBudget: Math.random() * 40000 + 20000,
+          isGenerated: true
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_8`,
+          title: 'Event Materyali Toplu Üretim',
+          type: 'Event',
+          location: 'İzmir',
+          amount: `₺${(Math.random() * 32000 + 15000).toFixed(0)}`,
+          status: Math.random() > 0.6 ? 'Üretimde' : 'Teklif aşamasında',
+          time: `${Math.floor(Math.random() * 200) + 60} dk önce`,
+          estimatedBudget: Math.random() * 32000 + 15000,
           isGenerated: true
         }
       ];

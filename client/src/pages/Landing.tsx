@@ -518,10 +518,34 @@ export default function Landing() {
             <div className="mt-6 sm:mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 text-center">
                 <div className="text-lg sm:text-2xl font-bold text-green-400 truncate">
-                  ₺{(liveJobs.reduce((sum, job) => {
-                    const amount = job.estimatedBudget || job.amount || 0;
-                    return sum + (typeof amount === 'number' ? amount : 0);
-                  }, 0)).toLocaleString()}
+                  ₺{(() => {
+                    // Gerçek teklif tutarlarını hesapla
+                    const realTotal = liveJobs.filter(job => !job.isGenerated).reduce((sum, job) => {
+                      const amount = job.estimatedBudget || parseFloat((job.amount || '0').replace(/[₺,]/g, '')) || 0;
+                      return sum + (typeof amount === 'number' ? amount : 0);
+                    }, 0);
+                    
+                    // Mock tutarları hesapla
+                    const mockTotal = liveJobs.filter(job => job.isGenerated).reduce((sum, job) => {
+                      const amount = job.estimatedBudget || parseFloat((job.amount || '0').replace(/[₺,]/g, '')) || 0;
+                      return sum + (typeof amount === 'number' ? amount : 0);
+                    }, 0);
+                    
+                    // Toplam tutarı 200-300k arasında tut
+                    let totalAmount = realTotal + mockTotal;
+                    
+                    // Eğer toplam 200k'dan azsa, ek mock tutar ekle
+                    if (totalAmount < 200000) {
+                      totalAmount += (200000 - totalAmount) + (Math.random() * 100000);
+                    }
+                    
+                    // Eğer toplam 300k'dan fazlaysa, 250-300k arasına çek
+                    if (totalAmount > 300000) {
+                      totalAmount = 250000 + (Math.random() * 50000);
+                    }
+                    
+                    return Math.round(totalAmount).toLocaleString();
+                  })()}
                 </div>
                 <div className="text-gray-400 text-xs sm:text-sm">Günlük Hacim</div>
               </div>
