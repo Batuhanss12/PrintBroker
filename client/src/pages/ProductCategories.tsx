@@ -29,7 +29,7 @@ import {
   Layers,
   Sparkles
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 
 const productCategories = [
   {
