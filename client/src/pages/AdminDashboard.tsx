@@ -23,20 +23,33 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
 
-  // Redirect to home if not authenticated
+  // Enhanced authentication handling
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
+        title: "Oturum Sonlandı",
+        description: "Lütfen tekrar giriş yapın",
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
+        window.location.href = "/?login=required";
+      }, 1500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+    
+    // Additional role check
+    if (!isLoading && user && user.role !== 'admin') {
+      toast({
+        title: "Erişim Hatası",
+        description: "Bu sayfaya erişim yetkiniz bulunmuyor",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, user, toast]);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/stats"],

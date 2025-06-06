@@ -41,8 +41,15 @@ export default function Navigation() {
 
   if (!user) return null;
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      //await logout.mutateAsync(); // Assuming logout is a mutation function from useMutation hook
+      window.location.href = "/api/logout"; // temporary solution without mutation func
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Force logout even if request fails
+      window.location.href = '/';
+    }
   };
 
   const getNavigationItems = () => {

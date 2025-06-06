@@ -1,3 +1,4 @@
+
 import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
@@ -18,18 +19,32 @@ declare module 'express-session' {
   }
 }
 
-// Simple fallback auth for development
+// Enhanced authentication for development and production
 export async function setupAuth(app: Express) {
-  // Configure session
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    tableName: "sessions",
-  });
+  // Configure session with proper settings
+  const sessionSecret = process.env.SESSION_SECRET || 'matbixx-development-secret-key-2024';
+  
+  let sessionStore;
+  
+  // Try to use PostgreSQL session store if available, fallback to memory store
+  try {
+    if (process.env.DATABASE_URL) {
+      const pgStore = connectPg(session);
+      sessionStore = new pgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: true,
+        tableName: "sessions",
+      });
+      console.log('✅ PostgreSQL session store initialized');
+    } else {
+      console.log('⚠️ Using memory session store (development only)');
+    }
+  } catch (error) {
+    console.warn('Session store warning:', error);
+  }
 
   app.use(session({
-    secret: process.env.SESSION_SECRET!,
+    secret: sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
@@ -38,40 +53,72 @@ export async function setupAuth(app: Express) {
       secure: false, // Set to true in production with HTTPS
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     },
+    name: 'matbixx.sid'
   }));
 
   app.use(passport.initialize());
   app.use(passport.session());
 
-  console.log('Authentication system initialized with session storage');
-
-  // Production login route - requires actual authentication
-  app.get("/api/login", (req, res) => {
-    // In production, redirect to login page instead of auto-login
-    res.redirect('/?login=required');
+  // Passport serialization
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
   });
 
-  // Logout route
-  app.get("/api/logout", (req, res) => {
-    req.logout((err) => {
-      if (err) {
-        console.error('Logout error:', err);
-      }
-      req.session.destroy((destroyErr) => {
-        if (destroyErr) {
-          console.error('Session destroy error:', destroyErr);
-        }
-        res.clearCookie('connect.sid');
-        res.redirect('/');
-      });
-    });
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
   });
+
+  console.log('✅ Authentication system initialized with enhanced session management');
 }
 
 export const isAuthenticated: RequestHandler = (req: any, res, next) => {
+  // Check session-based authentication
   if (req.session && req.session.user) {
+    req.user = req.session.user;
     return next();
   }
   
-  return res.status(401).json({ message: "Unauthorized" });
+  // Check if it's an API request
+  if (req.path.startsWith('/api/')) {
+    return res.status(401).json({ 
+      message: "Unauthorized",
+      code: "AUTH_REQUIRED",
+      redirectTo: "/"
+    });
+  }
+  
+  // Redirect to login for web requests
+  return res.redirect('/?login=required');
+};
+
+// Role-based access control middleware
+export const requireRole = (allowedRoles: string[]): RequestHandler => {
+  return (req: any, res, next) => {
+    if (!req.session?.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (!allowedRoles.includes(req.session.user.role)) {
+      return res.status(403).json({ 
+        message: "Insufficient permissions",
+        required: allowedRoles,
+        current: req.session.user.role
+      });
+    }
+
+    next();
+  };
+};
+
+// Session health check
+export const checkSession: RequestHandler = (req: any, res, next) => {
+  if (req.session) {
+    req.session.touch(); // Update session expiry
+  }
+  next();
 };

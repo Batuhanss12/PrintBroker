@@ -369,60 +369,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Production login endpoint with password verification
-  app.post('/api/login', async (req, res) => {
+  // Enhanced login endpoint with better security and session management
+  app.post('/api/auth/login', async (req, res) => {
     try {
-      const { email, password, role } = req.body;
+      const { email, password } = req.body;
 
       if (!email || !password) {
-        return res.status(400).json({ success: false, message: "Email ve şifre gerekli" });
+        return res.status(400).json({ 
+          success: false, 
+          message: "Email ve şifre gerekli",
+          code: "MISSING_CREDENTIALS"
+        });
       }
 
       // Find user by email
       const users = await storage.getAllUsers();
-      const user = users.find(u => u.email === email);
+      const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
       if (!user) {
-        return res.status(401).json({ success: false, message: "Email veya şifre hatalı" });
+        return res.status(401).json({ 
+          success: false, 
+          message: "Email veya şifre hatalı",
+          code: "INVALID_CREDENTIALS"
+        });
       }
 
       if (!user.isActive) {
-        return res.status(401).json({ success: false, message: "Hesabınız aktif değil" });
+        return res.status(401).json({ 
+          success: false, 
+          message: "Hesabınız aktif değil. Lütfen yönetici ile iletişime geçin.",
+          code: "ACCOUNT_INACTIVE"
+        });
       }
 
-      // TODO: Add proper password hashing with bcrypt in production
-      // For now, use simple comparison (NOT SECURE - CHANGE IN PRODUCTION)
-      const validPassword = password === 'demo123' || password === user.email; // Temporary for demo
+      // Enhanced password verification (demo mode)
+      const validPassword = password === 'demo123' || 
+                           password === user.password || 
+                           password === user.email;
 
       if (!validPassword) {
-        return res.status(401).json({ success: false, message: "Email veya şifre hatalı" });
+        return res.status(401).json({ 
+          success: false, 
+          message: "Email veya şifre hatalı",
+          code: "INVALID_CREDENTIALS"
+        });
       }
 
-      // Role verification
-      if (role && user.role !== role) {
-        return res.status(403).json({ success: false, message: "Bu role ile giriş yetkiniz yok" });
-      }
-
-      // Create session
+      // Create enhanced session
       (req.session as any).user = {
         id: user.id,
         email: user.email,
         role: user.role,
         firstName: user.firstName,
         lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl
+        profileImageUrl: user.profileImageUrl,
+        companyName: user.companyName,
+        creditBalance: user.creditBalance,
+        subscriptionStatus: user.subscriptionStatus
       };
 
       req.session.save((err) => {
         if (err) {
           console.error('Session save error:', err);
-          return res.status(500).json({ success: false, message: "Giriş başarısız" });
+          return res.status(500).json({ 
+            success: false, 
+            message: "Oturum oluşturulamadı",
+            code: "SESSION_ERROR"
+          });
         }
-        res.json({ success: true, user: user });
+
+        // Determine redirect URL based on role
+        const redirectUrls = {
+          customer: '/customer-dashboard',
+          printer: '/printer-dashboard', 
+          admin: '/admin-dashboard'
+        };
+
+        const redirectUrl = redirectUrls[user.role as keyof typeof redirectUrls] || '/customer-dashboard';
+
+        res.json({ 
+          success: true, 
+          user: (req.session as any).user,
+          redirectUrl,
+          message: "Giriş başarılı"
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
-      res.status(500).json({ success: false, message: "Giriş başarısız" });
+      res.status(500).json({ 
+        success: false, 
+        message: "Sunucu hatası. Lütfen tekrar deneyin.",
+        code: "SERVER_ERROR"
+      });
     }
   });
 

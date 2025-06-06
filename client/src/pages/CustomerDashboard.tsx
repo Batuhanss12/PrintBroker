@@ -41,20 +41,33 @@ export default function CustomerDashboard() {
   const [isDesignDialogOpen, setIsDesignDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Redirect to home if not authenticated
+  // Enhanced authentication handling
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
+        title: "Oturum Sonlandı",
+        description: "Lütfen tekrar giriş yapın",
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
+        window.location.href = "/?login=required";
+      }, 1500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+    
+    // Additional role check
+    if (!isLoading && user && user.role !== 'customer') {
+      toast({
+        title: "Erişim Hatası",
+        description: "Bu sayfaya erişim yetkiniz bulunmuyor",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, user, toast]);
 
   const { data: quotes, isLoading: quotesLoading } = useQuery({
     queryKey: ["/api/quotes"],

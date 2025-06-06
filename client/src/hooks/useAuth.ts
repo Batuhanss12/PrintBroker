@@ -1,8 +1,23 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface LoginCredentials {
   username: string;
   password: string;
+}
+
+interface RegisterData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: 'customer' | 'printer';
+  phone?: string;
+  companyName?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  taxNumber?: string;
 }
 
 export const useAuth = () => {
@@ -13,27 +28,42 @@ export const useAuth = () => {
     queryFn: async () => {
       try {
         const response = await fetch('/api/auth/user', {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          if (response.status === 401) {
-            return null; // Not authenticated
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
           }
-          throw new Error('Failed to fetch user');
+        });
+        
+        if (response.status === 401) {
+          return null; // Not authenticated
         }
-        return response.json();
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const userData = await response.json();
+        return userData;
       } catch (error) {
         console.error('Auth check failed:', error);
         return null;
       }
     },
-    retry: false,
+    retry: (failureCount, error) => {
+      // Don't retry on 401 (unauthorized)
+      if (error && typeof error === 'object' && 'message' in error && 
+          error.message?.includes('401')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   const login = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,20 +76,64 @@ export const useAuth = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: Login failed`);
       }
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      
+      // Redirect based on user role
+      if (data.user?.role) {
+        const redirectUrls = {
+          customer: '/customer-dashboard',
+          printer: '/printer-dashboard',
+          admin: '/admin-dashboard'
+        };
+        
+        const redirectUrl = redirectUrls[data.user.role as keyof typeof redirectUrls] || '/customer-dashboard';
+        window.location.href = redirectUrl;
+      }
+    },
+    onError: (error) => {
+      console.error('Login error:', error);
+    }
+  });
+
+  const register = useMutation({
+    mutationFn: async (registerData: RegisterData) => {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(registerData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Registration failed' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: Registration failed`);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      
+      // Redirect based on registration success
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      }
     },
   });
 
   const logout = useMutation({
     mutationFn: async () => {
       const response = await fetch('/api/logout', {
+        method: 'GET',
         credentials: 'include'
       });
       return response;
@@ -68,16 +142,34 @@ export const useAuth = () => {
       queryClient.clear();
       window.location.href = '/';
     },
+    onError: (error) => {
+      console.error('Logout error:', error);
+      // Force redirect even on error
+      queryClient.clear();
+      window.location.href = '/';
+    }
   });
 
   const isAuthenticated = !!user && !error;
+
+  // Session check function
+  const checkSession = async () => {
+    try {
+      await refetch();
+    } catch (error) {
+      console.error('Session check failed:', error);
+    }
+  };
 
   return {
     user,
     isLoading,
     isAuthenticated,
     login,
+    register,
     logout,
     refetch,
+    checkSession,
+    error,
   };
 };

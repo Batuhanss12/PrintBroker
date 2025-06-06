@@ -155,6 +155,11 @@ export default function Landing() {
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Giriş başarısız' }));
+        throw new Error(errorData.message || 'Giriş başarısız');
+      }
+
       const result = await response.json();
 
       if (result.success) {
@@ -163,6 +168,10 @@ export default function Landing() {
           description: "Giriş yapıldı, yönlendiriliyorsunuz...",
         });
 
+        // Clear form
+        setLoginForm({ email: '', password: '' });
+        setShowLoginForm(false);
+
         // Redirect based on user role
         const redirectUrls = {
           customer: '/customer-dashboard',
@@ -170,19 +179,17 @@ export default function Landing() {
           admin: '/admin-dashboard'
         };
 
-        window.location.href = redirectUrls[result.user.role] || '/customer-dashboard';
+        setTimeout(() => {
+          window.location.href = result.redirectUrl || redirectUrls[result.user?.role] || '/customer-dashboard';
+        }, 1000);
       } else {
-        toast({
-          title: "Giriş Hatası",
-          description: result.message || "Email veya şifre hatalı",
-          variant: "destructive"
-        });
+        throw new Error(result.message || "Giriş başarısız");
       }
     } catch (error) {
       console.error('Login error:', error);
       toast({
-        title: "Bağlantı Hatası",
-        description: "Sunucuya bağlanılamadı",
+        title: "Giriş Hatası",
+        description: error instanceof Error ? error.message : "Sunucuya bağlanılamadı",
         variant: "destructive"
       });
     }
