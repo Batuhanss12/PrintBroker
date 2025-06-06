@@ -30,11 +30,13 @@ import {
 
 export default function Landing() {
   const [liveJobs, setLiveJobs] = useState([
-    { id: 1, type: "Etiket Baskısı", location: "İstanbul", status: "Teklif aşamasında", time: "2 dk önce" },
-    { id: 2, type: "Kartvizit", location: "Ankara", status: "Üretimde", time: "5 dk önce" },
-    { id: 3, type: "Broşür", location: "İzmir", status: "Tamamlandı", time: "8 dk önce" },
-    { id: 4, type: "Sticker", location: "Bursa", status: "Teklif aşamasında", time: "12 dk önce" },
-    { id: 5, type: "Katalog", location: "Antalya", status: "Üretimde", time: "15 dk önce" }
+    { id: 1, type: "Etiket Baskısı", location: "İstanbul", status: "Teklif aşamasında", time: "2 dk önce", amount: "₺2,450", quantity: "5000 adet" },
+    { id: 2, type: "Kartvizit", location: "Ankara", status: "Üretimde", time: "5 dk önce", amount: "₺890", quantity: "1000 adet" },
+    { id: 3, type: "Broşür", location: "İzmir", status: "Tamamlandı", time: "8 dk önce", amount: "₺3,200", quantity: "2500 adet" },
+    { id: 4, type: "Sticker", location: "Bursa", status: "Teklif aşamasında", time: "12 dk önce", amount: "₺1,650", quantity: "3000 adet" },
+    { id: 5, type: "Katalog", location: "Antalya", status: "Üretimde", time: "15 dk önce", amount: "₺5,800", quantity: "500 adet" },
+    { id: 6, type: "Poster Baskı", location: "Adana", status: "Teklif aşamasında", time: "18 dk önce", amount: "₺1,200", quantity: "200 adet" },
+    { id: 7, type: "Mağnet", location: "Kocaeli", status: "Üretimde", time: "22 dk önce", amount: "₺780", quantity: "1500 adet" }
   ]);
   
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
@@ -42,12 +44,35 @@ export default function Landing() {
   const [selectedRole, setSelectedRole] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Canlı iş takibi animasyonu
+  // Canlı iş takibi animasyonu ve otomatik yeni iş ekleme
   useEffect(() => {
-    const interval = setInterval(() => {
+    const animationInterval = setInterval(() => {
       setCurrentJobIndex((prev) => (prev + 1) % liveJobs.length);
     }, 3000);
-    return () => clearInterval(interval);
+
+    // Her 10 dakikada bir yeni iş ekle
+    const newJobInterval = setInterval(() => {
+      const jobTypes = ["Etiket Baskısı", "Kartvizit", "Broşür", "Sticker", "Katalog", "Poster", "Mağnet", "Afiş", "Banner", "Kutu"];
+      const locations = ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana", "Kocaeli", "Gaziantep", "Konya", "Mersin"];
+      const statuses = ["Teklif aşamasında", "Üretimde", "Tamamlandı"];
+      
+      const newJob = {
+        id: Date.now(),
+        type: jobTypes[Math.floor(Math.random() * jobTypes.length)],
+        location: locations[Math.floor(Math.random() * locations.length)],
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+        time: "Az önce",
+        amount: `₺${(Math.random() * 5000 + 500).toFixed(0)}`,
+        quantity: `${Math.floor(Math.random() * 5000 + 100)} adet`
+      };
+
+      setLiveJobs(prev => [newJob, ...prev.slice(0, 9)]); // Son 10 işi tut
+    }, 600000); // 10 dakika = 600000ms
+
+    return () => {
+      clearInterval(animationInterval);
+      clearInterval(newJobInterval);
+    };
   }, [liveJobs.length]);
 
   const handleRoleSelection = (role: string) => {
@@ -56,6 +81,12 @@ export default function Landing() {
   };
 
   const handleLogin = () => {
+    window.location.href = '/api/login';
+  };
+
+  const handleDirectLogin = (userType: string) => {
+    // Store user type for redirect after login
+    localStorage.setItem('intended_user_type', userType);
     window.location.href = '/api/login';
   };
 
@@ -170,34 +201,27 @@ export default function Landing() {
                   </div>
                   <DropdownMenuSeparator className="bg-white/20" />
                   <DropdownMenuItem 
-                    onClick={() => handleRoleSelection('customer')}
+                    onClick={() => handleDirectLogin('customer')}
                     className="text-white hover:bg-white/10"
                   >
                     <User className="mr-2 h-4 w-4" />
                     Müşteri Girişi
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => handleRoleSelection('printer')}
+                    onClick={() => handleDirectLogin('printer')}
                     className="text-white hover:bg-white/10"
                   >
                     <Building2 className="mr-2 h-4 w-4" />
                     Matbaacı Girişi
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => handleRoleSelection('admin')}
+                    onClick={() => handleDirectLogin('admin')}
                     className="text-white hover:bg-white/10"
                   >
                     <Crown className="mr-2 h-4 w-4" />
                     Admin Girişi
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/20" />
-                  <DropdownMenuItem 
-                    onClick={handleLogin}
-                    className="text-white hover:bg-white/10"
-                  >
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Direkt Giriş
-                  </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={handleGoHome}
                     className="text-white hover:bg-white/10"
@@ -231,7 +255,7 @@ export default function Landing() {
                 <div className="border-t border-white/10 my-2"></div>
                 <Button 
                   variant="outline" 
-                  onClick={() => handleRoleSelection('customer')}
+                  onClick={() => handleDirectLogin('customer')}
                   className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <User className="mr-2 h-4 w-4" />
@@ -239,7 +263,7 @@ export default function Landing() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => handleRoleSelection('printer')}
+                  onClick={() => handleDirectLogin('printer')}
                   className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   <Building2 className="mr-2 h-4 w-4" />
@@ -247,12 +271,13 @@ export default function Landing() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={handleLogin}
+                  onClick={() => handleDirectLogin('admin')}
                   className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Direkt Giriş
+                  <Crown className="mr-2 h-4 w-4" />
+                  Admin Girişi
                 </Button>
+
                 <Button 
                   variant="ghost" 
                   onClick={handleGoHome}
@@ -285,7 +310,7 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <Button 
                 size="lg" 
-                onClick={() => handleRoleSelection('customer')}
+                onClick={() => handleDirectLogin('customer')}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3"
               >
                 <User className="mr-2 h-5 w-5" />
@@ -294,7 +319,7 @@ export default function Landing() {
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={() => handleRoleSelection('printer')}
+                onClick={() => handleDirectLogin('printer')}
                 className="border-white/30 text-white hover:bg-white/10 px-8 py-3"
               >
                 <Building2 className="mr-2 h-5 w-5" />
@@ -349,11 +374,11 @@ export default function Landing() {
             </div>
 
             <div className="space-y-4">
-              {liveJobs.slice(0, 3).map((job, index) => (
+              {liveJobs.slice(0, 4).map((job, index) => (
                 <div 
                   key={job.id}
                   className={`p-4 rounded-lg border transition-all duration-500 ${
-                    index === currentJobIndex % 3 
+                    index === currentJobIndex % 4 
                       ? 'bg-blue-500/20 border-blue-500/50 transform scale-105' 
                       : 'bg-white/5 border-white/10'
                   }`}
@@ -366,9 +391,11 @@ export default function Landing() {
                       <div>
                         <div className="text-white font-medium">{job.type}</div>
                         <div className="text-gray-400 text-sm">{job.location}</div>
+                        <div className="text-blue-300 text-xs">{job.quantity}</div>
                       </div>
                     </div>
                     <div className="text-right">
+                      <div className="text-green-400 font-bold text-lg">{job.amount}</div>
                       <div className={`text-sm font-medium ${
                         job.status === 'Tamamlandı' ? 'text-green-400' :
                         job.status === 'Üretimde' ? 'text-blue-400' : 'text-yellow-400'
@@ -380,6 +407,26 @@ export default function Landing() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Günlük İstatistikler */}
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-green-400">₺{(liveJobs.reduce((sum, job) => sum + parseInt(job.amount.replace('₺', '').replace(',', '')), 0)).toLocaleString()}</div>
+                <div className="text-gray-400 text-sm">Günlük Hacim</div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-blue-400">{liveJobs.filter(job => job.status === 'Üretimde').length}</div>
+                <div className="text-gray-400 text-sm">Üretimde</div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-yellow-400">{liveJobs.filter(job => job.status === 'Teklif aşamasında').length}</div>
+                <div className="text-gray-400 text-sm">Teklif Bekleyen</div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-purple-400">{liveJobs.filter(job => job.status === 'Tamamlandı').length}</div>
+                <div className="text-gray-400 text-sm">Tamamlanan</div>
+              </div>
             </div>
           </div>
         </div>
