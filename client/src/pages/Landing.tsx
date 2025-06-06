@@ -454,10 +454,7 @@ export default function Landing() {
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span>Gerçek sistem verileri</span>
-              <div className="w-1 h-1 bg-gray-500 rounded-full mx-2"></div>
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span>Demo aktivite (5dk'da bir güncellenir)</span>
+              <span>Canlı sistem verileri</span>
             </div>
           </div>
 
@@ -496,11 +493,7 @@ export default function Landing() {
                           <div className="text-white font-medium text-sm sm:text-base truncate">
                             {job.title || job.type}
                           </div>
-                          {job.isGenerated && (
-                            <Badge className="text-[10px] px-1 py-0 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                              DEMO
-                            </Badge>
-                          )}
+                          
                         </div>
                         <div className="text-gray-400 text-xs sm:text-sm">{job.location || 'Türkiye'}</div>
                       </div>
