@@ -403,11 +403,11 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4">
               <Button 
                 size="lg" 
-                onClick={() => handleShowLogin('customer')}
+                onClick={() => window.location.href = '/customer-register'}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 sm:px-8 py-3 w-full sm:w-auto"
               >
                 <User className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                Müşteri Girişi
+                Müşteri Kaydı
               </Button>
               <Button 
                 size="lg" 
@@ -682,11 +682,11 @@ export default function Landing() {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={() => handleShowLogin('customer')}
+                  onClick={() => window.location.href = '/customer-register'}
                   className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
                 >
                   <User className="mr-2 h-4 w-4" />
-                  Müşteri Girişi
+                  Müşteri Kaydı
                 </Button>
               </CardFooter>
             </Card>
@@ -792,11 +792,11 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-md sm:max-w-none mx-auto">
               <Button 
                 size="lg" 
-                onClick={() => handleShowLogin('customer')}
+                onClick={() => window.location.href = '/customer-register'}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 sm:px-8 py-3 w-full sm:w-auto"
               >
                 <User className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                Müşteri Demo
+                Müşteri Kaydı
               </Button>
               <Button 
                 size="lg" 
