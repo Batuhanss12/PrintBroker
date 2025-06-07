@@ -178,18 +178,6 @@ export default function Navigation() {
 
           {/* Quick Actions & User Menu */}
           <div className="flex items-center space-x-4">
-            {/* Quick New Quote Button for Customers */}
-            {user.role === 'customer' && (
-              <Link href="/quote/sheet_label">
-                <Button 
-                  size="sm" 
-                  className="bg-primary hover:bg-primary/90 text-white font-medium"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Yeni Teklif
-                </Button>
-              </Link>
-            )}
             {/* Credit Balance for Customers */}
             {user.role === 'customer' && (
               <div className="hidden sm:flex items-center text-sm">
