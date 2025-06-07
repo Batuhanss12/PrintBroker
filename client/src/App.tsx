@@ -43,6 +43,11 @@ function AppRouter() {
           <Route path="/customer-register" component={CustomerRegister} />
           <Route path="/printer-register" component={PrinterRegister} />
           <Route path="/payment" component={Payment} />
+          
+          {/* Public demo dashboard routes for testing */}
+          <Route path="/customer-dashboard" component={CustomerDashboard} />
+          <Route path="/printer-dashboard" component={PrinterDashboard} />
+          <Route path="/admin-dashboard" component={AdminDashboard} />
         </>
       ) : (
         <>

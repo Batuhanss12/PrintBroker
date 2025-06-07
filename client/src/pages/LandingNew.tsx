@@ -255,15 +255,39 @@ export default function LandingNew() {
                     <p className="font-semibold text-gray-900">Panel Türü Seçin</p>
                   </div>
                   <DropdownMenuItem 
-                    className="px-4 py-3 cursor-pointer hover:bg-gray-100" 
+                    className="px-4 py-3 cursor-pointer hover:bg-blue-50" 
                     onClick={() => {
-                      window.location.href = '/api/login';
+                      window.location.href = '/customer-dashboard';
                     }}
                   >
                     <User className="h-4 w-4 mr-3 text-blue-600" />
                     <div>
-                      <div className="font-medium">Firma Paneli Girişi</div>
-                      <div className="text-sm text-gray-500">Mevcut firma hesabı ile giriş</div>
+                      <div className="font-medium">Müşteri Paneli</div>
+                      <div className="text-sm text-gray-500">Teklif alın, siparişlerinizi takip edin</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="px-4 py-3 cursor-pointer hover:bg-orange-50" 
+                    onClick={() => {
+                      window.location.href = '/printer-dashboard';
+                    }}
+                  >
+                    <Building2 className="h-4 w-4 mr-3 text-orange-600" />
+                    <div>
+                      <div className="font-medium">Üretici Paneli</div>
+                      <div className="text-sm text-gray-500">Teklifler verin, işlerinizi yönetin</div>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="px-4 py-3 cursor-pointer hover:bg-purple-50" 
+                    onClick={() => {
+                      window.location.href = '/admin-dashboard';
+                    }}
+                  >
+                    <Factory className="h-4 w-4 mr-3 text-purple-600" />
+                    <div>
+                      <div className="font-medium">Admin Paneli</div>
+                      <div className="text-sm text-gray-500">Platform yönetimi</div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -273,10 +297,10 @@ export default function LandingNew() {
                       window.location.href = '/customer-register';
                     }}
                   >
-                    <Building2 className="h-4 w-4 mr-3 text-green-600" />
+                    <User className="h-4 w-4 mr-3 text-green-600" />
                     <div>
-                      <div className="font-medium">Yeni Firma Kaydı</div>
-                      <div className="text-sm text-gray-500">2999₺/ay - Ücretsiz deneme</div>
+                      <div className="font-medium">Yeni Müşteri Kaydı</div>
+                      <div className="text-sm text-gray-500">2999₺/ay - Kredili sistem</div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
@@ -285,7 +309,7 @@ export default function LandingNew() {
                       window.location.href = '/printer-register';
                     }}
                   >
-                    <Factory className="h-4 w-4 mr-3 text-orange-600" />
+                    <Building2 className="h-4 w-4 mr-3 text-teal-600" />
                     <div>
                       <div className="font-medium">Üretici Firma Kaydı</div>
                       <div className="text-sm text-gray-500">Platformumuza katılın</div>
