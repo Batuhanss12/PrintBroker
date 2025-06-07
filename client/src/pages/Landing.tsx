@@ -648,9 +648,7 @@ export default function Landing() {
                 </div>
                 <DropdownMenuItem 
                   className="px-6 py-4 cursor-pointer hover:bg-blue-50 border-b border-gray-50" 
-                  onClick={() => {
-                    window.location.href = '/api/login?type=customer';
-                  }}
+                  onClick={() => handleShowLogin('customer')}
                 >
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4">
@@ -665,9 +663,7 @@ export default function Landing() {
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="px-6 py-4 cursor-pointer hover:bg-orange-50 border-b border-gray-50" 
-                  onClick={() => {
-                    window.location.href = '/api/login?type=printer';
-                  }}
+                  onClick={() => handleShowLogin('printer')}
                 >
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-4">
@@ -682,9 +678,7 @@ export default function Landing() {
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="px-6 py-4 cursor-pointer hover:bg-purple-50" 
-                  onClick={() => {
-                    window.location.href = '/api/login?type=admin';
-                  }}
+                  onClick={() => handleShowLogin('admin')}
                 >
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4">
