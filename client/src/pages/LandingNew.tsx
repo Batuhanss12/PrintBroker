@@ -352,24 +352,61 @@ export default function LandingNew() {
                   Referanslar
                 </Link>
                 <div className="px-4 pt-2 border-t border-gray-200 space-y-2">
+                  <div className="text-sm font-medium text-gray-900 mb-3">Panel Girişi</div>
+                  
                   <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white justify-start" 
                     onClick={() => {
-                      window.location.href = '/api/login';
+                      window.location.href = '/customer-dashboard';
                     }}
                   >
                     <User className="h-4 w-4 mr-2" />
-                    Firma Paneli Girişi
+                    Müşteri Paneli
                   </Button>
+                  
+                  <Button 
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white justify-start" 
+                    onClick={() => {
+                      window.location.href = '/printer-dashboard';
+                    }}
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Üretici Paneli
+                  </Button>
+                  
+                  <Button 
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start" 
+                    onClick={() => {
+                      window.location.href = '/admin-dashboard';
+                    }}
+                  >
+                    <Factory className="h-4 w-4 mr-2" />
+                    Admin Paneli
+                  </Button>
+                  
+                  <div className="border-t border-gray-200 my-2"></div>
+                  <div className="text-sm font-medium text-gray-900 mb-3">Yeni Kayıt</div>
+                  
                   <Button 
                     variant="outline" 
-                    className="w-full" 
+                    className="w-full justify-start" 
                     onClick={() => {
                       window.location.href = '/customer-register';
                     }}
                   >
+                    <User className="h-4 w-4 mr-2" />
+                    Müşteri Kaydı (35₺/tasarım)
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    onClick={() => {
+                      window.location.href = '/printer-register';
+                    }}
+                  >
                     <Building2 className="h-4 w-4 mr-2" />
-                    Yeni Kayıt (2999₺/ay)
+                    Üretici Kaydı (2999₺/ay)
                   </Button>
                 </div>
               </div>
