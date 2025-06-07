@@ -154,46 +154,10 @@ export default function CustomerDashboard() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8">
-            {/* Teklif Türleri */}
-            <div>
-              <h4 className="text-lg font-semibold mb-4 text-gray-900">Teklif Talep Et</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Link href="/quote/sheet_label">
-                  <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
-                    <LayoutGrid className="text-blue-500 text-2xl mr-3" />
-                    <div className="text-left">
-                      <h5 className="font-semibold text-gray-900">Tabaka Etiket</h5>
-                      <p className="text-sm text-gray-600">A3/A4 profesyonel etiket</p>
-                    </div>
-                  </Button>
-                </Link>
-                
-                <Link href="/quote/roll_label">
-                  <Button variant="outline" className="flex items-center p-4 h-auto bg-orange-50 hover:bg-orange-100 border-orange-200 w-full justify-start">
-                    <Disc className="text-orange-500 text-2xl mr-3" />
-                    <div className="text-left">
-                      <h5 className="font-semibold text-gray-900">Rulo Etiket</h5>
-                      <p className="text-sm text-gray-600">Termal & yapışkanlı</p>
-                    </div>
-                  </Button>
-                </Link>
-                
-                <Link href="/quote/general_printing">
-                  <Button variant="outline" className="flex items-center p-4 h-auto bg-green-50 hover:bg-green-100 border-green-200 w-full justify-start">
-                    <Printer className="text-green-500 text-2xl mr-3" />
-                    <div className="text-left">
-                      <h5 className="font-semibold text-gray-900">Genel Baskı</h5>
-                      <p className="text-sm text-gray-600">Katalog, broşür, kartvizit</p>
-                    </div>
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
             {/* Hızlı İşlemler */}
             <div>
               <h4 className="text-lg font-semibold mb-4 text-gray-900">Hızlı İşlemler</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <Link href="/payment">
                   <Button variant="outline" className="flex items-center p-4 h-auto bg-green-50 hover:bg-green-100 border-green-200 w-full justify-start">
                     <Plus className="text-green-500 text-2xl mr-3" />
@@ -224,13 +188,35 @@ export default function CustomerDashboard() {
                   </DialogContent>
                 </Dialog>
                 
-                <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
-                  <Upload className="text-blue-500 text-2xl mr-3" />
-                  <div className="text-left">
-                    <h5 className="font-semibold text-gray-900">Dosya Yükle</h5>
-                    <p className="text-sm text-gray-600">Hazır dosyalarım</p>
-                  </div>
-                </Button>
+                <Link href="/quote/sheet_label">
+                  <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
+                    <LayoutGrid className="text-blue-500 text-2xl mr-3" />
+                    <div className="text-left">
+                      <h5 className="font-semibold text-gray-900">Tabaka Etiket</h5>
+                      <p className="text-sm text-gray-600">A3/A4 profesyonel etiket</p>
+                    </div>
+                  </Button>
+                </Link>
+                
+                <Link href="/quote/roll_label">
+                  <Button variant="outline" className="flex items-center p-4 h-auto bg-orange-50 hover:bg-orange-100 border-orange-200 w-full justify-start">
+                    <Disc className="text-orange-500 text-2xl mr-3" />
+                    <div className="text-left">
+                      <h5 className="font-semibold text-gray-900">Rulo Etiket</h5>
+                      <p className="text-sm text-gray-600">Termal & yapışkanlı</p>
+                    </div>
+                  </Button>
+                </Link>
+                
+                <Link href="/quote/general_printing">
+                  <Button variant="outline" className="flex items-center p-4 h-auto bg-indigo-50 hover:bg-indigo-100 border-indigo-200 w-full justify-start">
+                    <Printer className="text-indigo-500 text-2xl mr-3" />
+                    <div className="text-left">
+                      <h5 className="font-semibold text-gray-900">Genel Baskı</h5>
+                      <p className="text-sm text-gray-600">Katalog, broşür, kartvizit</p>
+                    </div>
+                  </Button>
+                </Link>
               </div>
             </div>
 
