@@ -257,37 +257,37 @@ export default function LandingNew() {
                   <DropdownMenuItem 
                     className="px-4 py-3 cursor-pointer hover:bg-blue-50" 
                     onClick={() => {
-                      window.location.href = '/customer-dashboard';
+                      window.location.href = '/api/login?returnTo=/customer-dashboard';
                     }}
                   >
                     <User className="h-4 w-4 mr-3 text-blue-600" />
                     <div>
-                      <div className="font-medium">Müşteri Paneli</div>
-                      <div className="text-sm text-gray-500">Teklif alın, siparişlerinizi takip edin</div>
+                      <div className="font-medium">Müşteri Girişi</div>
+                      <div className="text-sm text-gray-500">Mevcut hesabınızla giriş yapın</div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     className="px-4 py-3 cursor-pointer hover:bg-orange-50" 
                     onClick={() => {
-                      window.location.href = '/printer-dashboard';
+                      window.location.href = '/api/login?returnTo=/printer-dashboard';
                     }}
                   >
                     <Building2 className="h-4 w-4 mr-3 text-orange-600" />
                     <div>
-                      <div className="font-medium">Üretici Paneli</div>
-                      <div className="text-sm text-gray-500">Teklifler verin, işlerinizi yönetin</div>
+                      <div className="font-medium">Üretici Girişi</div>
+                      <div className="text-sm text-gray-500">Mevcut hesabınızla giriş yapın</div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     className="px-4 py-3 cursor-pointer hover:bg-purple-50" 
                     onClick={() => {
-                      window.location.href = '/admin-dashboard';
+                      window.location.href = '/api/login?returnTo=/admin-dashboard';
                     }}
                   >
                     <Factory className="h-4 w-4 mr-3 text-purple-600" />
                     <div>
-                      <div className="font-medium">Admin Paneli</div>
-                      <div className="text-sm text-gray-500">Platform yönetimi</div>
+                      <div className="font-medium">Admin Girişi</div>
+                      <div className="text-sm text-gray-500">Yönetici hesabıyla giriş yapın</div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -357,31 +357,31 @@ export default function LandingNew() {
                   <Button 
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white justify-start" 
                     onClick={() => {
-                      window.location.href = '/customer-dashboard';
+                      window.location.href = '/api/login?returnTo=/customer-dashboard';
                     }}
                   >
                     <User className="h-4 w-4 mr-2" />
-                    Müşteri Paneli
+                    Müşteri Girişi
                   </Button>
                   
                   <Button 
                     className="w-full bg-orange-600 hover:bg-orange-700 text-white justify-start" 
                     onClick={() => {
-                      window.location.href = '/printer-dashboard';
+                      window.location.href = '/api/login?returnTo=/printer-dashboard';
                     }}
                   >
                     <Building2 className="h-4 w-4 mr-2" />
-                    Üretici Paneli
+                    Üretici Girişi
                   </Button>
                   
                   <Button 
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start" 
                     onClick={() => {
-                      window.location.href = '/admin-dashboard';
+                      window.location.href = '/api/login?returnTo=/admin-dashboard';
                     }}
                   >
                     <Factory className="h-4 w-4 mr-2" />
-                    Admin Paneli
+                    Admin Girişi
                   </Button>
                   
                   <div className="border-t border-gray-200 my-2"></div>

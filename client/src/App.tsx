@@ -46,16 +46,16 @@ function AppRouter() {
           
           {/* Authentication-protected panel routes redirect to login */}
           <Route path="/customer-dashboard" component={() => {
-            window.location.href = '/customer-register';
-            return <div>Redirecting to customer registration...</div>;
+            window.location.href = '/api/login?returnTo=/customer-dashboard';
+            return <div>Redirecting to login...</div>;
           }} />
           <Route path="/printer-dashboard" component={() => {
-            window.location.href = '/printer-register';
-            return <div>Redirecting to printer registration...</div>;
+            window.location.href = '/api/login?returnTo=/printer-dashboard';
+            return <div>Redirecting to login...</div>;
           }} />
           <Route path="/admin-dashboard" component={() => {
-            window.location.href = '/api/login';
-            return <div>Redirecting to admin login...</div>;
+            window.location.href = '/api/login?returnTo=/admin-dashboard';
+            return <div>Redirecting to login...</div>;
           }} />
         </>
       ) : (
