@@ -113,13 +113,13 @@ export default function CustomerRegister() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
           role: 'customer',
-          company: formData.company
+          companyName: formData.company
         })
       });
 
@@ -132,11 +132,11 @@ export default function CustomerRegister() {
       if (data.success) {
         toast({
           title: "Kayıt Başarılı",
-          description: "Hesabınız oluşturuldu, ana sayfaya yönlendiriliyorsunuz...",
+          description: "Hesabınız oluşturuldu, müşteri panelinize yönlendiriliyorsunuz...",
         });
         
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/customer-dashboard';
         }, 1500);
       } else {
         throw new Error(data.message || "Kayıt işlemi başarısız");

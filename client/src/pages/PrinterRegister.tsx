@@ -119,7 +119,7 @@ export default function PrinterRegister() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -137,11 +137,11 @@ export default function PrinterRegister() {
       if (data.success) {
         toast({
           title: "Kayıt Başarılı",
-          description: "Matbaa hesabınız oluşturuldu, ana sayfaya yönlendiriliyorsunuz...",
+          description: "Matbaa hesabınız oluşturuldu, matbaa panelinize yönlendiriliyorsunuz...",
         });
 
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/printer-dashboard';
         }, 1500);
       } else {
         throw new Error(data.message || "Kayıt işlemi başarısız");
