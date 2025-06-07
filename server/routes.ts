@@ -1390,7 +1390,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authenticated quote routes
   app.post('/api/quotes', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // Enhanced user ID extraction for session-based auth
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User session not found" });
+      }
+
       const user = await storage.getUser(userId);
 
       if (!user || user.role !== 'customer') {
@@ -1415,7 +1421,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/quotes', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.id || req.user?.claims?.sub || req.session?.user?.id;
+      // Enhanced user ID extraction for session-based auth
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
 
       if (!userId) {
         return res.status(401).json({ message: "User session not found" });
@@ -1463,8 +1470,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Printer quote routes
   app.post('/api/quotes/:id/printer-quotes', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // Enhanced user ID extraction for session-based auth
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
       const quoteId = req.params.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User session not found" });
+      }
+
       const user = await storage.getUser(userId);
 
       if (!user || user.role !== 'printer') {
@@ -1507,8 +1520,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/quotes/:id/approve', isAuthenticated, async (req: any, res) => {
     try {
       const quoteId = req.params.id;
-      const userId = req.user.claims.sub;
+      // Enhanced user ID extraction for session-based auth
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
       const { printerId } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User session not found" });
+      }
 
       // Get quote details
       const quote = await storage.getQuote(quoteId);
