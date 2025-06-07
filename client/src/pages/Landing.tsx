@@ -1,47 +1,68 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  CheckCircle, 
-  Clock, 
-  FileText, 
-  Users, 
-  Building2, 
-  BarChart3, 
-  Star, 
+import {
   ArrowRight,
-  LogIn,
-  User,
-  Crown,
-  Home,
-  Target,
-  DollarSign,
-  Truck,
-  Shield,
-  MessageSquare,
+  CheckCircle,
+  Star,
+  Users,
   TrendingUp,
-  Award,
-  Menu,
-  X,
+  Shield,
+  Zap,
+  Clock,
+  Target,
+  Trophy,
+  Globe,
+  Sparkles,
+  Play,
+  LogIn,
+  MousePointer,
+  Layers,
+  Palette,
+  Download,
+  Upload,
+  FileText,
+  BarChart,
+  Settings,
+  Headphones,
   Mail,
   Phone,
   MapPin,
-  Eye,
-  EyeOff,
-  Zap,
-  CheckCircle2,
+  Calendar,
+  Award,
+  BookOpen,
+  Lightbulb,
+  Heart,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Youtube,
+  ChevronRight,
+  ChevronDown,
+  Quote,
+  User,
+  UserPlus,
+  Building2,
   Shirt,
   Package,
   CreditCard,
   Brain,
-  Printer
+  Printer,
+  Crown
 } from "lucide-react";
 
 export default function Landing() {
@@ -312,7 +333,7 @@ export default function Landing() {
               <Link href="/references" className="text-white/80 hover:text-white transition-colors font-medium">
                 Referanslar
               </Link>
-              
+
               {/* Live Activity Indicator */}
               <div className="flex items-center space-x-2 px-3 py-1 bg-green-500/20 rounded-full border border-green-400/30">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -465,9 +486,9 @@ export default function Landing() {
                   <TrendingUp className="mr-3 h-4 w-4" />
                   Canlı Takip
                 </a>
-                
+
                 <div className="border-t border-white/10 my-2 mx-4"></div>
-                
+
                 {/* Quick Actions Mobile */}
                 <div className="px-4 space-y-2">
                   <p className="text-xs text-white/60 font-medium">Hızlı Eylemler</p>
@@ -490,7 +511,7 @@ export default function Landing() {
                 </div>
 
                 <div className="border-t border-white/10 my-2 mx-4"></div>
-                
+
                 <Button 
                   variant="outline" 
                   onClick={() => handleShowLogin('customer')}
@@ -587,26 +608,147 @@ export default function Landing() {
               <p className="text-blue-100 text-sm">256-bit SSL şifreleme</p>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 px-4">
-              <Button 
-                size="lg" 
-                onClick={() => window.location.href = '/customer-register'}
-                className="group bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 text-lg font-semibold"
-              >
-                <User className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
-                Müşteri Olarak Başla
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </Button>
-              <Button 
-                size="lg" 
-                onClick={() => window.location.href = '/printer-register'}
-                className="group bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 text-lg font-semibold"
-              >
-                <Building2 className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
-                Matbaacı Kaydı
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </Button>
-            </div>
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {/* Register Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  <UserPlus className="mr-2 h-5 w-5" />
+                  Ücretsiz Kayıt Ol
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-80 p-0 bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl rounded-2xl">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <p className="font-semibold text-gray-900 text-lg">Hesap Türü Seçin</p>
+                  <p className="text-sm text-gray-600">Size uygun hesap türünü seçerek hemen başlayın</p>
+                </div>
+                <DropdownMenuItem 
+                  className="px-6 py-4 cursor-pointer hover:bg-blue-50 border-b border-gray-50" 
+                  onClick={() => {
+                    window.location.href = '/customer-register';
+                  }}
+                >
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                      <User className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">Müşteri Hesabı</div>
+                      <div className="text-sm text-gray-600">Matbaa hizmeti almak için</div>
+                      <div className="text-xs text-green-600 font-medium mt-1">✓ Ücretsiz</div>
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="px-6 py-4 cursor-pointer hover:bg-orange-50" 
+                  onClick={() => {
+                    window.location.href = '/printer-register';
+                  }}
+                >
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mr-4">
+                      <Building2 className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">Matbaa Hesabı</div>
+                      <div className="text-sm text-gray-600">İş almak ve kazanmak için</div>
+                      <div className="text-xs text-orange-600 font-medium mt-1">🎯 Komisyon bazlı</div>
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                  <p className="text-xs text-gray-500 text-center">
+                    Kayıt olduktan sonra hesabınızı ücretsiz kullanabilirsiniz
+                  </p>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Login Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-2 border-white/30 text-white hover:bg-white/10 px-8 py-4 text-lg font-semibold rounded-xl backdrop-blur-sm transition-all duration-300"
+                >
+                  <LogIn className="mr-2 h-5 w-5" />
+                  Panel Girişi
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-80 p-0 bg-white/95 backdrop-blur-md border border-gray-200/50 shadow-2xl rounded-2xl">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <p className="font-semibold text-gray-900 text-lg">Panel Türü Seçin</p>
+                  <p className="text-sm text-gray-600">Mevcut hesabınızla giriş yapın</p>
+                </div>
+                <DropdownMenuItem 
+                  className="px-6 py-4 cursor-pointer hover:bg-blue-50 border-b border-gray-50" 
+                  onClick={() => {
+                    window.location.href = '/api/login?type=customer';
+                  }}
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                      <User className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">Müşteri Paneli</div>
+                      <div className="text-sm text-gray-600">Teklif alın, siparişlerinizi takip edin</div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="px-6 py-4 cursor-pointer hover:bg-orange-50 border-b border-gray-50" 
+                  onClick={() => {
+                    window.location.href = '/api/login?type=printer';
+                  }}
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-4">
+                      <Building2 className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">Matbaa Paneli</div>
+                      <div className="text-sm text-gray-600">Teklifler verin, işlerinizi yönetin</div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="px-6 py-4 cursor-pointer hover:bg-purple-50" 
+                  onClick={() => {
+                    window.location.href = '/api/login?type=admin';
+                  }}
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                      <Crown className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">Yönetici Paneli</div>
+                      <div className="text-sm text-gray-600">Platform yönetimi ve ayarları</div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </DropdownMenuItem>
+                <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+                  <p className="text-xs text-gray-500 text-center">
+                    Hesabınız yok mu? 
+                    <span className="text-blue-600 hover:text-blue-700 font-medium ml-1 cursor-pointer">
+                      Hemen kayıt olun
+                    </span>
+                  </p>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </section>
       {/* Canlı İş Takibi */}
