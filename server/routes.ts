@@ -303,6 +303,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create test users if they don't exist
   await createTestUsers();
 
+  // Authentication routes
+  app.get('/api/login', (req, res) => {
+    const returnTo = req.query.returnTo || '/';
+    // Redirect to a simple login page or show login form
+    res.redirect(`/?login=true&returnTo=${encodeURIComponent(returnTo as string)}`);
+  });
+
+  app.post('/api/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ success: false, message: "Email ve şifre gerekli" });
+      }
+
+      // Find user by email
+      const users = await storage.getAllUsers();
+      const user = users.find(u => u.email === email);
+      
+      if (!user || user.password !== password) {
+        return res.status(401).json({ success: false, message: "Geçersiz email veya şifre" });
+      }
+
+      // Create session
+      (req.session as any).user = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        companyName: user.companyName
+      };
+
+      const redirectUrls = {
+        customer: '/customer-dashboard',
+        printer: '/printer-dashboard', 
+        admin: '/admin-dashboard'
+      };
+
+      const redirectUrl = redirectUrls[user.role as keyof typeof redirectUrls] || '/customer-dashboard';
+
+      res.json({ 
+        success: true, 
+        user: (req.session as any).user,
+        redirectUrl,
+        message: "Giriş başarılı"
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Sunucu hatası. Lütfen tekrar deneyin."
+      });
+    }
+  });
+
+  app.get('/api/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Session destroy error:', err);
+        return res.status(500).json({ success: false, message: "Çıkış hatası" });
+      }
+      res.clearCookie('matbixx.sid');
+      res.redirect('/');
+    });
+  });
+
   // Multer error handling middleware
   app.use((error: any, req: any, res: any, next: any) => {
     if (error instanceof multer.MulterError) {

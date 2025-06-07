@@ -58,6 +58,67 @@ export default function LandingNew() {
   const [liveJobs, setLiveJobs] = useState<any[]>([]);
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [returnTo, setReturnTo] = useState("/");
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Check URL params for login modal
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('login') === 'true') {
+      setShowLoginModal(true);
+      setReturnTo(urlParams.get('returnTo') || '/');
+    }
+  }, []);
+
+  // Handle login form submission
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginForm),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Giriş Başarılı",
+          description: result.message,
+        });
+        
+        setShowLoginModal(false);
+        window.location.href = result.redirectUrl || returnTo;
+      } else {
+        toast({
+          title: "Giriş Hatası",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Giriş Hatası",
+        description: "Sunucu hatası. Lütfen tekrar deneyin.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  // Handle panel login button clicks
+  const handlePanelLogin = (dashboardType: string) => {
+    setReturnTo(dashboardType);
+    setShowLoginModal(true);
+  };
 
   // Professional product categories inspired by leading platforms
   const productCategories = [
@@ -256,9 +317,7 @@ export default function LandingNew() {
                   </div>
                   <DropdownMenuItem 
                     className="px-4 py-3 cursor-pointer hover:bg-blue-50" 
-                    onClick={() => {
-                      window.location.href = '/api/login?returnTo=/customer-dashboard';
-                    }}
+                    onClick={() => handlePanelLogin('/customer-dashboard')}
                   >
                     <User className="h-4 w-4 mr-3 text-blue-600" />
                     <div>
@@ -268,9 +327,7 @@ export default function LandingNew() {
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     className="px-4 py-3 cursor-pointer hover:bg-orange-50" 
-                    onClick={() => {
-                      window.location.href = '/api/login?returnTo=/printer-dashboard';
-                    }}
+                    onClick={() => handlePanelLogin('/printer-dashboard')}
                   >
                     <Building2 className="h-4 w-4 mr-3 text-orange-600" />
                     <div>
@@ -280,9 +337,7 @@ export default function LandingNew() {
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     className="px-4 py-3 cursor-pointer hover:bg-purple-50" 
-                    onClick={() => {
-                      window.location.href = '/api/login?returnTo=/admin-dashboard';
-                    }}
+                    onClick={() => handlePanelLogin('/admin-dashboard')}
                   >
                     <Factory className="h-4 w-4 mr-3 text-purple-600" />
                     <div>
