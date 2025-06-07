@@ -159,6 +159,7 @@ export default function Landing() {
   const handleShowLogin = (role: 'customer' | 'printer' | 'admin') => {
     setLoginRole(role);
     setShowLoginForm(true);
+    setMobileMenuOpen(false); // Close mobile menu if open
   };
 
   const handleLogin = async (e: React.FormEvent) => {

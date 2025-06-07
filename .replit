@@ -20,7 +20,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Start Dev Server"
+runButton = "Full Stack Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -69,3 +69,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd python_service && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+[[workflows.workflow]]
+name = "Full Stack Server"
+author = 43420000
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"

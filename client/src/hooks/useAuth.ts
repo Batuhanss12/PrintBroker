@@ -35,17 +35,18 @@ export const useAuth = () => {
         });
         
         if (response.status === 401) {
-          return null; // Not authenticated
+          return null; // Not authenticated - this is normal
         }
         
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          console.warn(`Auth check returned ${response.status}`);
+          return null;
         }
         
         const userData = await response.json();
         return userData;
       } catch (error) {
-        console.error('Auth check failed:', error);
+        // Network errors should not spam console
         return null;
       }
     },

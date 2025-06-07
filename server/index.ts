@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { pythonAnalyzerService } from './pythonAnalyzerService';
+import { execSync } from 'child_process';
 
 const app = express();
 app.use(express.json());
@@ -43,18 +44,35 @@ app.use((req, res, next) => {
 
 // Python Analyzer Sistem Kontrolü
 async function initializePythonServices() {
-  console.log('🐍 Python tabanlı analiz sistemi başlatılıyor...');
-
+  // Python Environment Test with graceful degradation
+  console.log('🐍 Python tabanlı analiz sistemi kontrol ediliyor...');
   try {
-    const environmentOK = await pythonAnalyzerService.testPythonEnvironment();
-    if (environmentOK) {
-      console.log('✅ Python analiz sistemi AKTIF - Tüm kütüphaneler hazır');
-      console.log('📦 Aktif Python kütüphaneleri: PyMuPDF, Pillow, OpenCV, ReportLab, CairoSVG');
+    execSync('python3 -c "import sys; print(\'Python OK\')"', { 
+      stdio: 'pipe',
+      timeout: 5000
+    });
+
+    // Test individual packages
+    const packages = ['fitz', 'PIL', 'cv2', 'numpy', 'svglib', 'reportlab', 'cairosvg'];
+    const availablePackages = [];
+
+    for (const pkg of packages) {
+      try {
+        execSync(`python3 -c "import ${pkg}"`, { stdio: 'pipe', timeout: 2000 });
+        availablePackages.push(pkg);
+      } catch {
+        console.log(`⚠️ Python package missing: ${pkg}`);
+      }
+    }
+
+    if (availablePackages.length >= 4) {
+      console.log('✅ Python analiz sistemi AKTIF');
+      console.log(`📦 Mevcut kütüphaneler: ${availablePackages.join(', ')}`);
     } else {
-      console.log('⚠️ Python analiz sistemi KISITLI - Bazı kütüphaneler eksik');
+      console.log('⚠️ Python analiz sistemi KISITLI - Temel Node.js servisleri aktif');
     }
   } catch (error) {
-    console.error('❌ Python analiz sistemi başlatılamadı:', error);
+    console.log('⚠️ Python bulunamadı - Sadece Node.js servisleri aktif');
   }
 }
 
