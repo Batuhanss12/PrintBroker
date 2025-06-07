@@ -79,33 +79,10 @@ function AppRouter() {
             return null;
           }} />
           
-          {/* Role-based protected routes */}
-          <Route path="/customer-dashboard" component={() => {
-            const userRole = (user as any)?.role;
-            if (userRole !== 'customer') {
-              window.location.href = '/';
-              return null;
-            }
-            return <CustomerDashboard />;
-          }} />
-          
-          <Route path="/printer-dashboard" component={() => {
-            const userRole = (user as any)?.role;
-            if (userRole !== 'printer') {
-              window.location.href = '/';
-              return null;
-            }
-            return <PrinterDashboard />;
-          }} />
-          
-          <Route path="/admin-dashboard" component={() => {
-            const userRole = (user as any)?.role;
-            if (userRole !== 'admin') {
-              window.location.href = '/';
-              return null;
-            }
-            return <AdminDashboard />;
-          }} />
+          {/* Authenticated dashboard routes */}
+          <Route path="/customer-dashboard" component={CustomerDashboard} />
+          <Route path="/printer-dashboard" component={PrinterDashboard} />
+          <Route path="/admin-dashboard" component={AdminDashboard} />
           
           <Route path="/quote/:type" component={() => {
             const userRole = (user as any)?.role;
