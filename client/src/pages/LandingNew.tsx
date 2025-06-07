@@ -140,8 +140,8 @@ export default function LandingNew() {
     {
       icon: Sparkles,
       title: "Kredili Tasarım Sistemi",
-      description: "Firmalar için kredili sistem - 2999₺/ay ile sınırsız profesyonel tasarım",
-      benefit: "Aylık sabit maliyet"
+      description: "Müşteriler için tasarım başına 35₺ ödeme sistemi - Geniş firma ağına erişim",
+      benefit: "Kullandığın kadar öde"
     },
     {
       icon: Zap,
@@ -299,8 +299,8 @@ export default function LandingNew() {
                   >
                     <User className="h-4 w-4 mr-3 text-green-600" />
                     <div>
-                      <div className="font-medium">Yeni Firma Kaydı</div>
-                      <div className="text-sm text-gray-500">Kredili sistem - 2999₺/ay</div>
+                      <div className="font-medium">Yeni Müşteri Kaydı</div>
+                      <div className="text-sm text-gray-500">Kredili sistem - 35₺/tasarım</div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
@@ -312,7 +312,7 @@ export default function LandingNew() {
                     <Building2 className="h-4 w-4 mr-3 text-teal-600" />
                     <div>
                       <div className="font-medium">Üretici Firma Kaydı</div>
-                      <div className="text-sm text-gray-500">Platformumuza katılın</div>
+                      <div className="text-sm text-gray-500">Geniş müşteri portföyüne erişim - 2999₺/ay</div>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

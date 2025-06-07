@@ -176,10 +176,10 @@ export default function PrinterRegister() {
             <Building2 className="h-8 w-8 text-orange-600" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Matbaa Partner Kayıt
+            Üretici Firma Kayıt
           </h1>
           <p className="text-lg text-gray-600">
-            Matbixx matbaa ağımıza katılın ve işinizi büyütün
+            Geniş müşteri portföyümüze erişim kazanın ve iş hacminizi artırın - 2999₺/ay
           </p>
         </div>
 
@@ -368,49 +368,49 @@ export default function PrinterRegister() {
               {/* Plan Details */}
               <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-xl">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">Premium Üyelik</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Üretici Firma Paketi</h3>
                   <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    ₺2999/ay
+                    2999₺/ay
                   </div>
                 </div>
-                <p className="text-gray-600 mb-4">Gelişmiş işletme yönetim sistemi</p>
+                <p className="text-gray-600 mb-4">Geniş müşteri portföyüne erişim ve iş hacmi artırma</p>
 
                 <ul className="space-y-3">
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>Yoğun müşteri portföyü yönetimi</span>
+                    <span>Binlerce aktif müşteriye erişim</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>Gelişmiş analitik dashboard</span>
+                    <span>Sınırsız teklif verme imkanı</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>Otomatik sipariş ve teklif yönetimi</span>
+                    <span>İş hacmi artırma garantisi</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>Müşteri CRM entegrasyonu</span>
+                    <span>Otomatik sipariş yönlendirme</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>Premium öncelikli destek</span>
+                    <span>Premium liste görünürlüğü</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>Öncelikli liste görünürlüğü</span>
+                    <span>İş geliştirme danışmanlığı</span>
                   </li>
                 </ul>
               </div>

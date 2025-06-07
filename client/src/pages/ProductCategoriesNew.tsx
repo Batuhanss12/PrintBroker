@@ -816,7 +816,7 @@ export default function ProductCategoriesNew() {
               onClick={() => window.location.href = '/customer-register'}
             >
               <Calculator className="h-5 w-5 mr-2" />
-              Kredili Sistem Başlat (2999₺/ay)
+              Kredili Sistem Başlat (35₺/tasarım)
             </Button>
             <Button 
               size="lg" 
