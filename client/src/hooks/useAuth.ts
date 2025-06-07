@@ -39,27 +39,19 @@ export const useAuth = () => {
         }
         
         if (!response.ok) {
-          console.warn(`Auth check returned ${response.status}`);
           return null;
         }
         
         const userData = await response.json();
         return userData;
       } catch (error) {
-        // Network errors should not spam console
         return null;
       }
     },
-    retry: (failureCount, error) => {
-      // Don't retry on 401 (unauthorized)
-      if (error && typeof error === 'object' && 'message' in error && 
-          error.message?.includes('401')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: false, // Don't retry auth requests
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   const login = useMutation({
@@ -77,8 +69,8 @@ export const useAuth = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
-        throw new Error(errorData.message || `HTTP ${response.status}: Login failed`);
+        const errorData = await response.json().catch(() => ({ message: 'Giriş başarısız' }));
+        throw new Error(errorData.message || 'Giriş başarısız');
       }
 
       return response.json();
@@ -86,8 +78,12 @@ export const useAuth = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       
-      // Redirect based on user role
-      if (data.user?.role) {
+      // Redirect based on user role or provided URL
+      if (data.redirectUrl) {
+        setTimeout(() => {
+          window.location.href = data.redirectUrl;
+        }, 100);
+      } else if (data.user?.role) {
         const redirectUrls = {
           customer: '/customer-dashboard',
           printer: '/printer-dashboard',
@@ -95,7 +91,9 @@ export const useAuth = () => {
         };
         
         const redirectUrl = redirectUrls[data.user.role as keyof typeof redirectUrls] || '/customer-dashboard';
-        window.location.href = redirectUrl;
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 100);
       }
     },
     onError: (error) => {

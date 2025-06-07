@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, TrendingUp, Users, Clock, DollarSign, Package, Factory, Award, ChevronDown, Building2, User, Shield, Phone, Mail, MapPin, Star, Briefcase, CheckCircle, ArrowRight, BarChart3, Calendar, Zap, Globe, Target, Eye, MessageSquare, Settings, FileText, Truck, PlusCircle, Activity, Bell, Search, Filter, Download, Share2, Heart, Bookmark, ExternalLink, RefreshCw } from 'lucide-react';
+import { AlertCircle, TrendingUp, Users, Clock, DollarSign, Package, Factory, Award, ChevronDown, Building2, User, Shield, Phone, Mail, MapPin, Star, Briefcase, CheckCircle, ArrowRight, BarChart3, Calendar, Zap, Globe, Target, Eye, MessageSquare, Settings, FileText, Truck, PlusCircle, Activity, Bell, Search, Filter, Download, Share2, Heart, Bookmark, ExternalLink, RefreshCw, Play } from 'lucide-react';
 
 interface QuoteData {
   id: string;
@@ -80,6 +80,11 @@ const Landing: React.FC = () => {
     setSelectedLoginType(type);
     setShowLoginModal(true);
     setIsLoginMode(true);
+    // Reset form data
+    setLoginForm({ email: '', password: '' });
+    setRegisterForm({
+      firstName: '', lastName: '', email: '', phone: '', companyName: '', password: '', role: 'customer'
+    });
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -133,6 +138,14 @@ const Landing: React.FC = () => {
       alert('Kayıt sırasında hata oluştu');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGoToRegister = (type: 'customer' | 'printer') => {
+    if (type === 'customer') {
+      window.location.href = '/customer-register';
+    } else if (type === 'printer') {
+      window.location.href = '/printer-register';
     }
   };
 
@@ -261,12 +274,21 @@ const Landing: React.FC = () => {
               Günlük 200-300 bin TL iş hacmi, 50-100 teklif ve binlerce matbaa firması ile Türkiye'nin en büyük baskı ağı
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 text-lg px-8 py-4">
+              <Button 
+                size="lg" 
+                className="bg-white text-blue-600 hover:bg-blue-50 text-lg px-8 py-4"
+                onClick={() => handleShowLogin('customer')}
+              >
                 <PlusCircle className="w-5 h-5 mr-2" />
                 Hemen Teklif Al
               </Button>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-4">
-                <Play className="w-5 h-5 mr-2" />
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-white text-white hover:bg-white/10 text-lg px-8 py-4"
+                onClick={() => window.location.href = '/products'}
+              >
+                <Eye className="w-5 h-5 mr-2" />
                 Nasıl Çalışır?
               </Button>
             </div>
@@ -440,76 +462,49 @@ const Landing: React.FC = () => {
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
                 </Button>
-                <p className="text-xs text-gray-500 text-center">
-                  Demo: email@test.com / demo123
-                </p>
+                <div className="text-xs text-gray-500 text-center space-y-1">
+                  <p className="font-medium">Demo Hesapları:</p>
+                  <p>Müşteri: customer@test.com / demo123</p>
+                  <p>Matbaa: printer@test.com / demo123</p>
+                  <p>Admin: admin@test.com / demo123</p>
+                </div>
               </form>
             </TabsContent>
             
             <TabsContent value="register">
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">Ad</Label>
-                    <Input
-                      id="firstName"
-                      value={registerForm.firstName}
-                      onChange={(e) => setRegisterForm({...registerForm, firstName: e.target.value})}
-                      required
-                    />
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-4">
+                    Kayıt olmak için uygun paketi seçin ve detaylı kayıt sayfasına yönlendirileceksiniz.
+                  </p>
+                </div>
+                
+                {selectedLoginType === 'customer' && (
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => handleGoToRegister('customer')}
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Müşteri Kaydı (35₺/tasarım)
+                  </Button>
+                )}
+                
+                {selectedLoginType === 'printer' && (
+                  <Button 
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={() => handleGoToRegister('printer')}
+                  >
+                    <Factory className="w-4 h-4 mr-2" />
+                    Matbaa Kaydı (2999₺/ay)
+                  </Button>
+                )}
+                
+                {selectedLoginType === 'admin' && (
+                  <div className="text-center text-gray-500">
+                    Admin hesapları sistem yöneticisi tarafından oluşturulur.
                   </div>
-                  <div>
-                    <Label htmlFor="lastName">Soyad</Label>
-                    <Input
-                      id="lastName"
-                      value={registerForm.lastName}
-                      onChange={(e) => setRegisterForm({...registerForm, lastName: e.target.value})}
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="regEmail">E-posta</Label>
-                  <Input
-                    id="regEmail"
-                    type="email"
-                    value={registerForm.email}
-                    onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Telefon</Label>
-                  <Input
-                    id="phone"
-                    value={registerForm.phone}
-                    onChange={(e) => setRegisterForm({...registerForm, phone: e.target.value})}
-                    placeholder="+90 555 123 45 67"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="companyName">Şirket Adı</Label>
-                  <Input
-                    id="companyName"
-                    value={registerForm.companyName}
-                    onChange={(e) => setRegisterForm({...registerForm, companyName: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="regPassword">Şifre</Label>
-                  <Input
-                    id="regPassword"
-                    type="password"
-                    value={registerForm.password}
-                    onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
-                </Button>
-              </form>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </DialogContent>
