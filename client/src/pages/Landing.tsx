@@ -62,7 +62,17 @@ import {
   CreditCard,
   Brain,
   Printer,
-  Crown
+  Crown,
+  Home,
+  Menu,
+  X,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  MessageSquare,
+  Truck,
+  DollarSign,
+  BarChart3
 } from "lucide-react";
 
 export default function Landing() {
@@ -352,87 +362,32 @@ export default function Landing() {
                 </Button>
               </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border border-blue-500/30 text-white font-semibold px-6 py-2.5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
-                    <Building2 className="h-4 w-4" />
-                    Hesap Girişi
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl rounded-lg">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-semibold text-gray-900">Platformumuza Giriş Yapın</p>
-                    <p className="text-xs text-gray-600 mt-1">Hesap türünüzü seçerek devam edin</p>
-                  </div>
-                  <DropdownMenuItem 
-                    onClick={() => handleShowLogin('customer')}
-                    className="text-gray-700 hover:bg-blue-50 px-4 py-3 cursor-pointer"
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                        <User className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">Müşteri Girişi</div>
-                        <div className="text-xs text-gray-500">Baskı ihtiyaçlarınız için</div>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleShowLogin('printer')}
-                    className="text-gray-700 hover:bg-orange-50 px-4 py-3 cursor-pointer"
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                        <Building2 className="h-4 w-4 text-orange-600" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">Matbaa Girişi</div>
-                        <div className="text-xs text-gray-500">İşlerinizi yönetin</div>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleShowLogin('admin')}
-                    className="text-gray-700 hover:bg-purple-50 px-4 py-3 cursor-pointer"
-                  >
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                        <Crown className="h-4 w-4 text-purple-600" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">Yönetici Girişi</div>
-                        <div className="text-xs text-gray-500">Platform yönetimi</div>
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-gray-100" />
-                  <div className="px-4 py-2">
-                    <p className="text-xs text-gray-500 mb-2">Hızlı Eylemler</p>
-                    <div className="space-y-1">
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-gray-600 hover:text-blue-600">
-                        <Zap className="h-3 w-3 mr-2" />
-                        Demo Hesap
-                      </Button>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-gray-600 hover:text-green-600">
-                        <Phone className="h-3 w-3 mr-2" />
-                        Destek Hattı
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 border-t border-gray-100">
-                    <p className="text-xs text-gray-500">
-                      Hesabınız yok mu? 
-                      <a href="/customer-register" className="text-blue-600 hover:text-blue-700 font-medium ml-1">
-                        Kayıt Olun
-                      </a>
-                    </p>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Müşteri Panel Girişi */}
+              <Button 
+                onClick={() => handleShowLogin('customer')}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Müşteri Paneli
+              </Button>
+
+              {/* Firma Panel Girişi */}
+              <Button 
+                onClick={() => handleShowLogin('printer')}
+                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Firma Paneli
+              </Button>
+
+              {/* Admin Panel Girişi */}
+              <Button 
+                onClick={() => handleShowLogin('admin')}
+                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Admin Paneli
+              </Button>
             </nav>
 
             {/* Mobile menu button */}
@@ -489,6 +444,46 @@ export default function Landing() {
 
                 <div className="border-t border-white/10 my-2 mx-4"></div>
 
+                {/* Panel Giriş Butonları - Mobil */}
+                <div className="px-2 space-y-2">
+                  <p className="text-xs text-white/60 font-medium px-2 mb-3">Panel Girişleri</p>
+                  
+                  <Button 
+                    onClick={() => handleShowLogin('customer')}
+                    className="w-full justify-start bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white mb-2"
+                  >
+                    <User className="mr-3 h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-medium">Müşteri Paneli</div>
+                      <div className="text-xs opacity-80">Baskı siparişi verin</div>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => handleShowLogin('printer')}
+                    className="w-full justify-start bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white mb-2"
+                  >
+                    <Building2 className="mr-3 h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-medium">Firma Paneli</div>
+                      <div className="text-xs opacity-80">İşlerinizi yönetin</div>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => handleShowLogin('admin')}
+                    className="w-full justify-start bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white mb-2"
+                  >
+                    <Crown className="mr-3 h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-medium">Admin Paneli</div>
+                      <div className="text-xs opacity-80">Platform yönetimi</div>
+                    </div>
+                  </Button>
+                </div>
+
+                <div className="border-t border-white/10 my-2 mx-4"></div>
+
                 {/* Quick Actions Mobile */}
                 <div className="px-4 space-y-2">
                   <p className="text-xs text-white/60 font-medium">Hızlı Eylemler</p>
@@ -509,42 +504,6 @@ export default function Landing() {
                     Destek Hattı
                   </Button>
                 </div>
-
-                <div className="border-t border-white/10 my-2 mx-4"></div>
-
-                <Button 
-                  variant="outline" 
-                  onClick={() => handleShowLogin('customer')}
-                  className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Müşteri Girişi
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => handleShowLogin('printer')}
-                  className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Firma Girişi
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => handleShowLogin('admin')}
-                  className="mx-2 justify-start bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <Crown className="mr-2 h-4 w-4" />
-                  Admin Girişi
-                </Button>
-
-                <Button 
-                  variant="ghost" 
-                  onClick={handleGoHome}
-                  className="mx-2 justify-start text-white hover:bg-white/10"
-                >
-                  <Home className="mr-2 h-4 w-4" />
-                  Anasayfaya Dön
-                </Button>
               </div>
             </div>
           )}
