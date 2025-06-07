@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ import {
 // Professional Quote Dialog Component
 const ProfessionalQuoteDialog = ({ category }: { category: any }) => {
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     productType: category.id,
@@ -125,10 +127,26 @@ const ProfessionalQuoteDialog = ({ category }: { category: any }) => {
     }
   };
 
+  const handleQuoteRequest = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Üyelik Gerekli",
+        description: "Teklif almak için önce üye olmanız gerekiyor.",
+        variant: "destructive",
+      });
+      window.location.href = "/customer-register";
+      return;
+    }
+    setIsOpen(true);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold">
+        <Button 
+          className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold"
+          onClick={handleQuoteRequest}
+        >
           <Sparkles className="w-4 h-4 mr-2" />
           Otomatik Teklif Al
         </Button>

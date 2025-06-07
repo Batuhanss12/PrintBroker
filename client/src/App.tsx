@@ -44,10 +44,19 @@ function AppRouter() {
           <Route path="/printer-register" component={PrinterRegister} />
           <Route path="/payment" component={Payment} />
           
-          {/* Public demo dashboard routes for testing */}
-          <Route path="/customer-dashboard" component={CustomerDashboard} />
-          <Route path="/printer-dashboard" component={PrinterDashboard} />
-          <Route path="/admin-dashboard" component={AdminDashboard} />
+          {/* Authentication-protected panel routes redirect to login */}
+          <Route path="/customer-dashboard" component={() => {
+            window.location.href = '/customer-register';
+            return <div>Redirecting to customer registration...</div>;
+          }} />
+          <Route path="/printer-dashboard" component={() => {
+            window.location.href = '/printer-register';
+            return <div>Redirecting to printer registration...</div>;
+          }} />
+          <Route path="/admin-dashboard" component={() => {
+            window.location.href = '/api/login';
+            return <div>Redirecting to admin login...</div>;
+          }} />
         </>
       ) : (
         <>

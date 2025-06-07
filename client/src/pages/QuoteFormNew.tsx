@@ -200,13 +200,34 @@ export default function QuoteForm() {
           <CardContent className="pt-6">
             <div className="text-center">
               <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Giriş Gerekli</h2>
+              <h2 className="text-xl font-semibold mb-2">Üyelik Gerekli</h2>
               <p className="text-gray-600 mb-4">
-                Teklif talep etmek için giriş yapmanız gerekiyor.
+                Teklif almak için önce üye olmanız gerekiyor. Müşteri kaydı sadece 35₺/tasarım ile başlayın!
               </p>
-              <Button onClick={() => window.location.href = "/api/login"}>
-                Giriş Yap
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  onClick={() => window.location.href = "/customer-register"}
+                >
+                  Müşteri Kaydı (35₺/tasarım)
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => window.location.href = "/printer-register"}
+                >
+                  Üretici Kaydı (2999₺/ay)
+                </Button>
+                <div className="text-center text-sm text-gray-500">
+                  Zaten üye misiniz?{" "}
+                  <button 
+                    className="text-blue-600 hover:underline"
+                    onClick={() => window.location.href = "/customer-dashboard"}
+                  >
+                    Giriş yapın
+                  </button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
