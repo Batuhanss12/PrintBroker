@@ -885,6 +885,70 @@ export default function LandingNew() {
           </div>
         </div>
       </footer>
+
+      {/* Login Modal */}
+      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Giriş Yap</DialogTitle>
+            <DialogDescription className="text-center">
+              Hesabınızla giriş yapın ve hizmetlerimizden yararlanın
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-posta</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="ornek@email.com"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Şifre</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Şifrenizi girin"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                required
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoggingIn}
+            >
+              {isLoggingIn ? "Giriş yapılıyor..." : "Giriş Yap"}
+            </Button>
+          </form>
+          <div className="text-center pt-4 border-t">
+            <p className="text-sm text-gray-600 mb-2">Hesabınız yok mu?</p>
+            <div className="space-y-2">
+              <Link href="/customer-register">
+                <Button variant="outline" className="w-full text-sm">
+                  Müşteri Kaydı
+                </Button>
+              </Link>
+              <Link href="/printer-register">
+                <Button variant="outline" className="w-full text-sm">
+                  Matbaa Kaydı
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-xs text-blue-700 font-medium mb-1">Demo Hesapları:</p>
+            <p className="text-xs text-blue-600">Müşteri: customer@test.com - demo123</p>
+            <p className="text-xs text-blue-600">Matbaa: printer@test.com - demo123</p>
+            <p className="text-xs text-blue-600">Admin: admin@test.com - demo123</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
