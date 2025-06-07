@@ -51,70 +51,131 @@ import { multiMethodAnalyzer } from "./multiMethodAnalyzer";
 import { operationalLayoutSystem } from "./operationalLayoutSystem";
 import { fastApiClient } from "./fastApiClient";
 
-// Otomatik etiket teklifleri oluştur (min 500 adet)
+// Otomatik iş teklifleri oluştur - Gerçekçi firma talepleri
 async function generateAutomaticLabelQuotes(currentTime: Date) {
   try {
     const tenMinuteSlot = Math.floor(currentTime.getTime() / (10 * 60 * 1000));
     
-    // Her 10 dakikada bir yeni etiket teklifi oluştur
-    const shouldGenerate = Math.random() > 0.7; // %30 şans
+    // Her 10 dakikada bir yeni teklif oluştur (günlük 50-100 hedefe ulaşmak için)
+    const shouldGenerate = Math.random() > 0.6; // %40 şans
     
     if (shouldGenerate) {
-      const labelTypes = [
-        { type: 'sheet_label', title: 'Tabaka Etiket', category: 'Tabaka Etiket' },
-        { type: 'roll_label', title: 'Rulo Etiket', category: 'Rulo Etiket' },
-        { type: 'security_label', title: 'Güvenlik Etiketi', category: 'Güvenlik Etiket' },
-        { type: 'waterproof_label', title: 'Su Geçirmez Etiket', category: 'Özel Etiket' }
+      // Gerçekçi firma kategorileri ve teklif türleri
+      const businessTypes = [
+        { type: 'corporate_catalog', title: 'Kurumsal Katalog Projesi', category: 'Katalog & Broşür', basePrice: 15000, quantity: 25000 },
+        { type: 'industrial_label', title: 'Endüstriyel Etiket Üretimi', category: 'Endüstriyel Etiket', basePrice: 8000, quantity: 50000 },
+        { type: 'food_packaging', title: 'Gıda Ambalaj Baskısı', category: 'Gıda Ambalaj', basePrice: 12000, quantity: 100000 },
+        { type: 'medical_label', title: 'Medikal Etiket (Sertifikalı)', category: 'Medikal Ürün', basePrice: 18000, quantity: 75000 },
+        { type: 'luxury_packaging', title: 'Lüks Ürün Ambalajı', category: 'Premium Ambalaj', basePrice: 25000, quantity: 15000 },
+        { type: 'security_label', title: 'Güvenlik Hologram Etiket', category: 'Güvenlik Etiket', basePrice: 22000, quantity: 30000 },
+        { type: 'pharma_label', title: 'İlaç Sektörü Etiket', category: 'Farmasötik', basePrice: 20000, quantity: 60000 },
+        { type: 'automotive_label', title: 'Otomotiv Endüstri Etiket', category: 'Otomotiv', basePrice: 14000, quantity: 80000 },
+        { type: 'cosmetic_packaging', title: 'Kozmetik Ürün Ambalajı', category: 'Kozmetik', basePrice: 16000, quantity: 40000 },
+        { type: 'textile_label', title: 'Tekstil Etiket & Care Label', category: 'Tekstil', basePrice: 9000, quantity: 120000 }
       ];
       
-      const randomLabel = labelTypes[Math.floor(Math.random() * labelTypes.length)];
-      const quantity = Math.floor(Math.random() * 2000) + 500; // Min 500, max 2500 adet
-      const unitPrice = Math.random() * 8 + 2; // 2-10₺ arası birim fiyat
-      const totalPrice = quantity * unitPrice;
+      const randomBusiness = businessTypes[Math.floor(Math.random() * businessTypes.length)];
+      const quantity = randomBusiness.quantity + Math.floor(Math.random() * randomBusiness.quantity * 0.5); // ±50% varyasyon
+      const basePrice = randomBusiness.basePrice;
+      const priceVariation = basePrice * (0.8 + Math.random() * 0.4); // ±20% fiyat varyasyonu
+      const totalPrice = priceVariation;
       
-      const cities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Konya'];
-      const randomCity = cities[Math.floor(Math.random() * cities.length)];
+      const industrialCities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Kocaeli', 'Adana', 'Konya', 'Gaziantep', 'Manisa', 'Kayseri'];
+      const randomCity = industrialCities[Math.floor(Math.random() * industrialCities.length)];
       
-      const labelQuote = {
+      // Gerçekçi firma isimleri
+      const companyPrefixes = ['Mega', 'Pro', 'Elite', 'Prime', 'Global', 'Türk', 'Anadolu', 'Metro', 'Ultra', 'Super'];
+      const companySuffixes = ['Sanayi', 'Tekstil', 'Gıda', 'İlaç', 'Plastik', 'Ambalaj', 'Üretim', 'Endüstri', 'Ticaret', 'Kozmetik'];
+      const companyName = `${companyPrefixes[Math.floor(Math.random() * companyPrefixes.length)]} ${companySuffixes[Math.floor(Math.random() * companySuffixes.length)]} A.Ş.`;
+      
+      const businessQuote = {
         id: randomUUID(),
-        title: `${randomLabel.title} - ${quantity} Adet`,
+        title: `${randomBusiness.title} - ${companyName}`,
         type: 'general_printing' as const,
-        category: randomLabel.category,
+        category: randomBusiness.category,
         status: 'pending' as const,
         location: randomCity,
         quantity: quantity,
-        unitPrice: unitPrice.toFixed(2),
         totalPrice: totalPrice.toFixed(0),
         estimatedBudget: totalPrice,
+        companyInfo: {
+          name: companyName,
+          sector: randomBusiness.category,
+          location: randomCity,
+          projectScale: quantity > 50000 ? 'Büyük Ölçek' : quantity > 20000 ? 'Orta Ölçek' : 'Standart',
+          urgency: Math.random() > 0.7 ? 'Acil' : Math.random() > 0.4 ? 'Normal' : 'Planlanmış'
+        },
         specifications: {
           quantity: quantity,
-          material: Math.random() > 0.5 ? 'Kuşe Kağıt' : 'Vinyl',
-          size: Math.random() > 0.5 ? '50x30mm' : '70x40mm',
-          finishing: Math.random() > 0.5 ? 'Mat Laminat' : 'Parlak Laminat',
-          colors: Math.random() > 0.5 ? 'CMYK' : 'Pantone',
-          deadline: Math.floor(Math.random() * 14) + 3 + ' gün'
+          projectType: randomBusiness.type,
+          material: randomBusiness.category.includes('Etiket') ? 'PP/PE Film' : 'Kuşe Kağıt',
+          printType: quantity > 50000 ? 'Offset Baskı' : 'Dijital Baskı',
+          finishing: randomBusiness.category.includes('Lüks') ? 'UV Vernik + Yaldız' : 'Selefon',
+          colors: 'CMYK + Pantone',
+          deadline: Math.floor(Math.random() * 21) + 7 + ' gün',
+          qualityLevel: randomBusiness.category.includes('Medikal') || randomBusiness.category.includes('Farmasötik') ? 'GMP Standart' : 'Endüstri Standart'
         },
         autoGenerated: true,
         createdAt: currentTime,
-        deadline: new Date(currentTime.getTime() + (Math.random() * 14 + 3) * 24 * 60 * 60 * 1000)
+        deadline: new Date(currentTime.getTime() + (Math.random() * 21 + 7) * 24 * 60 * 60 * 1000),
+        isBusinessQuote: true // Firma panellerine gönderilecek
       };
       
       // Test amaçlı - sadece memory'de tutulur, veritabanına kaydedilmez
-      console.log(`🏷️ Test teklifi oluşturuldu: ${labelQuote.title} - ${randomCity} (${quantity} adet)`);
+      console.log(`💼 İş teklifi oluşturuldu: ${businessQuote.title} - ${randomCity} (${quantity.toLocaleString()} adet - ₺${totalPrice.toFixed(0)})`);
       
       // Mock data pool'una ekle
       if (!global.mockQuotes) {
         global.mockQuotes = [];
       }
-      global.mockQuotes.push(labelQuote);
+      global.mockQuotes.push(businessQuote);
       
-      // En fazla 50 mock quote tut
-      if (global.mockQuotes.length > 50) {
-        global.mockQuotes = global.mockQuotes.slice(-50);
+      // En fazla 100 mock quote tut (daha fazla aktivite)
+      if (global.mockQuotes.length > 100) {
+        global.mockQuotes = global.mockQuotes.slice(-100);
+      }
+      
+      // Firma panellerine teklif bildirimi gönder
+      if (businessQuote.isBusinessQuote) {
+        await notifyPrintersForNewQuote(businessQuote);
       }
     }
   } catch (error) {
     console.error('Otomatik etiket teklifi oluşturma hatası:', error);
+  }
+}
+
+// Firma panellerine yeni teklif bildirimi sistemi
+async function notifyPrintersForNewQuote(quote: any) {
+  try {
+    // Tüm aktif matbaa firmalarını getir
+    const allUsers = await storage.getAllUsers();
+    const printers = allUsers.filter(user => user.role === 'printer' && user.isActive);
+    
+    // Uygun kategorideki firmalara bildirim gönder
+    const suitablePrinters = printers.filter(printer => {
+      // Firma kapasitesi ve kategori uygunluğu kontrolü
+      const companyName = printer.companyName || '';
+      const isLargeScale = companyName.includes('Mega') || companyName.includes('Global') || companyName.includes('Endüstri');
+      const isMediumScale = companyName.includes('Pro') || companyName.includes('Elite') || companyName.includes('Metro');
+      
+      // Büyük projeler için büyük firmalar, orta projeler için orta firmalar
+      if (quote.quantity > 75000 && !isLargeScale) return false;
+      if (quote.quantity < 20000 && isLargeScale) return false;
+      
+      return true;
+    });
+    
+    // Log notification
+    if (suitablePrinters.length > 0) {
+      console.log(`📢 Yeni teklif ${suitablePrinters.length} matbaa firmasına bildirildi: ${quote.category} - ₺${quote.totalPrice}`);
+    }
+    
+    // Bu noktada gerçek sistemde push notification, email vs. gönderilir
+    // Mock sistemde sadece log tutuyoruz
+    
+  } catch (error) {
+    console.error('Printer notification error:', error);
   }
 }
 
@@ -831,43 +892,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Live feed endpoint - hem gerçek veriler hem mock veriler
+  // Enhanced live feed endpoint with realistic business volumes
   app.get('/api/quotes/live-feed', async (req, res) => {
     try {
       // Gerçek sisteme verilerini çek
-      const realQuotes = await storage.getRecentQuotes ? await storage.getRecentQuotes(15) : [];
+      const realQuotes = await storage.getRecentQuotes ? await storage.getRecentQuotes(20) : [];
       
-      // Mock işler oluştur (5 dakikada bir değişen) - yüksek tutarlı projeler
+      // Günlük iş hacmi tracking
       const now = new Date();
       const fiveMinuteSlot = Math.floor(now.getTime() / (5 * 60 * 1000));
+      const dailySlot = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
       
       // Firma panellerine otomatik etiket teklifleri gönder (min 500 adet)
       await generateAutomaticLabelQuotes(now);
       
+      // Günlük 50-100 teklif ve 200-300k TL hacim için enhanced mock system
+      const dailyQuoteTarget = 50 + Math.floor(Math.random() * 50); // 50-100 teklif
+      const dailyVolumeTarget = 200000 + Math.floor(Math.random() * 100000); // 200-300k TL
+      
+      // High-volume realistic business jobs
       const mockJobs = [
+        // Büyük hacimli kurumsal projeler
         {
           id: `mock_${fiveMinuteSlot}_1`,
-          title: 'Tabaka Etiket Seri Üretimi - 1500 Adet',
-          type: 'Tabaka Etiket',
+          title: 'Kurumsal Katalog Baskı Projesi - 50.000 Adet',
+          type: 'Katalog & Dergi',
           location: 'İstanbul',
-          amount: `₺${(Math.random() * 15000 + 12000).toFixed(0)}`,
-          status: Math.random() > 0.5 ? 'Teklif aşamasında' : 'Üretimde',
-          time: `${Math.floor(Math.random() * 59) + 1} dk önce`,
-          estimatedBudget: Math.random() * 15000 + 12000,
-          quantity: 1500,
-          isGenerated: true
+          amount: `₺${(Math.random() * 25000 + 35000).toFixed(0)}`,
+          status: Math.random() > 0.3 ? 'Teklif aşamasında' : 'Üretimde',
+          time: `${Math.floor(Math.random() * 45) + 5} dk önce`,
+          estimatedBudget: Math.random() * 25000 + 35000,
+          quantity: 50000,
+          isGenerated: true,
+          category: 'corporate'
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_1a`,
+          title: 'Endüstriyel Etiket Mega Üretim - 100.000 Adet',
+          type: 'Endüstriyel Etiket',
+          location: 'Bursa',
+          amount: `₺${(Math.random() * 30000 + 45000).toFixed(0)}`,
+          status: Math.random() > 0.4 ? 'Üretimde' : 'Kalite Kontrolde',
+          time: `${Math.floor(Math.random() * 30) + 10} dk önce`,
+          estimatedBudget: Math.random() * 30000 + 45000,
+          quantity: 100000,
+          isGenerated: true,
+          category: 'industrial'
         },
         {
           id: `mock_${fiveMinuteSlot}_2`,
-          title: 'Rulo Etiket Endüstriyel - 2000 Adet',
-          type: 'Rulo Etiket',
+          title: 'Lüks Ambalaj Tasarım & Üretim - 25.000 Adet',
+          type: 'Premium Ambalaj',
           location: 'Ankara',
-          amount: `₺${(Math.random() * 18000 + 14000).toFixed(0)}`,
+          amount: `₺${(Math.random() * 20000 + 28000).toFixed(0)}`,
           status: Math.random() > 0.3 ? 'Tamamlandı' : 'Kalite Kontrolde',
-          time: `${Math.floor(Math.random() * 120) + 5} dk önce`,
-          estimatedBudget: Math.random() * 18000 + 14000,
-          quantity: 2000,
-          isGenerated: true
+          time: `${Math.floor(Math.random() * 90) + 15} dk önce`,
+          estimatedBudget: Math.random() * 20000 + 28000,
+          quantity: 25000,
+          isGenerated: true,
+          category: 'packaging'
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_2a`,
+          title: 'Event & Fuar Materyali Toplu Üretim',
+          type: 'Event Malzemeleri',
+          location: 'İzmir',
+          amount: `₺${(Math.random() * 15000 + 22000).toFixed(0)}`,
+          status: Math.random() > 0.5 ? 'Teklif aşamasında' : 'Üretim Hazırlık',
+          time: `${Math.floor(Math.random() * 60) + 20} dk önce`,
+          estimatedBudget: Math.random() * 15000 + 22000,
+          quantity: 15000,
+          isGenerated: true,
+          category: 'event'
         },
         {
           id: `mock_${fiveMinuteSlot}_3`,
@@ -928,14 +1024,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         {
           id: `mock_${fiveMinuteSlot}_8`,
-          title: 'Event Materyali Toplu Üretim',
-          type: 'Event',
+          title: 'Kurumsal Kimlik Projesi - Komple Set',
+          type: 'Kurumsal Kimlik',
           location: 'İzmir',
-          amount: `₺${(Math.random() * 32000 + 15000).toFixed(0)}`,
+          amount: `₺${(Math.random() * 25000 + 18000).toFixed(0)}`,
           status: Math.random() > 0.6 ? 'Üretimde' : 'Teklif aşamasında',
-          time: `${Math.floor(Math.random() * 200) + 60} dk önce`,
-          estimatedBudget: Math.random() * 32000 + 15000,
-          isGenerated: true
+          time: `${Math.floor(Math.random() * 120) + 30} dk önce`,
+          estimatedBudget: Math.random() * 25000 + 18000,
+          quantity: 50000,
+          isGenerated: true,
+          category: 'corporate_identity'
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_9`,
+          title: 'Medikal Etiket Sertifikalı Üretim - 75.000 Adet',
+          type: 'Medikal Etiket',
+          location: 'İstanbul',
+          amount: `₺${(Math.random() * 18000 + 32000).toFixed(0)}`,
+          status: Math.random() > 0.4 ? 'Kalite Kontrolde' : 'Üretimde',
+          time: `${Math.floor(Math.random() * 75) + 45} dk önce`,
+          estimatedBudget: Math.random() * 18000 + 32000,
+          quantity: 75000,
+          isGenerated: true,
+          category: 'medical'
+        },
+        {
+          id: `mock_${fiveMinuteSlot}_10`,
+          title: 'Gıda Sektörü Ambalaj Mega Proje',
+          type: 'Gıda Ambalaj',
+          location: 'Konya',
+          amount: `₺${(Math.random() * 22000 + 28000).toFixed(0)}`,
+          status: Math.random() > 0.3 ? 'Teklif aşamasında' : 'Müşteri Onayı',
+          time: `${Math.floor(Math.random() * 150) + 60} dk önce`,
+          estimatedBudget: Math.random() * 22000 + 28000,
+          quantity: 200000,
+          isGenerated: true,
+          category: 'food_packaging'
         }
       ];
 
@@ -953,19 +1077,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   quote.status === 'approved' ? 'Kalite Kontrolde' : 'Teklif aşamasında',
           time: quote.createdAt ? `${Math.floor((Date.now() - new Date(quote.createdAt).getTime()) / (1000 * 60))} dk önce` : 'Yeni',
           estimatedBudget: quote.estimatedBudget || 500,
-          isGenerated: false
+          quantity: quote.quantity || 1000,
+          isGenerated: false,
+          category: quote.category || 'general'
         })),
         ...mockJobs
       ];
 
-      // Son 8 işi göster (gerçek + mock karışık)
+      // Son 12 işi göster (daha fazla aktivite)
       const shuffled = combinedQuotes.sort(() => Math.random() - 0.5);
-      const displayQuotes = shuffled.slice(0, 8);
+      const displayQuotes = shuffled.slice(0, 12);
+
+      // Günlük istatistikler
+      const totalDailyVolume = combinedQuotes.reduce((sum, quote) => sum + (quote.estimatedBudget || 0), 0);
+      const dailyQuoteCount = combinedQuotes.length;
+      
+      // Firma kategorileri için teklif dağılımı
+      const categoryStats = {
+        corporate: combinedQuotes.filter(q => q.category === 'corporate' || q.category === 'corporate_identity').length,
+        industrial: combinedQuotes.filter(q => q.category === 'industrial' || q.category === 'medical').length,
+        packaging: combinedQuotes.filter(q => q.category === 'packaging' || q.category === 'food_packaging').length,
+        event: combinedQuotes.filter(q => q.category === 'event').length
+      };
 
       res.json({ 
         quotes: displayQuotes,
         totalReal: realQuotes.length,
         totalMock: mockJobs.length,
+        dailyStats: {
+          totalVolume: Math.min(totalDailyVolume, dailyVolumeTarget),
+          quoteCount: Math.min(dailyQuoteCount, dailyQuoteTarget),
+          targetVolume: dailyVolumeTarget,
+          targetQuotes: dailyQuoteTarget,
+          categoryDistribution: categoryStats
+        },
         lastUpdated: now.toISOString()
       });
     } catch (error) {
