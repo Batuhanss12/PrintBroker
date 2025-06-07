@@ -171,10 +171,10 @@ export default function CustomerRegister() {
             <Users className="h-8 w-8 text-blue-600" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Müşteri Kayıt
+            Firma Kayıt
           </h1>
           <p className="text-lg text-gray-600">
-            Matbixx'e katılın ve profesyonel baskı hizmetlerinden yararlanın
+            Kredili sistem ile profesyonel baskı hizmetlerinden yararlanın - 2999₺/ay
           </p>
         </div>
 
@@ -319,7 +319,7 @@ export default function CustomerRegister() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <CreditCard className="h-5 w-5 mr-2 text-blue-600" />
-                Müşteri Paketi Avantajları
+                Kurumsal Paket Avantajları
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -327,8 +327,9 @@ export default function CustomerRegister() {
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900">Kredili Sistem</h3>
+                  <div className="text-2xl font-bold text-blue-600">2999₺/ay</div>
                 </div>
-                <p className="text-gray-600 mb-4">Kullandığın kadar öde sistemi</p>
+                <p className="text-gray-600 mb-4">Firmalar için aylık sabit ödeme sistemi</p>
                 
                 <ul className="space-y-3">
                   <li className="flex items-center text-sm">
@@ -341,13 +342,13 @@ export default function CustomerRegister() {
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>AI destekli tasarım (35₺/tasarım)</span>
+                    <span>Sınırsız AI destekli tasarım</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>100MB dosya yükleme</span>
+                    <span>Sınırsız dosya yükleme</span>
                   </li>
                   <li className="flex items-center text-sm">
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
@@ -359,7 +360,7 @@ export default function CustomerRegister() {
                     <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <Check className="h-2.5 w-2.5 text-green-600" />
                     </div>
-                    <span>7/24 canlı destek</span>
+                    <span>Öncelikli destek</span>
                   </li>
                 </ul>
               </div>

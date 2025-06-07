@@ -140,7 +140,7 @@ export default function LandingNew() {
     {
       icon: Sparkles,
       title: "Kredili Tasarım Sistemi",
-      description: "AI destekli otomatik tasarım motoru - 2999₺/ay ile sınırsız profesyonel tasarım",
+      description: "Firmalar için kredili sistem - 2999₺/ay ile sınırsız profesyonel tasarım",
       benefit: "Aylık sabit maliyet"
     },
     {
@@ -299,8 +299,8 @@ export default function LandingNew() {
                   >
                     <User className="h-4 w-4 mr-3 text-green-600" />
                     <div>
-                      <div className="font-medium">Yeni Müşteri Kaydı</div>
-                      <div className="text-sm text-gray-500">2999₺/ay - Kredili sistem</div>
+                      <div className="font-medium">Yeni Firma Kaydı</div>
+                      <div className="text-sm text-gray-500">Kredili sistem - 2999₺/ay</div>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
