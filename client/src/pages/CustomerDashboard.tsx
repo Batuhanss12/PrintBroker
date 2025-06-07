@@ -223,6 +223,15 @@ export default function CustomerDashboard() {
                   </DialogContent>
                 </Dialog>
                 
+                <Link href="/quote/sheet_label">
+                  <Button variant="outline" className="flex items-center p-4 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200 w-full justify-start">
+                    <Plus className="text-blue-500 text-2xl mr-3" />
+                    <div className="text-left">
+                      <h5 className="font-semibold text-gray-900">Yeni Teklif</h5>
+                      <p className="text-sm text-gray-600">Teklif talebi oluştur</p>
+                    </div>
+                  </Button>
+                </Link>
 
               </div>
             </div>
