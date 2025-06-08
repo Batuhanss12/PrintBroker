@@ -1,4 +1,3 @@
-
 import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
@@ -23,9 +22,9 @@ declare module 'express-session' {
 export async function setupAuth(app: Express) {
   // Configure session with proper settings
   const sessionSecret = process.env.SESSION_SECRET || 'matbixx-development-secret-key-2024';
-  
+
   let sessionStore;
-  
+
   // Try to use PostgreSQL session store if available, fallback to memory store
   try {
     if (process.env.DATABASE_URL) {
@@ -76,24 +75,41 @@ export async function setupAuth(app: Express) {
   console.log('✅ Authentication system initialized with enhanced session management');
 }
 
-export const isAuthenticated: RequestHandler = (req: any, res, next) => {
-  // Check session-based authentication
-  if (req.session && req.session.user) {
-    req.user = req.session.user;
+export const isAuthenticated = (req: any, res: any, next: any) => {
+  // Enhanced session validation
+  if (req.session && req.session.user && req.session.user.id) {
+    // Session-based authentication
+    req.user = {
+      id: req.session.user.id,
+      email: req.session.user.email,
+      role: req.session.user.role,
+      firstName: req.session.user.firstName,
+      lastName: req.session.user.lastName,
+      claims: {
+        sub: req.session.user.id // Add claims.sub for compatibility
+      }
+    };
+
+    console.log("Session auth successful for user:", req.session.user.id);
     return next();
   }
-  
-  // Check if it's an API request
-  if (req.path.startsWith('/api/')) {
-    return res.status(401).json({ 
-      message: "Unauthorized",
-      code: "AUTH_REQUIRED",
-      redirectTo: "/"
-    });
-  }
-  
-  // Redirect to login for web requests
-  return res.redirect('/?login=required');
+
+  // Use Passport authentication as fallback
+  passport.authenticate('session', { session: false }, (err: any, user: any) => {
+    if (err) {
+      console.error('Authentication error:', err);
+      return res.status(500).json({ message: 'Authentication error' });
+    }
+
+    if (!user) {
+      console.log("Authentication failed - no user found");
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    console.log("Passport auth successful for user:", user.id || user.claims?.sub);
+    req.user = user;
+    next();
+  })(req, res, next);
 };
 
 // Role-based access control middleware

@@ -81,6 +81,21 @@ export default function QuoteForm() {
           uploadedFiles,
         },
       };
+
+      // Convert deadline to proper format if it exists
+      if (quoteData.deadline && quoteData.deadline !== '') {
+        quoteData.deadline = new Date(quoteData.deadline).toISOString();
+      } else {
+        delete quoteData.deadline;
+      }
+
+      console.log("Submitting quote data:", {
+        title: quoteData.title,
+        type: quoteData.type,
+        hasDeadline: !!quoteData.deadline,
+        specificationsCount: Object.keys(quoteData.specifications).length
+      });
+
       const response = await fetch("/api/quotes", {
         method: "POST",
         headers: {
@@ -88,8 +103,11 @@ export default function QuoteForm() {
         },
         body: JSON.stringify(quoteData),
       });
+      
       if (!response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`);
+        const errorData = await response.json();
+        console.error("Quote submission failed:", errorData);
+        throw new Error(errorData.message || `${response.status}: ${response.statusText}`);
       }
       return response.json();
     },

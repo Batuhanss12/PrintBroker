@@ -305,7 +305,15 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users);
-export const insertQuoteSchema = createInsertSchema(quotes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertQuoteSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  type: z.enum(["sheet_label", "roll_label", "general_printing"]),
+  customerId: z.string(),
+  specifications: z.record(z.any()).default({}),
+  description: z.string().optional(),
+  deadline: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  budget: z.string().optional(),
+});
 export const insertPrinterQuoteSchema = createInsertSchema(printerQuotes).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertRatingSchema = createInsertSchema(ratings).omit({ id: true, createdAt: true });

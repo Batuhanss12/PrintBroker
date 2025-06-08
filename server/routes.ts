@@ -806,7 +806,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Design history endpoint
   app.get('/api/designs/history', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session.user.id;
+      // Enhanced user ID extraction for session-based auth
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
+      
+      if (!userId) {
+        console.error("User ID not found for design history:", { 
+          userClaims: req.user?.claims, 
+          userId: req.user?.id, 
+          sessionUser: req.session?.user 
+        });
+        return res.status(401).json({ message: "User session not found" });
+      }
+
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
 
@@ -1394,6 +1405,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.user?.id;
       
       if (!userId) {
+        console.error("User ID not found in session:", { 
+          userClaims: req.user?.claims, 
+          userId: req.user?.id, 
+          sessionUser: req.session?.user 
+        });
         return res.status(401).json({ message: "User session not found" });
       }
 
@@ -1403,16 +1419,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only customers can create quotes" });
       }
 
-      const quoteData = insertQuoteSchema.parse({
+      // Prepare quote data with proper type conversion
+      const quoteInput = {
         ...req.body,
         customerId: userId,
+      };
+
+      // Convert date strings to Date objects if they exist
+      if (quoteInput.deadline && typeof quoteInput.deadline === 'string') {
+        quoteInput.deadline = new Date(quoteInput.deadline);
+      }
+
+      // Remove empty or undefined date fields
+      if (!quoteInput.deadline || quoteInput.deadline === '') {
+        delete quoteInput.deadline;
+      }
+
+      console.log("Creating quote with data:", {
+        title: quoteInput.title,
+        type: quoteInput.type,
+        customerId: userId,
+        hasDeadline: !!quoteInput.deadline
       });
 
+      const quoteData = insertQuoteSchema.parse(quoteInput);
       const quote = await storage.createQuote(quoteData);
+      
+      console.log("Quote created successfully:", quote.id);
       res.json(quote);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid quote data", errors: error.errors });
+        console.error("Quote validation error:", error.errors);
+        return res.status(400).json({ 
+          message: "Invalid quote data", 
+          errors: error.errors,
+          received: req.body 
+        });
       }
       console.error("Error creating quote:", error);
       res.status(500).json({ message: "Failed to create quote" });
