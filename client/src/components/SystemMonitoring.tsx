@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Activity, AlertTriangle, CheckCircle, Clock, Database, HardDrive, Cpu, Users } from "lucide-react";
+import { DialogDescription } from "@/components/ui/dialog";
 
 interface SystemHealth {
   status: 'healthy' | 'unhealthy';

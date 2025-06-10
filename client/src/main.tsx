@@ -13,7 +13,7 @@ window.addEventListener('unhandledrejection', (event) => {
     event.preventDefault();
     return;
   }
-  
+
   console.warn('Promise rejection handled:', event.reason);
   event.preventDefault();
 });
@@ -26,7 +26,7 @@ window.addEventListener('error', (event) => {
     window.location.reload();
     return;
   }
-  
+
   console.warn('Error handled:', event.error);
   event.preventDefault();
 });
